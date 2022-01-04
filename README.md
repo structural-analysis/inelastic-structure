@@ -1,6 +1,6 @@
-# inelastic-structure
+# Inelastic Structure
 
-# TODO:
+## TODO:
 
 - change rblp algorithm to mahini algorithm
 - use update inverse of B matrix instead of direct inversion.
