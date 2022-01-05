@@ -22,7 +22,12 @@ def apply_boundry_conditions(joints_restraints, matrix):
     if matrix.shape[1] == 1:
         # if we have a vector, for example force vector.
         for bc_index in range(len(joints_restraints)):
-            reduced_matrix = np.delete(reduced_matrix, 3*joints_restraints[bc_index, 0]+joints_restraints[bc_index, 1]-fixed_dof_counter, 0)  # delete row 1
+            # delete row 1
+            reduced_matrix = np.delete(
+                reduced_matrix,
+                3 * joints_restraints[bc_index, 0] + joints_restraints[bc_index, 1] - fixed_dof_counter,
+                0,
+            )
             fixed_dof_counter += 1
     elif matrix.shape[1] != 1:
         # if we have a matrix like stiffness or mass.
