@@ -10,7 +10,7 @@ all units are SI (N, m, s)
 - optimize code to full usage of numpy (remove for loops, ...)
 - optimize code structure (use classes, ...)
 - improve performance (using numba or cython)
-- do TODOs
 - use sifting
 - upgrade to polygon elements
 - include hardening and softening
+- do TODOs
