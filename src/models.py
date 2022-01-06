@@ -10,19 +10,19 @@ class Material:
 
 
 class Section:
-    def __init__(self, material, area, ix, iy, zp):
+    def __init__(self, material, a, ix, iy, zp):
         self.e = material.e
         self.sy = material.sy
-        self.a = area
+        self.a = a
         self.ix = ix
         self.iy = iy
         self.zp = zp
 
 
-class Beam2D:
-    # ends_fixity: one of following: fixed_fixed, hinge_fixed, fixed_hinge, hinge_hinge
+class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
+    # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
     def __init__(self, section, start, end, ends_fixity):
         self.start = start
         self.end = end
@@ -39,7 +39,7 @@ class Beam2D:
     def _length(self):
         a = self.start
         b = self.end
-        l = sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2 + (b[2] - a[2])**2)
+        l = sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
         return l
 
     def _stiffness(self):
@@ -49,7 +49,7 @@ class Beam2D:
         e = self.e
         ends_fixity = self.ends_fixity
 
-        if (ends_fixity == "fixed_fixed"):
+        if (ends_fixity == "fix_fix"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 12.0 * e * i / (l**3.0), 6.0 * e * i / (l**2.0), 0.0, -12.0 * e * i / (l**3.0), 6.0 * e * i / (l**2.0)],
@@ -58,7 +58,7 @@ class Beam2D:
                 [0.0, -12.0 * e * i / (l**3.0), -6.0 * e * i / (l**2.0), 0.0, 12.0 * e * i / (l**3.0), -6.0 * e * i / (l**2.0)],
                 [0.0, 6.0 * e * i / (l**2.0), 2.0 * e * i / (l), 0.0, -6.0 * e * i / (l**2.0), 4.0 * e * i / (l)]])
 
-        elif (ends_fixity == "hinge_fixed"):
+        elif (ends_fixity == "hinge_fix"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 3.0 * e * i / (l**3.0), 0.0, 0.0, -3.0 * e * i / (l**3.0), 3.0 * e * i / (l**2.0)],
@@ -67,7 +67,7 @@ class Beam2D:
                 [0.0, -3.0 * e * i / (l**3.0), 0.0, 0.0, 3.0 * e * i / (l**3.0), -3.0 * e * i / (l**2.0)],
                 [0.0, 3.0 * e * i / (l**2.0), 0.0, 0.0, -3.0 * e * i / (l**2.0), 3.0 * e * i / (l)]])
 
-        elif (ends_fixity == "fixed_hinge"):
+        elif (ends_fixity == "fix_hinge"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 3.0 * e * i / (l**3.0), 3.0 * e * i / (l**2.0), 0.0, -3.0 * e * i / (l**3.0), 0.0],
