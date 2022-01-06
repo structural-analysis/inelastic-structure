@@ -1,4 +1,18 @@
+import math
 import numpy as np
+
+
+# math functions
+def sin(t):
+    return math.sin(t)
+
+
+def cos(t):
+    return math.cos(t)
+
+
+def sqrt(t):
+    return math.sqrt(t)
 
 
 def apply_boundry_conditions(joints_restraints, matrix):
@@ -8,8 +22,12 @@ def apply_boundry_conditions(joints_restraints, matrix):
     if matrix.shape[1] == 1:
         # if we have a vector, for example force vector.
         for bc_counter in range(len(joints_restraints)):
-            # delete row
-            reduced_matrix = np.delete(reduced_matrix, 3*joints_restraints[bc_counter, 0]+joints_restraints[bc_counter, 1]-fixed_dof_counter, 0)
+            # delete row 1
+            reduced_matrix = np.delete(
+                reduced_matrix,
+                3 * joints_restraints[bc_counter, 0] + joints_restraints[bc_counter, 1] - fixed_dof_counter,
+                0,
+            )
             fixed_dof_counter += 1
     elif matrix.shape[1] != 1:
         # if we have a matrix like stiffness or mass.

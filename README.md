@@ -1,5 +1,8 @@
 # Inelastic Structure
 
+all units are SI (N, m, s)
+
+
 ## TODO:
 
 - change rblp algorithm to mahini algorithm
