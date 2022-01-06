@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def _transform_local_2d_matrix(element_transform, element_stiffness):
+def _transform_loc_2d_matrix_to_glob(element_transform, element_stiffness):
     element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
     return element_global_stiffness
 
@@ -24,7 +24,7 @@ def assemble_2d_frame(no_elements, no_nodes, all_transform, all_stiffness, all_e
     """
     structure_stiffness = np.zeros((3*no_nodes, 3*no_nodes))
     for eln in range(no_elements):
-        element_global_stiffness = _transform_local_2d_matrix(all_transform[eln], all_stiffness[eln])
+        element_global_stiffness = _transform_loc_2d_matrix_to_glob(all_transform[eln], all_stiffness[eln])
         for i in range(6):
             for j in range(6):
                 ndn = (j)//3
