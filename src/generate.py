@@ -12,7 +12,7 @@ sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv"
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
 
 
-def get_global_cords(global_cords_path):
+def get_global_cords():
     cords = []
     cords_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
     for i in range(cords_array.shape[0]):
@@ -20,7 +20,7 @@ def get_global_cords(global_cords_path):
     return cords
 
 
-def populate_materials(materials_path):
+def generate_materials():
     materials = {}
     materials_array = np.loadtxt(fname=materials_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(materials_array.shape[0]):
@@ -28,7 +28,7 @@ def populate_materials(materials_path):
     return materials
 
 
-def populate_sections(sections_path, materials):
+def generate_sections(materials):
     sections = {}
     sections_array = np.loadtxt(fname=sections_path, usecols=range(6), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
@@ -42,9 +42,13 @@ def populate_sections(sections_path, materials):
     return sections
 
 
-def populate_frames(frames_path, sections, global_cords):
-    frames = []
+def generate_frames():
+    global_cords = get_global_cords()
+    materials = generate_materials()
+    sections = generate_sections(materials)
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+
+    frames = []
     for i in range(frames_array.shape[0]):
         frames.append(
             FrameElement2D(
@@ -54,13 +58,4 @@ def populate_frames(frames_path, sections, global_cords):
                 ends_fixity=frames_array[i, 3]
             )
         )
-    return frames
-
-
-def populate():
-    global_cords = get_global_cords(global_cords_path)
-    materials = populate_materials(materials_path)
-    sections = populate_sections(sections_path, materials)
-    frames = populate_frames(frames_path, sections, global_cords)
-
     return frames
