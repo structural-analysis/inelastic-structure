@@ -6,7 +6,7 @@ def _transform_loc_2d_matrix_to_glob(element_transform, element_stiffness):
     return element_global_stiffness
 
 
-def assemble_2d_frame(no_elements, no_nodes, all_transform, all_stiffness, all_elements_nodes):
+def assemble_2d_frame(frames, global_cords):
     """[summary]
 
     :param no_elements: Number of Elements
@@ -22,14 +22,24 @@ def assemble_2d_frame(no_elements, no_nodes, all_transform, all_stiffness, all_e
     :return: structure stiffness after assembling stiffness of elements
     :rtype: matrix
     """
-    structure_stiffness = np.zeros((3 * no_nodes, 3 * no_nodes))
-    for eln in range(no_elements):
-        element_global_stiffness = _transform_loc_2d_matrix_to_glob(all_transform[eln], all_stiffness[eln])
+    number_of_nodes = global_cords.shape[0]
+    structure_stiffness = np.zeros((3 * number_of_nodes, 3 * number_of_nodes))
+    for eln in range(len(frames)):
+        element_global_stiffness = _transform_loc_2d_matrix_to_glob(frames[eln].t, frames[eln].k)
         for i in range(6):
             for j in range(6):
-                ndn = (j) // 3
-                p = 3 * all_elements_nodes[eln, ndn + 1] + j % 3
+                ndn = j // 3
+                # p = 3 * all_elements_nodes[eln, ndn + 1] + j % 3
+                if ndn == 0:
+                    p = 3 * frames[eln].start + j % 3
+                else:
+                    p = 3 * frames[eln].end + j % 3
+
                 ndnn = i // 3
-                q = 3 * all_elements_nodes[eln, ndnn + 1] + i % 3
+                if ndnn == 0:
+                    q = 3 * frames[eln].start + j % 3
+                else:
+                    q = 3 * frames[eln].end + i % 3
+                # q = 3 * all_elements_nodes[eln, ndnn + 1] + i % 3
                 structure_stiffness[p, q] = structure_stiffness[p, q] + element_global_stiffness[j, i]
     return structure_stiffness
