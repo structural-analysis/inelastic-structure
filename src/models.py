@@ -2,36 +2,54 @@ from src.functions import sqrt
 import numpy as np
 
 
-class Beam2D():
+class Material:
+    def __init__(self, name):
+        if name == "steel":
+            self.e = 2e11
+            self.sy = 240e6
+
+
+class Section:
+    def __init__(self, material, a, ix, iy, zp):
+        self.e = material.e
+        self.sy = material.sy
+        self.a = a
+        self.ix = ix
+        self.iy = iy
+        self.zp = zp
+
+
+class FrameElement2D:
+    # mp: bending capacity
     # udef: unit distorsions equivalent forces
-    def __init__(self, start, end, ends_fixity,
-                 section_area, inertia_moment, bending_capacity, elasticity_modulus):
+    # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
+    def __init__(self, section, start, end, ends_fixity):
         self.start = start
         self.end = end
         self.ends_fixity = ends_fixity
-        self.section_area = section_area
-        self.inertia_moment = inertia_moment
-        self.elasticity_modulus = elasticity_modulus
-        self.bending_capacity = bending_capacity
-        self.length = self._length()
-        self.stiffness = self._stiffness()["k"]
-        self.transform_matrix = self._transform_matrix()
+        self.a = section.a
+        self.i = section.ix
+        self.e = section.e
+        self.mp = section.zp * section.sy
+        self.l = self._length()
+        self.k = self._stiffness()["k"]
+        self.t = self._transform_matrix()
         self.udef = self._stiffness()["udef"]
 
     def _length(self):
         a = self.start
         b = self.end
-        l = sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2 + (b[2] - a[2])**2)
+        l = sqrt((b[0] - a[0])**2 + (b[1] - a[1])**2)
         return l
 
     def _stiffness(self):
-        l = self.length
-        a = self.section_area
-        i = self.inertia_moment
-        e = self.elasticity_modulus
+        l = self.l
+        a = self.a
+        i = self.i
+        e = self.e
         ends_fixity = self.ends_fixity
 
-        if (ends_fixity == "fixed_fixed"):
+        if (ends_fixity == "fix_fix"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 12.0 * e * i / (l**3.0), 6.0 * e * i / (l**2.0), 0.0, -12.0 * e * i / (l**3.0), 6.0 * e * i / (l**2.0)],
@@ -40,7 +58,7 @@ class Beam2D():
                 [0.0, -12.0 * e * i / (l**3.0), -6.0 * e * i / (l**2.0), 0.0, 12.0 * e * i / (l**3.0), -6.0 * e * i / (l**2.0)],
                 [0.0, 6.0 * e * i / (l**2.0), 2.0 * e * i / (l), 0.0, -6.0 * e * i / (l**2.0), 4.0 * e * i / (l)]])
 
-        elif (ends_fixity == "hinge_fixed"):
+        elif (ends_fixity == "hinge_fix"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 3.0 * e * i / (l**3.0), 0.0, 0.0, -3.0 * e * i / (l**3.0), 3.0 * e * i / (l**2.0)],
@@ -49,7 +67,7 @@ class Beam2D():
                 [0.0, -3.0 * e * i / (l**3.0), 0.0, 0.0, 3.0 * e * i / (l**3.0), -3.0 * e * i / (l**2.0)],
                 [0.0, 3.0 * e * i / (l**2.0), 0.0, 0.0, -3.0 * e * i / (l**2.0), 3.0 * e * i / (l)]])
 
-        elif (ends_fixity == "fixed_hinge"):
+        elif (ends_fixity == "fix_hinge"):
             k = np.matrix([
                 [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
                 [0.0, 3.0 * e * i / (l**3.0), 3.0 * e * i / (l**2.0), 0.0, -3.0 * e * i / (l**3.0), 0.0],
@@ -73,7 +91,7 @@ class Beam2D():
     def _transform_matrix(self):
         a = self.start
         b = self.end
-        l = self.length
+        l = self.l
         xa = a[0]
         ya = a[1]
         xb = b[0]
@@ -90,6 +108,6 @@ class Beam2D():
     def get_nodal_forces(self, displacements, fixed_forces):
         # displacements: numpy matrix
         # fixed_forces: numpy matrix
-        k = self.stiffness
+        k = self.k
         f = (k * displacements + fixed_forces).T
         return f

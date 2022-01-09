@@ -4,6 +4,9 @@ __pycache__/
 *.xlsx
 *.xlsx#
 .flake8
+static/
+phiP0.csv
+phiPvPhi.csv
 
 # ---> Python
 # Byte-compiled / optimized / DLL files
