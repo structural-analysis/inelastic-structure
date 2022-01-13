@@ -1,5 +1,5 @@
 import numpy as np
-
+import scipy.linalg
 
 class Structure:
     def __init__(self, n_nodes, node_n_dof, elements, boundaries, loads):
@@ -12,6 +12,7 @@ class Structure:
         self.reduced_k = self.apply_boundry_conditions()
         self.f = self.apply_loading()
         self.reduced_f = self.apply_load_boundry_conditions()
+        self.ck = scipy.linalg.cho_factor(self.reduced_k)
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
         element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
