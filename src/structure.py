@@ -2,13 +2,16 @@ import numpy as np
 
 
 class Structure:
-    def __init__(self, n_nodes, node_n_dof, elements, boundaries):
+    def __init__(self, n_nodes, node_n_dof, elements, boundaries, loads):
         self.n_nodes = n_nodes
         self.node_n_dof = node_n_dof
         self.elements = elements
         self.boundaries = boundaries
+        self.loads = loads
         self.k = self.assemble()
         self.reduced_k = self.apply_boundry_conditions()
+        self.f = self.apply_loading()
+        self.reduced_f = self.apply_load_boundry_conditions()
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
         element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
@@ -33,12 +36,6 @@ class Structure:
     def apply_boundry_conditions(self):
         reduced_matrix = self.k
         deleted_counter = 0
-        # Ft.shape[1]
-        # if M.shape[1] == 1:
-        #     for BC in range(len(JTR)):
-        #         MR=np.delete(MR,3*JTR[BC,0]+JTR[BC,1]-jj,0) #delete row 1
-        #         jj+=1
-        # elif M.shape[1] != 1:
         for i in range(len(self.boundaries)):
             # delete column
             reduced_matrix = np.delete(
@@ -50,3 +47,28 @@ class Structure:
             )
             deleted_counter += 1
         return reduced_matrix
+
+    def _assemble_join_load(self):
+        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.matrix(f_total)
+        for joint_load in self.loads["joint_loads"]:
+            f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] = f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
+        return f_total
+
+    def apply_loading(self):
+        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.matrix(f_total)
+        for load in self.loads:
+            if load == "joint_loads":
+                f_total = f_total + self._assemble_join_load()
+        return f_total
+
+    def apply_load_boundry_conditions(self):
+        reduced_f = self.f
+        deleted_counter = 0
+        for i in range(len(self.boundaries)):
+            reduced_f = np.delete(
+                reduced_f, 3 * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 0
+            )
+            deleted_counter += 1
+        return reduced_f

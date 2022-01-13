@@ -9,6 +9,7 @@ example_name = settings.example_name
 
 global_cords_path = os.path.join(examples_dir, example_name, "global_cords.csv")
 boundaries_path = os.path.join(examples_dir, example_name, "boundaries.csv")
+joint_load_path = os.path.join(examples_dir, example_name, "loads/joint_loads.csv")
 materials_path = os.path.join(examples_dir, example_name, "materials.csv")
 sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv")
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
@@ -66,7 +67,13 @@ def generate_frames():
 def generate_structure():
     boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
     frames = generate_frames()
+    joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    loads = {
+        "joint_loads": joint_loads,
+        "concentrated_member_loads": [],
+        "distributed_load": [],
+    }
     structure = Structure(
-        n_nodes=3, node_n_dof=3, elements=frames, boundaries=boundaries_array
+        n_nodes=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
     )
     return structure
