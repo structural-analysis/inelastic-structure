@@ -28,9 +28,9 @@ class Structure:
             for i in range(element_n_dof):
                 for j in range(element_n_dof):
                     local_element_node_row = int(j // element_node_n_dof)
-                    p = int(element_node_n_dof * self.elements[eln].nodes[local_element_node_row] + j % element_node_n_dof)
+                    p = int(element_node_n_dof * self.elements[eln].nodes[local_element_node_row].num + j % element_node_n_dof)
                     local_element_node_column = int(i // element_node_n_dof)
-                    q = int(element_node_n_dof * self.elements[eln].nodes[local_element_node_column] + i % element_node_n_dof)
+                    q = int(element_node_n_dof * self.elements[eln].nodes[local_element_node_column].num + i % element_node_n_dof)
                     structure_stiffness[p, q] = structure_stiffness[p, q] + element_global_stiffness[j, i]
         return structure_stiffness
 

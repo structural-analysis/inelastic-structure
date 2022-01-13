@@ -2,6 +2,13 @@ from src.functions import sqrt
 import numpy as np
 
 
+class Node:
+    def __init__(self, num, x, y):
+        self.num = num
+        self.x = x
+        self.y = y
+
+
 class Material:
     def __init__(self, name):
         if name == "steel":
@@ -10,8 +17,8 @@ class Material:
             self.nu = 0.3
 
 
-class BeamSection:
-    def __init__(self, material, a, ix, iy, zp):
+class FrameSection:
+    def __init__(self, material: Material, a, ix, iy, zp):
         self.a = a
         self.ix = ix
         self.iy = iy
@@ -23,7 +30,7 @@ class BeamSection:
 
 class PlateSection:
     # nu: poisson ratio
-    def __init__(self, material, t):
+    def __init__(self, material: Material, t):
         e = material.e
         nu = material.nu
         sy = material.sy
@@ -38,7 +45,7 @@ class PlateSection:
 
 class RectangularThinPlateElement:
     # k is calculated based on four integration points
-    def __init__(self, nodes: tuple[tuple], section):
+    def __init__(self, nodes: tuple[Node, Node, Node, Node], section: PlateSection):
         self.t = section.t
         self.nodes = nodes
         self.lx = nodes[1][0] - nodes[0][0]
@@ -126,11 +133,11 @@ class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, section, start, end, nodes, ends_fixity):
-        self.start = start
-        self.end = end
-        self.ends_fixity = ends_fixity
+    def __init__(self, section: FrameSection, nodes: tuple[Node, Node], ends_fixity):
         self.nodes = nodes
+        self.start = nodes[0]
+        self.end = nodes[1]
+        self.ends_fixity = ends_fixity
         self.a = section.a
         self.i = section.ix
         self.e = section.e
@@ -143,7 +150,7 @@ class FrameElement2D:
     def _length(self):
         a = self.start
         b = self.end
-        l = sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
+        l = sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
         return l
 
     def _stiffness(self):
@@ -196,16 +203,12 @@ class FrameElement2D:
         a = self.start
         b = self.end
         l = self.l
-        xa = a[0]
-        ya = a[1]
-        xb = b[0]
-        yb = b[1]
         t = np.matrix([
-            [(xb - xa) / l, (yb - ya) / l, 0.0, 0.0, 0.0, 0.0],
-            [-(yb - ya) / l, (xb - xa) / l, 0.0, 0.0, 0.0, 0.0],
+            [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
+            [-(b.y - a.y) / l, (b.x - a.x) / l, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, (xb - xa) / l, (yb - ya) / l, 0.0],
-            [0.0, 0.0, 0.0, -(yb - ya) / l, (xb - xa) / l, 0.0],
+            [0.0, 0.0, 0.0, (b.x - a.x) / l, (b.y - a.y) / l, 0.0],
+            [0.0, 0.0, 0.0, -(b.y - a.y) / l, (b.x - a.x) / l, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
