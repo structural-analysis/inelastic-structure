@@ -19,6 +19,42 @@ class Section:
         self.zp = zp
 
 
+
+
+class PlateSection:
+    # nu: poisson ratio
+    def __init__(self, material, t):
+        e = material.e
+        nu = material.nu
+        sy = material.sy
+        d = np.matrix([[1, nu, 0],
+                      [nu, 1, 0],
+                      [0, 0, (1 - nu) / 2]])
+        self.t = t
+        self.mp = 0.25 * t ** 2 * sy
+        self.be = (e / (1 - nu ** 2)) * d
+        self.de = (e * t ** 3) / (12 * (1 - nu ** 2)) * d
+
+
+class PlateElement:
+    def __init__(self, nodes: tuple, section):
+        self.t = section.t
+        self.nodes = nodes
+        self.k = self._stiffness(
+            a=self.width,
+            b=self.height,
+            t=section.t,
+            de=section.de
+        )
+
+    def _stiffness(a, b, t, de):
+        return self.de
+
+    def get_nodal_forces(self, displacements):
+        k = self.k
+        return k * displacements
+
+
 class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
