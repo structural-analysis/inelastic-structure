@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from src.settings import settings
-from src.models import Material, Section, FrameElement2D
+from src.models import Material, BeamSection, FrameElement2D
 from src.structure import Structure
 
 examples_dir = "input/examples/"
@@ -34,7 +34,7 @@ def generate_sections(materials):
     sections = {}
     sections_array = np.loadtxt(fname=sections_path, usecols=range(6), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
-        sections[sections_array[i, 0]] = Section(
+        sections[sections_array[i, 0]] = BeamSection(
             material=materials[sections_array[i, 1]],
             a=float(sections_array[i, 2]),
             ix=float(sections_array[i, 3]),
