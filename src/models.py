@@ -7,16 +7,18 @@ class Material:
         if name == "steel":
             self.e = 2e11
             self.sy = 240e6
+            self.nu = 0.3
 
 
-class Section:
+class BeamSection:
     def __init__(self, material, a, ix, iy, zp):
-        self.e = material.e
-        self.sy = material.sy
         self.a = a
         self.ix = ix
         self.iy = iy
         self.zp = zp
+        self.e = material.e
+        self.sy = material.sy
+        self.mp = self.zp * self.sy
 
 
 class FrameElement2D:
@@ -31,7 +33,7 @@ class FrameElement2D:
         self.a = section.a
         self.i = section.ix
         self.e = section.e
-        self.mp = section.zp * section.sy
+        self.mp = section.mp
         self.l = self._length()
         self.k = self._stiffness()["k"]
         self.t = self._transform_matrix()
