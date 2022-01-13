@@ -25,10 +25,11 @@ class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, section, start, end, ends_fixity):
+    def __init__(self, section, start, end, nodes, ends_fixity):
         self.start = start
         self.end = end
         self.ends_fixity = ends_fixity
+        self.nodes = nodes
         self.a = section.a
         self.i = section.ix
         self.e = section.e

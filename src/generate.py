@@ -2,11 +2,13 @@ import os
 import numpy as np
 from src.settings import settings
 from src.models import Material, BeamSection, FrameElement2D
+from src.structure import Structure
 
 examples_dir = "input/examples/"
 example_name = settings.example_name
 
 global_cords_path = os.path.join(examples_dir, example_name, "global_cords.csv")
+boundaries_path = os.path.join(examples_dir, example_name, "boundaries.csv")
 materials_path = os.path.join(examples_dir, example_name, "materials.csv")
 sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv")
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
@@ -47,7 +49,6 @@ def generate_frames():
     materials = generate_materials()
     sections = generate_sections(materials)
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
-
     frames = []
     for i in range(frames_array.shape[0]):
         frames.append(
@@ -55,7 +56,17 @@ def generate_frames():
                 section=sections[frames_array[i, 0]],
                 start=global_cords[int(frames_array[i, 1])],
                 end=global_cords[int(frames_array[i, 2])],
+                nodes=(int(frames_array[i, 1]), int(frames_array[i, 2])),
                 ends_fixity=frames_array[i, 3]
             )
         )
     return frames
+
+
+def generate_structure():
+    boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+    frames = generate_frames()
+    structure = Structure(
+        n_nodes=3, node_n_dof=3, elements=frames, boundaries=boundaries_array
+    )
+    return structure
