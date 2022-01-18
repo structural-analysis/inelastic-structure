@@ -316,10 +316,10 @@ class Structure:
         boundaries_num = len(self.boundaries)
         reduced_forces = self.apply_load_boundry_conditions(force)
         reduced_disp = scipy.linalg.cho_solve(self.ck, reduced_forces)
-        disp = np.zeros((self.node_n_dof*self.n_nodes, 1))
+        disp = np.zeros((self.node_n_dof * self.n_nodes, 1))
         disp = np.matrix(disp)
-        for i in range(self.node_n_dof*self.n_nodes):
-            if (j != boundaries_num and i == self.node_n_dof*self.boundaries[j, 0]+self.boundaries[j, 1]):
+        for i in range(self.node_n_dof * self.n_nodes):
+            if (j != boundaries_num and i == self.node_n_dof * self.boundaries[j, 0] + self.boundaries[j, 1]):
                 j += 1
             else:
                 disp[i, 0] = reduced_disp[o, 0]
