@@ -1,8 +1,7 @@
 import os
 import numpy as np
 from src.settings import settings
-from src.models import Node, Material, FrameSection, FrameElement2D
-from src.structure import Structure
+from src.models import Node, Material, FrameSection, FrameElement2D, Structure
 
 examples_dir = "input/examples/"
 example_name = settings.example_name
@@ -15,7 +14,7 @@ sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv"
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
 
 
-def generate_nodes():
+def create_nodes():
     nodes = []
     nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
     for i in range(nodes_array.shape[0]):
@@ -25,7 +24,7 @@ def generate_nodes():
     return nodes
 
 
-def generate_materials():
+def create_materials():
     materials = {}
     materials_array = np.loadtxt(fname=materials_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(materials_array.shape[0]):
@@ -33,7 +32,7 @@ def generate_materials():
     return materials
 
 
-def generate_sections(materials):
+def create_sections(materials):
     sections = {}
     sections_array = np.loadtxt(fname=sections_path, usecols=range(6), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
@@ -47,10 +46,10 @@ def generate_sections(materials):
     return sections
 
 
-def generate_frames():
-    nodes = generate_nodes()
-    materials = generate_materials()
-    sections = generate_sections(materials)
+def create_frames():
+    nodes = create_nodes()
+    materials = create_materials()
+    sections = create_sections(materials)
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     frames = []
     for i in range(frames_array.shape[0]):
@@ -64,9 +63,9 @@ def generate_frames():
     return frames
 
 
-def generate_structure():
+def create_structure():
     boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
-    frames = generate_frames()
+    frames = create_frames()
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
     loads = {
         "joint_loads": joint_loads,

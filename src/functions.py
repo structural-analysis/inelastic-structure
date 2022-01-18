@@ -134,23 +134,3 @@ def load_condensation(force, ku0, joints_restraints):
     phat = ptr+np.dot(np.transpose(ku0), p0r)
 
     return phat, p0r
-
-
-def compute_displacement(ck, reduced_f):
-    reduced_disp = scipy.linalg.cho_solve(ck, reduced_f)
-    return reduced_disp
-
-
-def compute_structure_displacement(n_nodes, node_n_dof, boundaries, reduced_disp):
-    j = 0
-    o = 0
-    boundaries_num = len(boundaries)
-    disp = np.zeros((node_n_dof*n_nodes, 1))
-    disp = np.matrix(disp)
-    for i in range(node_n_dof*n_nodes):
-        if (j != boundaries_num and i == node_n_dof*boundaries[j, 0]+boundaries[j, 1]):
-            j += 1
-        else:
-            disp[i, 0] = reduced_disp[o, 0]
-            o += 1
-    return disp
