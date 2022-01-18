@@ -48,9 +48,9 @@ class RectangularThinPlateElement:
     def __init__(self, nodes: tuple[Node, Node, Node, Node], section: PlateSection):
         self.t = section.t
         self.nodes = nodes
-        self.lx = nodes[1][0] - nodes[0][0]
-        self.ly = nodes[2][1] - nodes[1][1]
-        self.k = self._stiffness_4ip(section.de)
+        self.lx = nodes[1].x - nodes[0].x
+        self.ly = nodes[2].y - nodes[1].y
+        self.k = self._stiffness(section.de)
 
     def _shape_functions(self, r, s):
         ax = (self.lx / 2)
@@ -112,9 +112,7 @@ class RectangularThinPlateElement:
         return b
 
     def _stiffness_integrand(self, r, s, de):
-        ax = (self.lx / 2)
-        ay = (self.ly / 2)
-        b = self._shape_derivatives(r=r, s=s, ax=ax, ay=ay)
+        b = self._shape_derivatives(r=r, s=s)
         ki = b.T * de * b
         return ki
 
