@@ -14,4 +14,5 @@ for i, element in enumerate(structure.elements):
     elements_forces.append(fs)
     p0[2 * i] = fs[0, 2]
     p0[2 * i + 1] = fs[0, 5]
-    disp1 = structure.compute_structure_displacement(structure.)
+    # disp1 = structure.compute_structure_displacement(structure.)
+    fv = np.zeros((structure.node_n_dof * structure.n_nodes, 1))

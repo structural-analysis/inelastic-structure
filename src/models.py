@@ -196,7 +196,7 @@ class FrameElement2D:
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
-        udef = k[:, [2, 5]]
+        udef = k[:, [2, 5]].T
         return {"k": k, "udef": udef}
 
     def _transform_matrix(self):
