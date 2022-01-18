@@ -73,3 +73,19 @@ class Structure:
             )
             deleted_counter += 1
         return reduced_f
+
+    def get_elements_disps(self, disp):
+        elements_disps = []
+        for element in self.elements:
+            element_dof_num = element.k.shape[0]
+            element_nodes_num = len(element.nodes)
+            element_node_dof_num = int(element_dof_num / element_nodes_num)
+            v = np.zeros((element_dof_num, 1))
+            v = np.matrix(v)
+            for i in range(element_dof_num):
+                element_node = i // element_node_dof_num
+                node_dof = i % element_node_dof_num
+                v[i, 0] = disp[element_node_dof_num * element.nodes[element_node].num + node_dof, 0]
+            u = element.t * v
+            elements_disps.append(u)
+        return elements_disps
