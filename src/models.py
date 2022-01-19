@@ -19,8 +19,24 @@ class Material:
             self.nu = 0.3
 
 
+class Frame2DYieldSurface():
+    # phi: yield surface gradients matrix
+    def __init__(self, mp, ap):
+        self.ap = ap
+        if not self.ap:
+            self.phi = np.matrix([-1 / mp, 1 / mp])
+        else:
+            self.phi = None
+
+
+class Frame2DYieldPoint():
+    def __init__(self, yield_surface: Frame2DYieldSurface):
+        self.has_axial = True if yield_surface.ap else False
+        self.yield_surface = yield_surface
+
+
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp):
+    def __init__(self, material: Material, a, ix, iy, zp, has_axial):
         self.a = a
         self.ix = ix
         self.iy = iy
@@ -28,6 +44,10 @@ class FrameSection:
         self.e = material.e
         self.sy = material.sy
         self.mp = self.zp * self.sy
+        if has_axial:
+            self.ap = self.a * self.sy
+        else:
+            self.ap = None
 
 
 class PlateSection:
@@ -133,7 +153,9 @@ class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, section: FrameSection, nodes: tuple[Node, Node], ends_fixity):
+    def __init__(self, nodes: tuple[Node, Node], section: FrameSection, ends_fixity):
+        self.moment_yield_surface = Frame2DYieldSurface(mp=section.mp, ap=section.ap)
+        self.moment_yield_point = Frame2DYieldPoint(yield_surface=self.moment_yield_surface)
         self.nodes = nodes
         self.start = nodes[0]
         self.end = nodes[1]
@@ -143,9 +165,10 @@ class FrameElement2D:
         self.e = section.e
         self.mp = section.mp
         self.l = self._length()
-        self.k = self._stiffness()["k"]
+        self.k = self._stiffness()
         self.t = self._transform_matrix()
-        self.udef = self._stiffness()["udef"]
+        self.yield_point_type = self.moment_yield_point
+        # self.udefs = self._udefs()
 
     def _length(self):
         a = self.start
@@ -196,8 +219,25 @@ class FrameElement2D:
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
-        udef = k[:, [2, 5]].T
-        return {"k": k, "udef": udef}
+        return k
+
+    # def _udefs(self):
+    #     udef_start_n = self.k[:, [0]]
+    #     print(udef_start_n)
+    #     print(udef_start_n.shape)
+    #     udef_start_m = self.k[:, [2]]
+    #     udef_end_n = self.k[:, [3]]
+    #     udef_end_m = self.k[:, [5]]
+
+    #     if self.yield_point_type.has_axial:
+    #         udef_start = np.matrix([udef_start_n, udef_start_m])
+    #         udef_end = np.matrix([udef_end_n, udef_end_m])
+    #     else:
+    #         udef_start = np.matrix([udef_start_m])
+    #         udef_end = np.matrix([udef_end_m])
+
+    #     udefs = (udef_start, udef_end)
+    #     return udefs
 
     def _transform_matrix(self):
         a = self.start

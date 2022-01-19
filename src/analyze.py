@@ -30,4 +30,3 @@ for i, element in enumerate(structure.elements):
         elem_disps = structure.get_elements_disps(struc_disp)
         for elem_disp in elem_disps:
             fs = element.get_nodal_forces(elem_disp, -element.udef[section].T)
-            
