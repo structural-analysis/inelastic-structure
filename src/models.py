@@ -31,8 +31,10 @@ class FrameSection:
         self.ap = self.a * self.sy
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
         if not self.has_axial_yield:
+            self.yield_components_num = 1
             self.phi = np.matrix([-1 / self.mp, 1 / self.mp])
         else:
+            self.yield_components_num = 2
             self.phi = None
 
 
@@ -50,6 +52,7 @@ class FrameElement2D:
         self.e = section.e
         self.mp = section.mp
         self.has_axial_yield = section.has_axial_yield
+        self.total_ycn = 2 * section.yield_components_num
         self.l = self._length()
         self.k = self._stiffness()
         self.t = self._transform_matrix()
@@ -109,7 +112,6 @@ class FrameElement2D:
     def _udefs(self):
         k = self.k
         k_size = k.shape[0]
-        print(self.has_axial_yield)
         if self.has_axial_yield:
             udef_start_empty = np.zeros((k_size, 2))
             udef_end_empty = np.zeros((k_size, 2))
@@ -143,7 +145,7 @@ class FrameElement2D:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
-    def get_nodal_forces(self, displacements, fixed_forces):
+    def get_nodal_force(self, displacements, fixed_forces):
         # displacements: numpy matrix
         # fixed_forces: numpy matrix
         k = self.k
