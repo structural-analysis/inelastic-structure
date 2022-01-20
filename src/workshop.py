@@ -42,7 +42,7 @@ def create_sections(materials):
             ix=float(sections_array[i, 3]),
             iy=float(sections_array[i, 4]),
             zp=float(sections_array[i, 5]),
-            has_axial=bool(sections_array[i, 6]),
+            has_axial_yield=sections_array[i, 6],
         )
     return sections
 
@@ -57,8 +57,8 @@ def create_frames():
         frames.append(
             FrameElement2D(
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
-                section=sections[frames_array[i, 0]],
                 ends_fixity=frames_array[i, 3],
+                section=sections[frames_array[i, 0]],
             )
         )
     return frames
