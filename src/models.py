@@ -44,9 +44,12 @@ class FrameElement2D:
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
     def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
         self.nodes = nodes
+        # for frame elements yield points coincide on fem nodes
+        self.yield_points = self.nodes
         self.start = nodes[0]
         self.end = nodes[1]
         self.ends_fixity = ends_fixity
+        self.section = section
         self.a = section.a
         self.i = section.ix
         self.e = section.e
@@ -265,6 +268,9 @@ class Structure:
         self.ck = scipy.linalg.cho_factor(self.reduced_k)
         self.disp = self.compute_structure_displacement(self.f)
         self.elements_disps = self.get_elements_disps(self.disp)
+        self.sensitivity_matrices = self.compute_sensitivity_matrices()
+        self.p0 = self.sensitivity_matrices[0]
+        self.pv = self.sensitivity_matrices[1]
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
         element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
@@ -358,3 +364,87 @@ class Structure:
                 disp[i, 0] = reduced_disp[o, 0]
                 o += 1
         return disp
+
+    def compute_sensitivity_matrices(self):
+        elements = self.elements
+        elements_disps = self.get_elements_disps(self.disp)
+
+        fixed_force = np.zeros((self.node_n_dof * 2, 1))
+        fixed_force = np.matrix(fixed_force)
+
+        structure_ycn = 0
+        for element in elements:
+            structure_ycn = structure_ycn + element.total_ycn
+
+        # calculate p0
+        elements_forces = []
+        p0 = np.zeros((structure_ycn, 1))
+        pv = np.zeros((structure_ycn, structure_ycn))
+        pv_column = 0
+        current_p0_row = 0
+        current_pv_column = 0
+
+        for i_element, element in enumerate(elements):
+            if element.__class__.__name__ == "FrameElement2D":
+                element_force = element.get_nodal_force(elements_disps[i_element], fixed_force)
+                elements_forces.append(element_force)
+                if not element.has_axial_yield:
+                    p0[current_p0_row] = element_force[0, 2]
+                    p0[current_p0_row + 1] = element_force[0, 5]
+                else:
+                    p0[current_p0_row] = element_force[0, 0]
+                    p0[current_p0_row + 1] = element_force[0, 2]
+                    p0[current_p0_row + 2] = element_force[0, 3]
+                    p0[current_p0_row + 3] = element_force[0, 5]
+                for i_udef, component_udef in enumerate(element.udefs):
+                    # calculate pv
+                    fv_size = self.node_n_dof * self.n_nodes
+                    fv = np.zeros((fv_size, 1))
+                    fv = np.matrix(fv)
+                    component_udef_global = element.t.T * component_udef
+                    start_dof = self.node_n_dof * element.nodes[0].num
+                    end_dof = self.node_n_dof * element.nodes[1].num
+
+                    fv[start_dof] = component_udef_global[0]
+                    fv[start_dof + 1] = component_udef_global[1]
+                    fv[start_dof + 2] = component_udef_global[2]
+
+                    fv[end_dof] = component_udef_global[3]
+                    fv[end_dof + 1] = component_udef_global[4]
+                    fv[end_dof + 2] = component_udef_global[5]
+
+                    affected_struc_disp = self.compute_structure_displacement(fv)
+                    affected_elem_disps = self.get_elements_disps(affected_struc_disp)
+                    current_affected_element_ycns = 0
+                    for i_affected_element, affected_elem_disp in enumerate(affected_elem_disps):
+                        if i_element == i_affected_element:
+                            fixed_force = -component_udef
+                        else:
+                            fixed_force = np.zeros((self.node_n_dof * 2, 1))
+                            fixed_force = np.matrix(fixed_force)
+                        affected_element_force = self.elements[i_affected_element].get_nodal_force(affected_elem_disp, fixed_force)
+                        pv_column = current_pv_column + i_udef
+                        # pv_column = element.total_ycn * i_element + i_udef
+                        if not element.has_axial_yield:
+                            pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 2]
+                            pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 5]
+                        else:
+                            pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 0]
+                            pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 2]
+                            pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[0, 3]
+                            pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[0, 5]
+                        current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].total_ycn
+            current_pv_column = current_pv_column + element.total_ycn
+            current_p0_row = current_p0_row + element.total_ycn
+
+        return p0, pv
+
+    # def create_phi(self):
+    #     phi_row_size = 0
+    #     phi_column_size = 0
+    #     for element in self.elements:
+    #         phi_row_size = phi_row_size + element.section.phi.shape[0] * len(element.yield_points)
+    #         phi_column_size = phi_column_size + element.section.phi.shape[1] * len(element.yield_points)
+
+    #     phi = np.zeros((phi_row_size, phi_column_size))
+    #     for element in self.elements:
