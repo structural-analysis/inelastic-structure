@@ -257,8 +257,8 @@ class RectangularThinPlateElement:
 
 class Structure:
     # ycn: yield components num
-    def __init__(self, n_nodes, node_n_dof, elements, boundaries, loads):
-        self.n_nodes = n_nodes
+    def __init__(self, nodes_num, node_n_dof, elements, boundaries, loads):
+        self.nodes_num = nodes_num
         self.node_n_dof = node_n_dof
         self.elements = elements
         self.boundaries = boundaries
@@ -284,7 +284,7 @@ class Structure:
         return element_global_stiffness
 
     def assemble(self):
-        empty_stiffness = np.zeros((self.node_n_dof * self.n_nodes, self.node_n_dof * self.n_nodes))
+        empty_stiffness = np.zeros((self.node_n_dof * self.nodes_num, self.node_n_dof * self.nodes_num))
         structure_stiffness = np.matrix(empty_stiffness)
         for eln in range(len(self.elements)):
             element_n_nodes = len(self.elements[eln].nodes)
@@ -316,14 +316,14 @@ class Structure:
         return reduced_matrix
 
     def _assemble_join_load(self):
-        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.zeros((self.nodes_num * self.node_n_dof, 1))
         f_total = np.matrix(f_total)
         for joint_load in self.loads["joint_loads"]:
             f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] = f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
         return f_total
 
     def apply_loading(self):
-        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.zeros((self.nodes_num * self.node_n_dof, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
             if load == "joint_loads":
@@ -362,9 +362,9 @@ class Structure:
         boundaries_num = len(self.boundaries)
         reduced_forces = self.apply_load_boundry_conditions(force)
         reduced_disp = scipy.linalg.cho_solve(self.ck, reduced_forces)
-        disp = np.zeros((self.node_n_dof * self.n_nodes, 1))
+        disp = np.zeros((self.node_n_dof * self.nodes_num, 1))
         disp = np.matrix(disp)
-        for i in range(self.node_n_dof * self.n_nodes):
+        for i in range(self.node_n_dof * self.nodes_num):
             if (j != boundaries_num and i == self.node_n_dof * self.boundaries[j, 0] + self.boundaries[j, 1]):
                 j += 1
             else:
@@ -412,7 +412,7 @@ class Structure:
         for i_element, element in enumerate(elements):
             if element.__class__.__name__ == "FrameElement2D":
                 for i_udef, component_udef in enumerate(element.udefs):
-                    fv_size = self.node_n_dof * self.n_nodes
+                    fv_size = self.node_n_dof * self.nodes_num
                     fv = np.zeros((fv_size, 1))
                     fv = np.matrix(fv)
                     component_udef_global = element.t.T * component_udef

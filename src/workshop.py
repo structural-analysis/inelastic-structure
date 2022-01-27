@@ -66,14 +66,15 @@ def create_frames():
 
 def create_structure():
     boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
-    frames = create_frames()
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    frames = create_frames()
     loads = {
         "joint_loads": joint_loads,
         "concentrated_member_loads": [],
         "distributed_load": [],
     }
+    # FIXME: read nodes_num from input
     structure = Structure(
-        n_nodes=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
+        nodes_num=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
     )
     return structure
