@@ -452,12 +452,20 @@ class Structure:
 
         return pv
 
-    # def create_phi(self):
-    #     phi_row_size = 0
-    #     phi_column_size = 0
-    #     for element in self.elements:
-    #         phi_row_size = phi_row_size + element.section.phi.shape[0] * len(element.yield_points)
-    #         phi_column_size = phi_column_size + element.section.phi.shape[1] * len(element.yield_points)
+    def create_phi(self):
+        phi_row_size = 0
+        phi_column_size = 0
+        for element in self.elements:
+            phi_row_size = phi_row_size + element.section.phi.shape[0] * len(element.yield_points)
+            phi_column_size = phi_column_size + element.section.phi.shape[1] * len(element.yield_points)
 
-    #     phi = np.zeros((phi_row_size, phi_column_size))
-    #     for element in self.elements:
+        phi = np.zeros((phi_row_size, phi_column_size))
+        current_row = 0
+        current_column = 0
+        for element in self.elements:
+            for yield_point in range(len(element.yield_points)):
+                for yield_section_row in range(element.section.phi.shape[0]):
+                    for yield_section_column in range(element.section.phi.shape[1]):
+                        phi[current_row + yield_section_row, current_column + yield_section_column] = element.section.phi[yield_section_row, yield_section_column]
+                    current_column = current_column + element.section.phi.shape[1]
+                current_row = current_row + element.section.phi.shape[0]
