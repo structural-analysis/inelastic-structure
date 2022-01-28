@@ -20,7 +20,7 @@ class Material:
 
 
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp):
+    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str):
         self.a = a
         self.ix = ix
         self.iy = iy
@@ -28,6 +28,132 @@ class FrameSection:
         self.e = material.e
         self.sy = material.sy
         self.mp = self.zp * self.sy
+        self.ap = self.a * self.sy
+        self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
+        if not self.has_axial_yield:
+            self.yield_components_num = 1
+            self.phi = np.matrix([-1 / self.mp, 1 / self.mp])
+        else:
+            self.yield_components_num = 2
+            self.phi = None
+
+
+class FrameElement2D:
+    # mp: bending capacity
+    # udef: unit distorsions equivalent forces
+    # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
+        self.nodes = nodes
+        # for frame elements yield points coincide on fem nodes
+        self.yield_points = self.nodes
+        self.start = nodes[0]
+        self.end = nodes[1]
+        self.ends_fixity = ends_fixity
+        self.section = section
+        self.a = section.a
+        self.i = section.ix
+        self.e = section.e
+        self.mp = section.mp
+        self.has_axial_yield = section.has_axial_yield
+        self.total_ycn = 2 * section.yield_components_num
+        self.l = self._length()
+        self.k = self._stiffness()
+        self.t = self._transform_matrix()
+        self.udefs = self._udefs()
+
+    def _length(self):
+        a = self.start
+        b = self.end
+        l = sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+        return l
+
+    def _stiffness(self):
+        l = self.l
+        a = self.a
+        i = self.i
+        e = self.e
+        ends_fixity = self.ends_fixity
+
+        if (ends_fixity == "fix_fix"):
+            k = np.matrix([
+                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
+                [0.0, 12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0), 0.0, -12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0)],
+                [0.0, 6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l), 0.0, -6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l)],
+                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
+                [0.0, -12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0), 0.0, 12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0)],
+                [0.0, 6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l), 0.0, -6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l)]])
+
+        elif (ends_fixity == "hinge_fix"):
+            k = np.matrix([
+                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
+                [0.0, 3.0 * e * i / (l ** 3.0), 0.0, 0.0, -3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0)],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
+                [0.0, -3.0 * e * i / (l ** 3.0), 0.0, 0.0, 3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0)],
+                [0.0, 3.0 * e * i / (l ** 2.0), 0.0, 0.0, -3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l)]])
+
+        elif (ends_fixity == "fix_hinge"):
+            k = np.matrix([
+                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
+                [0.0, 3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0), 0.0, -3.0 * e * i / (l ** 3.0), 0.0],
+                [0.0, 3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l), 0.0, -3.0 * e * i / (l ** 2.0), 0.0],
+                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
+                [0.0, -3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0), 0.0, 3.0 * e * i / (l ** 3.0), 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+
+        elif (ends_fixity == "hinge_hinge"):
+            k = np.matrix([
+                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+
+        return k
+
+    def _udefs(self):
+        k = self.k
+        k_size = k.shape[0]
+        if self.has_axial_yield:
+            udef_start_empty = np.zeros((k_size, 2))
+            udef_end_empty = np.zeros((k_size, 2))
+            udef_start = np.matrix(udef_start_empty)
+            udef_end = np.matrix(udef_end_empty)
+            udef_start[:, 0] = k[:, 0]
+            udef_start[:, 1] = k[:, 2]
+            udef_end[:, 0] = k[:, 3]
+            udef_end[:, 1] = k[:, 5]
+        else:
+            udef_start_empty = np.zeros((k_size, 1))
+            udef_end_empty = np.zeros((k_size, 1))
+            udef_start = np.matrix(udef_start_empty)
+            udef_end = np.matrix(udef_end_empty)
+            udef_start[:, 0] = k[:, 2]
+            udef_end[:, 0] = k[:, 5]
+
+        udefs = (udef_start, udef_end)
+        return udefs
+
+    def _transform_matrix(self):
+        a = self.start
+        b = self.end
+        l = self.l
+        t = np.matrix([
+            [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
+            [-(b.y - a.y) / l, (b.x - a.x) / l, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, (b.x - a.x) / l, (b.y - a.y) / l, 0.0],
+            [0.0, 0.0, 0.0, -(b.y - a.y) / l, (b.x - a.x) / l, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
+        return t
+
+    def get_nodal_force(self, displacements, fixed_forces):
+        # displacements: numpy matrix
+        # fixed_forces: numpy matrix
+        k = self.k
+        f = (k * displacements + fixed_forces).T
+        return f
 
 
 class PlateSection:
@@ -129,100 +255,10 @@ class RectangularThinPlateElement:
         return k
 
 
-class FrameElement2D:
-    # mp: bending capacity
-    # udef: unit distorsions equivalent forces
-    # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, section: FrameSection, nodes: tuple[Node, Node], ends_fixity):
-        self.nodes = nodes
-        self.start = nodes[0]
-        self.end = nodes[1]
-        self.ends_fixity = ends_fixity
-        self.a = section.a
-        self.i = section.ix
-        self.e = section.e
-        self.mp = section.mp
-        self.l = self._length()
-        self.k = self._stiffness()["k"]
-        self.t = self._transform_matrix()
-        self.udef = self._stiffness()["udef"]
-
-    def _length(self):
-        a = self.start
-        b = self.end
-        l = sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
-        return l
-
-    def _stiffness(self):
-        l = self.l
-        a = self.a
-        i = self.i
-        e = self.e
-        ends_fixity = self.ends_fixity
-
-        if (ends_fixity == "fix_fix"):
-            k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0), 0.0, -12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0)],
-                [0.0, 6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l), 0.0, -6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l)],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0), 0.0, 12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0)],
-                [0.0, 6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l), 0.0, -6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l)]])
-
-        elif (ends_fixity == "hinge_fix"):
-            k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), 0.0, 0.0, -3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0)],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), 0.0, 0.0, 3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0)],
-                [0.0, 3.0 * e * i / (l ** 2.0), 0.0, 0.0, -3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l)]])
-
-        elif (ends_fixity == "fix_hinge"):
-            k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0), 0.0, -3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, 3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l), 0.0, -3.0 * e * i / (l ** 2.0), 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0), 0.0, 3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-
-        elif (ends_fixity == "hinge_hinge"):
-            k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
-
-        udef = k[:, [2, 5]].T
-        return {"k": k, "udef": udef}
-
-    def _transform_matrix(self):
-        a = self.start
-        b = self.end
-        l = self.l
-        t = np.matrix([
-            [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
-            [-(b.y - a.y) / l, (b.x - a.x) / l, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, (b.x - a.x) / l, (b.y - a.y) / l, 0.0],
-            [0.0, 0.0, 0.0, -(b.y - a.y) / l, (b.x - a.x) / l, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
-        return t
-
-    def get_nodal_forces(self, displacements, fixed_forces):
-        # displacements: numpy matrix
-        # fixed_forces: numpy matrix
-        k = self.k
-        f = (k * displacements + fixed_forces).T
-        return f
-
-
 class Structure:
-    def __init__(self, n_nodes, node_n_dof, elements, boundaries, loads):
-        self.n_nodes = n_nodes
+    # ycn: yield components num
+    def __init__(self, nodes_num, node_n_dof, elements, boundaries, loads):
+        self.nodes_num = nodes_num
         self.node_n_dof = node_n_dof
         self.elements = elements
         self.boundaries = boundaries
@@ -233,13 +269,23 @@ class Structure:
         self.ck = scipy.linalg.cho_factor(self.reduced_k)
         self.disp = self.compute_structure_displacement(self.f)
         self.elements_disps = self.get_elements_disps(self.disp)
+        self.ycn = self._ycn()
+        self.p0 = self._elastic_internal_force_vector()
+        self.pv = self._sensitivity_matrix()
+
+    def _ycn(self):
+        ycn = 0
+        for element in self.elements:
+            ycn = ycn + element.total_ycn
+        return ycn
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
         element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
         return element_global_stiffness
 
     def assemble(self):
-        structure_stiffness = np.zeros((self.node_n_dof * self.n_nodes, self.node_n_dof * self.n_nodes))
+        empty_stiffness = np.zeros((self.node_n_dof * self.nodes_num, self.node_n_dof * self.nodes_num))
+        structure_stiffness = np.matrix(empty_stiffness)
         for eln in range(len(self.elements)):
             element_n_nodes = len(self.elements[eln].nodes)
             element_n_dof = self.elements[eln].k.shape[0]
@@ -270,14 +316,14 @@ class Structure:
         return reduced_matrix
 
     def _assemble_join_load(self):
-        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.zeros((self.nodes_num * self.node_n_dof, 1))
         f_total = np.matrix(f_total)
         for joint_load in self.loads["joint_loads"]:
             f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] = f_total[self.node_n_dof * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
         return f_total
 
     def apply_loading(self):
-        f_total = np.zeros((self.n_nodes * self.node_n_dof, 1))
+        f_total = np.zeros((self.nodes_num * self.node_n_dof, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
             if load == "joint_loads":
@@ -316,12 +362,102 @@ class Structure:
         boundaries_num = len(self.boundaries)
         reduced_forces = self.apply_load_boundry_conditions(force)
         reduced_disp = scipy.linalg.cho_solve(self.ck, reduced_forces)
-        disp = np.zeros((self.node_n_dof * self.n_nodes, 1))
+        disp = np.zeros((self.node_n_dof * self.nodes_num, 1))
         disp = np.matrix(disp)
-        for i in range(self.node_n_dof * self.n_nodes):
+        for i in range(self.node_n_dof * self.nodes_num):
             if (j != boundaries_num and i == self.node_n_dof * self.boundaries[j, 0] + self.boundaries[j, 1]):
                 j += 1
             else:
                 disp[i, 0] = reduced_disp[o, 0]
                 o += 1
         return disp
+
+    def _elastic_internal_force_vector(self):
+        ycn = self.ycn
+        elements = self.elements
+        elements_disps = self.elements_disps
+
+        fixed_force = np.zeros((self.node_n_dof * 2, 1))
+        fixed_force = np.matrix(fixed_force)
+
+        # calculate p0
+        p0 = np.zeros((ycn, 1))
+        current_p0_row = 0
+
+        for i, element in enumerate(elements):
+            if element.__class__.__name__ == "FrameElement2D":
+                element_force = element.get_nodal_force(elements_disps[i], fixed_force)
+                if not element.has_axial_yield:
+                    p0[current_p0_row] = element_force[0, 2]
+                    p0[current_p0_row + 1] = element_force[0, 5]
+                else:
+                    p0[current_p0_row] = element_force[0, 0]
+                    p0[current_p0_row + 1] = element_force[0, 2]
+                    p0[current_p0_row + 2] = element_force[0, 3]
+                    p0[current_p0_row + 3] = element_force[0, 5]
+            current_p0_row = current_p0_row + element.total_ycn
+        return p0
+
+    def _sensitivity_matrix(self):
+        ycn = self.ycn
+        elements = self.elements
+
+        fixed_force = np.zeros((self.node_n_dof * 2, 1))
+        fixed_force = np.matrix(fixed_force)
+
+        pv = np.zeros((ycn, ycn))
+        pv_column = 0
+        current_pv_column = 0
+
+        for i_element, element in enumerate(elements):
+            if element.__class__.__name__ == "FrameElement2D":
+                for i_udef, component_udef in enumerate(element.udefs):
+                    fv_size = self.node_n_dof * self.nodes_num
+                    fv = np.zeros((fv_size, 1))
+                    fv = np.matrix(fv)
+                    component_udef_global = element.t.T * component_udef
+                    start_dof = self.node_n_dof * element.nodes[0].num
+                    end_dof = self.node_n_dof * element.nodes[1].num
+
+                    fv[start_dof] = component_udef_global[0]
+                    fv[start_dof + 1] = component_udef_global[1]
+                    fv[start_dof + 2] = component_udef_global[2]
+
+                    fv[end_dof] = component_udef_global[3]
+                    fv[end_dof + 1] = component_udef_global[4]
+                    fv[end_dof + 2] = component_udef_global[5]
+
+                    affected_struc_disp = self.compute_structure_displacement(fv)
+                    affected_elem_disps = self.get_elements_disps(affected_struc_disp)
+                    current_affected_element_ycns = 0
+                    for i_affected_element, affected_elem_disp in enumerate(affected_elem_disps):
+                        if i_element == i_affected_element:
+                            fixed_force = -component_udef
+                        else:
+                            fixed_force = np.zeros((self.node_n_dof * 2, 1))
+                            fixed_force = np.matrix(fixed_force)
+                        affected_element_force = self.elements[i_affected_element].get_nodal_force(affected_elem_disp, fixed_force)
+                        pv_column = current_pv_column + i_udef
+                        # pv_column = element.total_ycn * i_element + i_udef
+                        if not element.has_axial_yield:
+                            pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 2]
+                            pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 5]
+                        else:
+                            pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 0]
+                            pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 2]
+                            pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[0, 3]
+                            pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[0, 5]
+                        current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].total_ycn
+            current_pv_column = current_pv_column + element.total_ycn
+
+        return pv
+
+    # def create_phi(self):
+    #     phi_row_size = 0
+    #     phi_column_size = 0
+    #     for element in self.elements:
+    #         phi_row_size = phi_row_size + element.section.phi.shape[0] * len(element.yield_points)
+    #         phi_column_size = phi_column_size + element.section.phi.shape[1] * len(element.yield_points)
+
+    #     phi = np.zeros((phi_row_size, phi_column_size))
+    #     for element in self.elements:

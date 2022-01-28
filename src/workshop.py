@@ -34,7 +34,7 @@ def create_materials():
 
 def create_sections(materials):
     sections = {}
-    sections_array = np.loadtxt(fname=sections_path, usecols=range(6), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    sections_array = np.loadtxt(fname=sections_path, usecols=range(7), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
         sections[sections_array[i, 0]] = FrameSection(
             material=materials[sections_array[i, 1]],
@@ -42,6 +42,7 @@ def create_sections(materials):
             ix=float(sections_array[i, 3]),
             iy=float(sections_array[i, 4]),
             zp=float(sections_array[i, 5]),
+            has_axial_yield=sections_array[i, 6],
         )
     return sections
 
@@ -56,8 +57,8 @@ def create_frames():
         frames.append(
             FrameElement2D(
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
-                section=sections[frames_array[i, 0]],
                 ends_fixity=frames_array[i, 3],
+                section=sections[frames_array[i, 0]],
             )
         )
     return frames
@@ -65,14 +66,15 @@ def create_frames():
 
 def create_structure():
     boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
-    frames = create_frames()
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    frames = create_frames()
     loads = {
         "joint_loads": joint_loads,
         "concentrated_member_loads": [],
         "distributed_load": [],
     }
+    # FIXME: read nodes_num from input
     structure = Structure(
-        n_nodes=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
+        nodes_num=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
     )
     return structure
