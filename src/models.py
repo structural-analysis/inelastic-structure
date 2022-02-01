@@ -385,7 +385,8 @@ class Structure:
         fixed_force = np.matrix(fixed_force)
 
         # calculate p0
-        p0 = np.zeros((ycn, 1))
+        empty_p0 = np.zeros((ycn, 1))
+        p0 = np.matrix(empty_p0)
         current_p0_row = 0
 
         for i, element in enumerate(elements):
@@ -405,7 +406,8 @@ class Structure:
     def _sensitivity_matrix(self):
         ycn = self.ycn
         elements = self.elements
-        pv = np.zeros((ycn, ycn))
+        empty_pv = np.zeros((ycn, ycn))
+        pv = np.matrix(empty_pv)
         pv_column = 0
         for i_element, element in enumerate(elements):
             if element.__class__.__name__ == "FrameElement2D":
@@ -457,7 +459,8 @@ class Structure:
             phi_row_size = phi_row_size + element.section.phi.shape[0] * len(element.yield_points)
             phi_column_size = phi_column_size + element.section.phi.shape[1] * len(element.yield_points)
 
-        phi = np.zeros((phi_row_size, phi_column_size))
+        empty_phi = np.zeros((phi_row_size, phi_column_size))
+        phi = np.matrix(empty_phi)
         current_row = 0
         current_column = 0
         for element in self.elements:

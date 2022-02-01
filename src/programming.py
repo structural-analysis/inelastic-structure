@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def prepare_raw_data(phi, load_limit, Xn_previous, force_of_elements, unit_load_forces):
+def prepare_raw_data(structure, load_limit=95500, include_displacement_limit=False):
     """
     In this function we get elements internal forces due to
     Loading on structure and unit deformation loading and compute
@@ -10,42 +10,43 @@ def prepare_raw_data(phi, load_limit, Xn_previous, force_of_elements, unit_load_
     :return: [description]
     :rtype: [type]
     """
-    no_elements = force_of_elements.shape[0]
-    p0 = np.zeros((2 * no_elements, 1))
-    for eln in range(no_elements):
-        p0[2 * eln] = force_of_elements[eln, 2]
-        p0[2 * eln + 1] = force_of_elements[eln, 5]
-    ns = len(unit_load_forces)
-    pv = np.zeros((2 * no_elements, 2 * no_elements))
-    for elnn in range(ns):
-        for eln in range(no_elements):
-            pv[2 * eln, elnn] = unit_load_forces[elnn][eln, 2]
-            pv[2 * eln + 1, elnn] = unit_load_forces[elnn][eln, 5]
+    analysis_type = "static"
+    phi = structure.phi
+    p0 = structure.p0
+    pv = structure.pv
 
-    # Number of Variables
-    nv = 4 * no_elements + 1
-    # Number of Constraints
-    nc = 4 * no_elements + 1
-    a = np.zeros((4 * no_elements + 1, 4 * no_elements + 1))
-    phi_p0 = np.dot(np.transpose(phi), p0)
-    phi_pv_phi = np.dot(np.transpose(phi), np.dot(pv, phi))
+    phi_pv_phi = phi.T * pv * phi
+    phi_p0 = phi.T * p0
+
+    extra_numbers_num = 2 if include_displacement_limit else 1
+    yield_lines_num = phi.shape[1]
+    variables_num = extra_numbers_num + yield_lines_num
+    constraints_num = phi.shape[1]
+
+    empty_a = np.zeros((variables_num, variables_num))
+    a = np.matrix(empty_a)
+
     # np.savetxt("phiPvPhi.csv", phi_pv_phi, delimiter=",")
     # np.savetxt("phiP0.csv", phi_p0, delimiter=",")
-    a[0:4 * no_elements, 0:4 * no_elements] = phi_pv_phi[0:4 * no_elements, 0:4 * no_elements]
-    a[0:4 * no_elements, 4 * no_elements] = phi_p0[0:4 * no_elements, 0]
-    a[4 * no_elements, 4 * no_elements] = 1.0
-    b = np.ones((nc))
-    b[0:-1] = b[0:-1] - np.dot(phi_pv_phi, Xn_previous[0:-1])
-    b[-1] = load_limit
+    a[0:yield_lines_num, 0:yield_lines_num] = phi_pv_phi[0:yield_lines_num, 0:yield_lines_num]
+    a[0:yield_lines_num, yield_lines_num] = phi_p0[0:yield_lines_num, 0]
+    a[yield_lines_num, yield_lines_num] = 1.0
+    b = np.ones((constraints_num))
+    if analysis_type == "dynamic":
+        pass
+        # b[0:-extra_numbers_num] = b[0:-extra_numbers_num] - np.dot(phi_pv_phi, xn_previous[0:-extra_numbers_num])
+    elif analysis_type == "static":
+        b[0:-extra_numbers_num] = b[0:-extra_numbers_num]
+    b[-extra_numbers_num] = load_limit
     # possible minmax are:
     # minimization: min, maximization: max
     minmax = "max"
     # possible inequality_condition are:
     # lt: Less Than or Equal  gt: Larger Than or Eqaul  eq: Equal
-    inequality_condition = np.full((nc), "lt")
+    inequality_condition = np.full((constraints_num), "lt")
     # 1: Less Than or Equal  2: Larger Than or Eqaul  3: Equal
-    c = np.zeros(2 * nv)
-    c[0:4 * no_elements] = 1.0
+    c = np.zeros(2 * variables_num)
+    c[0:yield_lines_num] = 1.0
     mp_data = {
         "a": a,
         "b": b,
