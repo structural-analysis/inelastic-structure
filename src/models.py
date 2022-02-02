@@ -404,6 +404,7 @@ class Structure:
         return p0
 
     def _sensitivity_matrix(self):
+        # fv: equivalent global force vector for a yield component's udef
         ycn = self.ycn
         elements = self.elements
         empty_pv = np.zeros((ycn, ycn))
@@ -411,7 +412,7 @@ class Structure:
         pv_column = 0
         for i_element, element in enumerate(elements):
             if element.__class__.__name__ == "FrameElement2D":
-                for i_yield_point, yield_point_udef in enumerate(element.udefs):
+                for yield_point_udef in element.udefs:
                     udef_components_num = yield_point_udef.shape[1]
                     for i_component in range(udef_components_num):
                         fv_size = self.node_n_dof * self.nodes_num
