@@ -135,3 +135,33 @@ def load_condensation(force, ku0, boundaries):
     phat = ptr + np.dot(np.transpose(ku0), p0r)
 
     return phat, p0r
+
+
+# def elasto_plastic_response(Xn, phi, unit_response, load_response):
+#     # Xn: is basic variable of mathematical programming that reveals which plastic multipliers are in basis.
+#     # phi: is the matrix of yeild surfaces of all of the sections that can be plastic.
+#     # unitResponse: is the response of structure under equilibrated forces due to unit deformataion. unitResponse can be
+#     # forces or deformations of elements or deflection of nodes that are stored in a list.
+#     # loadResponse: is the response of structure due to External loadings.
+#     xbar = np.zeros((len(unit_response), 1))
+#     extra_numbers_num = 2 if include_displacement_limit else 1
+#     xbar = np.dot(phi, np.reshape(Xn[0:-1], (len(Xn) - 1, 1)))
+#     print(unit_response[0])
+#     print(unit_response[1])
+#     print(unit_response[2])
+#     print(unit_response[3])
+#     print('-------------------')
+
+#     for i in range(len(unit_response)):
+#         unit_response[i] = unit_response[i] * xbar[i][0]
+#     print('xbar', xbar)
+#     print(unit_response[0])
+#     print(unit_response[1])
+#     print(unit_response[2])
+#     print(unit_response[3])
+#     print('-------------------')
+#     sum_unit = np.sum(unit_response, 0)
+#     elasto_plastic_response = sum_unit + load_response * Xn[-1]
+#     print(sum_unit)
+#     print(elasto_plastic_response)
+#     return elasto_plastic_response
