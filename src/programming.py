@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def prepare_raw_data(structure, load_limit=280000, include_displacement_limit=False):
+def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
 
     # possible minmax are:
     # minimization: min, maximization: max
@@ -47,6 +47,7 @@ def prepare_raw_data(structure, load_limit=280000, include_displacement_limit=Fa
     c[0:total_yield_pieces_num] = 1.0
     mp_data = {
         "variables_num": variables_num,
+        "extra_numbers_num": extra_numbers_num,
         "raw_a": raw_a,
         "b": b,
         "c": c,
@@ -64,7 +65,7 @@ def _zero_out_small_values(matrix, floor=1e-8):
     return matrix
 
 
-def find_pivot_element(basic_variables, tableau):
+def _find_pivot_element(basic_variables, tableau):
     variables_num = basic_variables.shape[0]
     for i in range(variables_num):
         if tableau[i, variables_num] > 0.0:
@@ -79,7 +80,7 @@ def find_pivot_element(basic_variables, tableau):
     return will_out_row_num, will_out
 
 
-def pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau):
+def _pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau):
     variables_num = basic_variables.shape[0]
     basic_variables[will_out_row_num] = will_in
     pivot_element = tableau[will_out_row_num, variables_num]
@@ -129,6 +130,7 @@ def complementarity_programming(mp_data):
     c = mp_data["c"]
     minmax = mp_data["minmax"]
     inequality_condition = mp_data["inequality_condition"]
+    extra_numbers_num = mp_data["extra_numbers_num"]
 
     cbar = np.zeros((2 * variables_num))
     # ------------------------------------Construction of Aj
@@ -212,10 +214,10 @@ def complementarity_programming(mp_data):
     tableau[0:variables_num, variables_num] = a[0:variables_num, will_in]
 
     # Finding the exiting variable (r)
-    will_out_row_num, will_out = find_pivot_element(basic_variables, tableau)
+    will_out_row_num, will_out = _find_pivot_element(basic_variables, tableau)
 
     # Pivot Operation
-    basic_variables, tableau = pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau)
+    basic_variables, tableau = _pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau)
     cbar[0:2 * variables_num] = np.dot(tableau[variables_num, 0:variables_num], a[0:variables_num, 0:2 * variables_num]) + c[0:2 * variables_num]
     cbar = _zero_out_small_values(cbar)
     will_in = int(will_out - variables_num)
@@ -242,9 +244,9 @@ def complementarity_programming(mp_data):
         tableau[0:variables_num, variables_num] = np.dot(tableau[0:variables_num, 0:variables_num], a[0:variables_num, will_in])
         tableau[variables_num, variables_num] = cbar[will_in]
         tableau = _zero_out_small_values(tableau)
-        will_out_row_num, will_out = find_pivot_element(basic_variables, tableau)
+        will_out_row_num, will_out = _find_pivot_element(basic_variables, tableau)
         # Pivot Operation
-        basic_variables, tableau = pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau)
+        basic_variables, tableau = _pivot_operation_on_pivot_element(will_out_row_num, will_in, basic_variables, tableau)
         cbar[0:2 * variables_num] = c[0:2 * variables_num] + np.dot(tableau[variables_num, 0:variables_num], a[0:variables_num, 0:2 * variables_num])
         cbar = _zero_out_small_values(cbar)
         will_in = int(will_out - variables_num)
@@ -268,9 +270,10 @@ def complementarity_programming(mp_data):
         #     elif atemp[i] <= 0 and bV[i] != nC-1 and bV[i] != nC+nV-1:
         #         unbounded = True
         #     i += 1
-    xn = np.zeros(variables_num)
+    empty_xn = np.zeros((variables_num, 1))
+    xn = np.matrix(empty_xn)
     for i in range(variables_num):
         if int(basic_variables[i]) < variables_num:
-            xn[int(basic_variables[i])] = tableau[i, variables_num + 3]
-
-    return xn
+            xn[int(basic_variables[i]), 0] = tableau[i, variables_num + 3]
+    plastic_multipliers = xn[0:-extra_numbers_num, 0]
+    return plastic_multipliers
