@@ -424,12 +424,15 @@ class Structure:
         for element in elements:
             total_components_num += element.total_ycn
         total_elements_num = len(elements)
+
         empty_elements_forces_sensitivity_matrix = np.zeros((total_elements_num, total_components_num), dtype=object)
         empty_elements_disps_sensitivity_matrix = np.zeros((total_elements_num, total_components_num), dtype=object)
         empty_nodal_disps_sensitivity_matrix = np.zeros((1, total_components_num), dtype=object)
+
         elements_forces_sensitivity_matrix = np.matrix(empty_elements_forces_sensitivity_matrix)
         elements_disps_sensitivity_matrix = np.matrix(empty_elements_disps_sensitivity_matrix)
         nodal_disps_sensitivity_matrix = np.matrix(empty_nodal_disps_sensitivity_matrix)
+
         for i_element, element in enumerate(elements):
             if element.__class__.__name__ == "FrameElement2D":
                 for yield_point_udef in element.udefs:
@@ -497,7 +500,7 @@ class Structure:
         current_row = 0
         current_column = 0
         for element in self.elements:
-            for yield_point in range(len(element.yield_points)):
+            for _ in range(len(element.yield_points)):
                 for yield_section_row in range(element.section.phi.shape[0]):
                     for yield_section_column in range(element.section.phi.shape[1]):
                         phi[current_row + yield_section_row, current_column + yield_section_column] = element.section.phi[yield_section_row, yield_section_column]
