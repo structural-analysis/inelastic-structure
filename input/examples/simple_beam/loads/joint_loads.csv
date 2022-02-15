@@ -1,2 +1,2 @@
-join_number,dof_of_load(0:x,1:y,2:teta_z),load_magnitude
+join_number,dof_of_load(0:x|1:y|2:teta_z),load_magnitude
 1,1,-1
