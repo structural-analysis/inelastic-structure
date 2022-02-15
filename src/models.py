@@ -468,7 +468,7 @@ class Structure:
                             # FIXME: affected_elem_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
                             affected_element_force = self.elements[i_affected_element].get_nodal_force(affected_elem_disp[0, 0], fixed_force)
                             elements_forces_sensitivity_matrix[i_affected_element, pv_column] = affected_element_force
-                            elements_disps_sensitivity_matrix[i_affected_element, pv_column] = affected_elem_disp
+                            elements_disps_sensitivity_matrix[i_affected_element, pv_column] = affected_elem_disp[0, 0]
 
                             if not element.has_axial_yield:
                                 pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 2]
