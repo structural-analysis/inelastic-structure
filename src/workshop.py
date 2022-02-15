@@ -12,6 +12,7 @@ joint_load_path = os.path.join(examples_dir, example_name, "loads/joint_loads.cs
 materials_path = os.path.join(examples_dir, example_name, "materials.csv")
 sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv")
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
+general_info_path = os.path.join(examples_dir, example_name, "general.csv")
 
 
 def create_nodes():
@@ -67,7 +68,11 @@ def create_frames():
 def create_structure():
     boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    general_info = np.loadtxt(fname=general_info_path, usecols=range(3), delimiter=",", ndmin=1, skiprows=1, dtype=str)
     frames = create_frames()
+    nodes_num = int(general_info[0])
+    dim = general_info[1]
+    load_limit = float(general_info[2])
     loads = {
         "joint_loads": joint_loads,
         "concentrated_member_loads": [],
@@ -75,6 +80,6 @@ def create_structure():
     }
     # FIXME: read nodes_num from input
     structure = Structure(
-        nodes_num=3, node_n_dof=3, elements=frames, boundaries=boundaries_array, loads=loads
+        nodes_num=nodes_num, dim=dim, elements=frames, boundaries=boundaries_array, loads=loads, load_limit=load_limit
     )
     return structure
