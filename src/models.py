@@ -29,6 +29,7 @@ class FrameSection:
         self.sy = material.sy
         self.mp = self.zp * self.sy
         self.ap = self.a * self.sy
+        abar0 = 0.15 * self.ap
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
         if not self.has_axial_yield:
             self.yield_components_num = 1
@@ -37,7 +38,7 @@ class FrameSection:
             self.yield_components_num = 2
             self.phi = np.matrix([
                 [1 / self.ap, 0, -1 / self.ap, -1 / self.ap, 0, 1 / self.ap],
-                [(1 - 0.15 * self.ap) / self.mp, 1 / self.mp, (1 - 0.15 * self.ap) / self.mp, -(1 - 0.15 * self.ap) / self.mp, -1 / self.mp, (1 - 0.15 * self.ap) / self.mp]
+                [(1 - abar0) / self.mp, 1 / self.mp, (1 - abar0) / self.mp, -(1 - abar0) / self.mp, -1 / self.mp, -(1 - abar0) / self.mp]
             ])
 
 
