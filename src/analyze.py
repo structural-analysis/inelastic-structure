@@ -1,5 +1,4 @@
 import numpy as np
-from src.settings import settings
 from src.workshop import create_structure
 from src.programming import prepare_raw_data, complementarity_programming
 
