@@ -1,4 +1,10 @@
 import numpy as np
+from openpyxl import load_workbook
+import os
+
+app_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+workbook_path = app_dir + '/data/skew.xlsx'
+workbook = load_workbook(filename=workbook_path)
 
 
 def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
@@ -58,6 +64,7 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
 
 
 def _zero_out_small_values(matrix, floor=1e-8):
+    # TODO: why generate small numbers. Do not consider this function.
     # where values are low
     low_values_flags = abs(matrix) < floor
     # all low values set to 0
@@ -153,6 +160,18 @@ def complementarity_programming(mp_data):
     for i in range(variables_num):
         a[i, j] = 1.0
         j += 1
+
+    # for i in range(a.shape[0]):
+    #     for j in range(a.shape[1]):
+    #         workbook['table'].cell(row=i + 2, column=j + 2).value = a[i, j]
+
+    # for i in range(b.shape[0]):
+    #     workbook['table'].cell(row=i + 2, column=a.shape[1] + 2).value = b[i]
+    # workbook.save(filename=workbook_path)
+
+    # for i in range(c.shape[0]):
+    #     workbook['table'].cell(row=a.shape[0] + 2, column=i + 2).value = c[i]
+    # workbook.save(filename=workbook_path)
 
     # In dynamic analysis we may have negative b, so to achieve canonical form we must use 2phase mathematical programming.
     # So that we must check b values and if we had negative ones, we must use 2phase programming.

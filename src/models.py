@@ -37,7 +37,7 @@ class FrameSection:
             self.yield_components_num = 2
             self.phi = np.matrix([
                 [1 / self.ap, 0, -1 / self.ap, -1 / self.ap, 0, 1 / self.ap],
-                [(1 - 0.15 * self.ap) / self.mp, 1 / self.mp, (1 - 0.15 * self.ap) / self.mp, -(1 - 0.15 * self.ap) / self.mp, -1 / self.mp, (1 - 0.15 * self.ap) / self.mp]
+                [(1 - 0.15) / self.mp, 1 / self.mp, (1 - 0.15) / self.mp, -(1 - 0.15) / self.mp, -1 / self.mp, (1 - 0.15) / self.mp]
             ])
 
 
