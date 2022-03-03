@@ -161,17 +161,18 @@ def complementarity_programming(mp_data):
         a[i, j] = 1.0
         j += 1
 
-    # for i in range(a.shape[0]):
-    #     for j in range(a.shape[1]):
-    #         workbook['table'].cell(row=i + 2, column=j + 2).value = a[i, j]
+    # excel prints
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+            workbook['table'].cell(row=i + 2, column=j + 2).value = a[i, j]
 
-    # for i in range(b.shape[0]):
-    #     workbook['table'].cell(row=i + 2, column=a.shape[1] + 2).value = b[i]
-    # workbook.save(filename=workbook_path)
+    for i in range(b.shape[0]):
+        workbook['table'].cell(row=i + 2, column=a.shape[1] + 2).value = b[i]
+    workbook.save(filename=workbook_path)
 
-    # for i in range(c.shape[0]):
-    #     workbook['table'].cell(row=a.shape[0] + 2, column=i + 2).value = c[i]
-    # workbook.save(filename=workbook_path)
+    for i in range(c.shape[0]):
+        workbook['table'].cell(row=a.shape[0] + 2, column=i + 2).value = c[i]
+    workbook.save(filename=workbook_path)
 
     # In dynamic analysis we may have negative b, so to achieve canonical form we must use 2phase mathematical programming.
     # So that we must check b values and if we had negative ones, we must use 2phase programming.

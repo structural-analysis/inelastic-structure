@@ -2,6 +2,7 @@ import scipy.linalg
 import numpy as np
 
 from src.functions import sqrt
+from src.settings import settings
 
 
 class Node:
@@ -29,7 +30,7 @@ class FrameSection:
         self.sy = material.sy
         self.mp = self.zp * self.sy
         self.ap = self.a * self.sy
-        abar0 = 0.15
+        abar0 = settings.abar0
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
         if not self.has_axial_yield:
             self.yield_components_num = 1
