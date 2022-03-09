@@ -27,7 +27,7 @@ def create_original_table():
     return original_table
 
 
-def update_costs(c, , a):
+def update_costs(c, a):
 
 
 def update_will_in_column():

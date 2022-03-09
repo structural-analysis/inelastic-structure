@@ -140,6 +140,7 @@ def complementarity_programming(mp_data):
     extra_numbers_num = mp_data["extra_numbers_num"]
 
     cbar = np.zeros((2 * variables_num))
+
     # ------------------------------------Construction of Aj
     # Apply Inequality Conditions
     for i in range(variables_num):
@@ -296,4 +297,112 @@ def complementarity_programming(mp_data):
         if int(basic_variables[i]) < variables_num:
             xn[int(basic_variables[i]), 0] = tableau[i, variables_num + 3]
     plastic_multipliers = xn[0:-extra_numbers_num, 0]
+    return plastic_multipliers
+
+
+def get_will_in(fpm):
+    will_in = fpm
+    return will_in
+
+
+def get_will_out(ba, basic_variables):
+    # TODO: we check b/a to be positive, correct way is to check a to be positive
+    # b is not always positive
+    # TODO: exclude load variable
+    # TODO: do not divide zero values
+    # ba = np.round(ba, 5)
+    minba = min(ba[ba > 0])
+    will_out_row_num = np.where(ba == minba)[0][0]
+    will_out = basic_variables[will_out_row_num]
+    return will_out, will_out_row_num
+
+
+def get_initial_basic_variables(variables_num):
+    basic_variables = np.zeros(variables_num)
+    for i in range(variables_num):
+        basic_variables[i] = variables_num + i
+    return basic_variables
+
+
+def get_full_a_matrix(variables_num, a_matrix):
+    full_a_matrix = np.zeros((variables_num, 2 * variables_num))
+    full_a_matrix[0:variables_num, 0:variables_num] = a_matrix[0:variables_num, 0:variables_num]
+    j = variables_num
+
+    # Assigning diagonal arrays of y variables.
+    for i in range(variables_num):
+        full_a_matrix[i, j] = 1.0
+        j += 1
+
+    return full_a_matrix
+
+
+def get_fpm(will_out, variables_num):
+    # TODO: check wether is possible to a x be will_out or not
+    fpm = will_out - variables_num
+    return int(fpm)
+
+
+def update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num):
+    e = np.eye(variables_num)
+    eta = np.zeros(variables_num)
+    will_out_item = abar[will_out_row_num]
+
+    for i, item in enumerate(abar):
+        if i == will_out_row_num:
+            eta[i] = 1 / will_out_item
+        else:
+            eta[i] = -item / will_out_item
+    e[:, will_out_row_num] = eta
+    updated_b_matrix_inv = np.dot(e, b_matrix_inv)
+    return updated_b_matrix_inv
+
+
+def revised_simplex(mp_data):
+
+    variables_num = mp_data["variables_num"]
+    a_matrix = np.array(mp_data["raw_a"])
+    b = mp_data["b"]
+    c = -1 * mp_data["c"]
+    extra_numbers_num = mp_data["extra_numbers_num"]
+
+    full_a_matrix = get_full_a_matrix(variables_num, a_matrix)
+    basic_variables = get_initial_basic_variables(variables_num)
+
+    b_matrix_inv = np.eye(variables_num)
+    cb = np.zeros(variables_num)
+    fpm = variables_num - 1
+
+    landa_bar_var_num = 2 * variables_num - 1
+    will_out = 0
+
+    while will_out != landa_bar_var_num:
+        bbar = np.dot(b_matrix_inv, b)
+
+        will_in = get_will_in(fpm)
+        a = full_a_matrix[:, will_in]
+        abar = np.dot(b_matrix_inv, a)
+        ba = bbar / abar
+        will_out, will_out_row_num = get_will_out(ba, basic_variables)
+
+        basic_variables[will_out_row_num] = will_in
+        cb[will_out_row_num] = c[will_out_row_num]
+
+        pi_transpose = np.dot(cb, b_matrix_inv)
+        cj = np.zeros(2 * variables_num)
+        for i in range(2 * variables_num):
+            cj[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
+
+        fpm = will_out_row_num
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
+
+    bbar = np.dot(b_matrix_inv, b)
+
+    empty_xn = np.zeros((variables_num, 1))
+    xn = np.matrix(empty_xn)
+    for i in range(variables_num):
+        if int(basic_variables[i]) < variables_num:
+            xn[int(basic_variables[i]), 0] = bbar[i]
+    plastic_multipliers = xn[0:-extra_numbers_num, 0]
+
     return plastic_multipliers
