@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from src.settings import settings
-from src.models import Node, Material, FrameSection, FrameElement2D, Structure
+from src.models import Node, Material, FrameSection, FrameElement2D, Structure, FrameYieldPoint
 
 examples_dir = "input/examples/"
 example_name = settings.example_name
@@ -55,11 +55,14 @@ def create_frames():
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     frames = []
     for i in range(frames_array.shape[0]):
+        section = sections[frames_array[i, 0]]
+        yield_point = FrameYieldPoint(section)
         frames.append(
             FrameElement2D(
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
                 ends_fixity=frames_array[i, 3],
-                section=sections[frames_array[i, 0]],
+                section=section,
+                yield_points=(yield_point, yield_point)
             )
         )
     return frames

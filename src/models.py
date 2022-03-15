@@ -41,16 +41,22 @@ class FrameSection:
                 [1 / self.ap, 0, -1 / self.ap, -1 / self.ap, 0, 1 / self.ap],
                 [(1 - abar0) / self.mp, 1 / self.mp, (1 - abar0) / self.mp, -(1 - abar0) / self.mp, -1 / self.mp, -(1 - abar0) / self.mp]
             ])
+        self.yield_pieces_num = self.phi.shape[1]
+
+
+class FrameYieldPoint:
+    def __init__(self, section: FrameSection):
+        self.pieces_num = section.yield_pieces_num
 
 
 class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, yield_points: tuple[FrameYieldPoint, FrameYieldPoint]):
         self.nodes = nodes
         # for frame elements yield points coincide on fem nodes
-        self.yield_points = self.nodes
+        self.yield_points = yield_points
         self.start = nodes[0]
         self.end = nodes[1]
         self.ends_fixity = ends_fixity
@@ -283,6 +289,7 @@ class Structure:
         self.elements_disps_sensitivity_matrix = self._sensitivity_matrices()["elements_disps_sensitivity_matrix"]
         self.nodal_disps_sensitivity_matrix = self._sensitivity_matrices()["nodal_disps_sensitivity_matrix"]
         self.phi = self._create_phi()
+        self.yield_points_pieces = self._get_yield_points_pieces()
 
     def _ycn(self):
         ycn = 0
@@ -510,3 +517,16 @@ class Structure:
                 current_column = current_column + element.section.phi.shape[1]
                 current_row = current_row + element.section.phi.shape[0]
         return phi
+
+    def _get_yield_points_pieces(self):
+        # TODO: it's better to try YieldPoint class with pieces attribute
+        piece_counter = 0
+        yield_points_pieces = []
+        for element in self.elements:
+            for yield_point in element.yield_points:
+                start_piece_num = piece_counter
+                piece_counter += yield_point.pieces_num
+                end_piece_num = piece_counter
+                yield_point_pieces = tuple(range(start_piece_num, end_piece_num))
+                yield_points_pieces.append(yield_point_pieces)
+        return yield_points_pieces
