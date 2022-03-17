@@ -1,11 +1,11 @@
 import numpy as np
 from src.workshop import create_structure
-from src.programming import prepare_raw_data, revised_simplex
+from src.programming import prepare_raw_data, solve_by_mahini_approach
 
 structure = create_structure()
 load_limit = structure.load_limit
 mp_data = prepare_raw_data(structure=structure, load_limit=load_limit)
-plastic_multipliers = revised_simplex(mp_data)
+plastic_multipliers = solve_by_mahini_approach(mp_data)
 
 phi = structure.phi
 phi_x = phi * plastic_multipliers

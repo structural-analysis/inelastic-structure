@@ -519,7 +519,6 @@ class Structure:
         return phi
 
     def _get_yield_points_pieces(self):
-        # TODO: it's better to try YieldPoint class with pieces attribute
         piece_counter = 0
         yield_points_pieces = []
         for element in self.elements:

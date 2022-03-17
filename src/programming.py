@@ -18,6 +18,7 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
     phi = structure.phi
     p0 = structure.p0
     pv = structure.pv
+    yield_points_pieces = structure.yield_points_pieces
 
     phi_pv_phi = phi.T * pv * phi
     phi_p0 = phi.T * p0
@@ -58,7 +59,8 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
         "b": b,
         "c": c,
         "minmax": minmax,
-        "inequality_condition": inequality_condition
+        "inequality_condition": inequality_condition,
+        "yield_points_pieces": yield_points_pieces
     }
     return mp_data
 
@@ -305,12 +307,24 @@ def get_will_in(fpm):
     return will_in
 
 
-def get_will_out(ba, basic_variables):
+def calculate_abar(full_a_matrix, will_in, b_matrix_inv):
+    a = full_a_matrix[:, will_in]
+    abar = np.dot(b_matrix_inv, a)
+    return abar
+
+
+def calculate_bbar(b, b_matrix_inv):
+    bbar = np.dot(b_matrix_inv, b)
+    return bbar
+
+
+def get_will_out(abar, bbar, basic_variables):
     # TODO: we check b/a to be positive, correct way is to check a to be positive
     # b is not always positive
     # TODO: exclude load variable
     # TODO: do not divide zero values
     # ba = np.round(ba, 5)
+    ba = bbar / abar
     minba = min(ba[ba > 0])
     will_out_row_num = np.where(ba == minba)[0][0]
     will_out = basic_variables[will_out_row_num]
@@ -358,42 +372,130 @@ def update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
     return updated_b_matrix_inv
 
 
-def revised_simplex(mp_data):
+def get_min_cost_variable_num(entering_candidates):
+    candidates_costs = [candidate["variable_cost"] for candidate in entering_candidates]
+    min_cost_candidate_num = min(range(len(candidates_costs)), key=candidates_costs.__getitem__)
+    min_cost_variable_num = entering_candidates[min_cost_candidate_num]["variable_num"]
+    return min_cost_variable_num
+
+
+def is_variable_plastic_multiplier(variable_num, variables_num, extra_numbers_num):
+    return False if variable_num >= variables_num - extra_numbers_num else True
+
+
+def is_candidate_fpm(min_cost_variable_num, variables_num, extra_numbers_num):
+    # fpm: free plastic multiplier
+    if is_variable_plastic_multiplier(min_cost_variable_num, variables_num, extra_numbers_num) or min_cost_variable_num == variables_num - extra_numbers_num:
+        return True
+    else:
+        return False
+
+
+def is_will_out_opm(will_out, variables_num, extra_numbers_num):
+    # opm: obstacle plastic multiplier
+    return is_variable_plastic_multiplier(will_out, variables_num, extra_numbers_num)
+
+
+def get_yield_point_num_from_piece(piece, yield_points_pieces):
+    for yield_point_num, yield_point_pieces in enumerate(yield_points_pieces):
+        if piece in yield_point_pieces:
+            return yield_point_num
+
+
+def get_active_yield_points(basic_variables, yield_points_pieces):
+    active_yield_points = []
+    for variable in basic_variables:
+        active_yield_point = get_yield_point_num_from_piece(variable, yield_points_pieces)
+        if active_yield_point is not None:
+            active_yield_points.append(active_yield_point)
+    return active_yield_points
+
+
+def is_fpm_for_an_active_yield_point(fpm, active_yield_points):
+    return True if fpm in active_yield_points else False
+
+
+def update_basic_variables(basic_variables, will_out_row_num, will_in):
+    basic_variables[will_out_row_num] = will_in
+    return basic_variables
+
+
+def reset(basic_variables, b_history, b):
+    # INCOMPLETE:
+    for basic_variable in basic_variables:
+        b_history += b
+        b = 0
+    return basic_variables, b
+
+
+def update_entering_candidates(entering_candidates, will_out, cbar):
+    # INCOMPLETE
+    new_candidate = {
+        "variable_num": fpm,
+        "variable_cost": 0,
+    }
+    entering_candidates.append(new_candidate)
+    return entering_candidates
+
+
+def solve_by_mahini_approach(mp_data):
 
     variables_num = mp_data["variables_num"]
     a_matrix = np.array(mp_data["raw_a"])
     b = mp_data["b"]
     c = -1 * mp_data["c"]
     extra_numbers_num = mp_data["extra_numbers_num"]
+    yield_points_pieces = mp_data["yield_points_pieces"]
 
     full_a_matrix = get_full_a_matrix(variables_num, a_matrix)
     basic_variables = get_initial_basic_variables(variables_num)
-
+    active_yield_points = []
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
-    fpm = variables_num - 1
+    fpm = variables_num - extra_numbers_num
 
-    landa_bar_var_num = 2 * variables_num - 1
+    entering_candidates = [
+        {
+            "variable_num": fpm,
+            "variable_cost": 0,
+        }
+    ]
+
+    landa_bar_var_num = 2 * variables_num - extra_numbers_num
     will_out = 0
 
     while will_out != landa_bar_var_num:
-        bbar = np.dot(b_matrix_inv, b)
+        min_cost_variable_num = get_min_cost_variable_num(entering_candidates)
 
-        will_in = get_will_in(fpm)
-        a = full_a_matrix[:, will_in]
-        abar = np.dot(b_matrix_inv, a)
-        ba = bbar / abar
-        will_out, will_out_row_num = get_will_out(ba, basic_variables)
+        if is_candidate_fpm(min_cost_variable_num, variables_num, extra_numbers_num):
+            will_in = get_will_in(fpm)
+        else:
+            pass
 
-        basic_variables[will_out_row_num] = will_in
+        abar = calculate_abar(full_a_matrix, will_in, b_matrix_inv)
+        bbar = calculate_bbar(b, b_matrix_inv)
+        will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
+
+        if is_will_out_opm(will_out, variables_num, extra_numbers_num):
+            pass
+        else:
+            if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
+                pass
+
         cb[will_out_row_num] = c[will_out_row_num]
 
         pi_transpose = np.dot(cb, b_matrix_inv)
-        cj = np.zeros(2 * variables_num)
+        cbar = np.zeros(2 * variables_num)
         for i in range(2 * variables_num):
-            cj[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
+            cbar[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
 
         fpm = will_out_row_num
+
+        # # INCOMPLETE:
+        # entering_candidates = update_entering_candidates(entering_candidates, fpm, will_out, cbar)
+
+        basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
+        active_yield_points = get_active_yield_points(basic_variables, yield_points_pieces)
         b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
 
     bbar = np.dot(b_matrix_inv, b)
