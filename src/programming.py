@@ -332,7 +332,7 @@ def get_will_out(abar, bbar, basic_variables):
 
 
 def get_initial_basic_variables(variables_num):
-    basic_variables = np.zeros(variables_num)
+    basic_variables = np.zeros(variables_num, dtype=int)
     for i in range(variables_num):
         basic_variables[i] = variables_num + i
     return basic_variables
@@ -428,14 +428,41 @@ def reset(basic_variables, b_history, b):
     return basic_variables, b
 
 
-def update_entering_candidates(entering_candidates, will_out, cbar):
-    # INCOMPLETE
-    new_candidate = {
-        "variable_num": fpm,
-        "variable_cost": 0,
+def update_entering_candidates(
+        entering_candidates,
+        old_fpm,
+        will_out_row_num,
+        cbar,
+        variables_num,
+        extra_numbers_num,
+        basic_variables):
+
+    for candidate in entering_candidates:
+        if candidate["variable_num"] == old_fpm:
+            entering_candidates.remove(candidate)
+            break
+
+    # TODO: check when test opm
+    if basic_variables[will_out_row_num] >= variables_num:
+        new_fpm = basic_variables[will_out_row_num] - variables_num
+    else:
+        new_fpm = old_fpm
+
+    new_fpm_candidate = {
+        "variable_num": new_fpm,
+        "variable_cost": cbar[new_fpm],
     }
-    entering_candidates.append(new_candidate)
-    return entering_candidates
+
+    if old_fpm != variables_num - extra_numbers_num:
+        old_fpm_slack_num = variables_num + old_fpm
+        old_fpm_slack_candidate = {
+            "variable_num": old_fpm_slack_num,
+            "variable_cost": cbar[old_fpm_slack_num],
+        }
+        entering_candidates.append(old_fpm_slack_candidate)
+
+    entering_candidates.append(new_fpm_candidate)
+    return new_fpm, entering_candidates
 
 
 def solve_by_mahini_approach(mp_data):
@@ -482,17 +509,23 @@ def solve_by_mahini_approach(mp_data):
             if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
                 pass
 
-        cb[will_out_row_num] = c[will_out_row_num]
-
         pi_transpose = np.dot(cb, b_matrix_inv)
         cbar = np.zeros(2 * variables_num)
+
         for i in range(2 * variables_num):
             cbar[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
 
-        fpm = will_out_row_num
+        cb[will_out_row_num] = c[will_in]
 
-        # # INCOMPLETE:
-        # entering_candidates = update_entering_candidates(entering_candidates, fpm, will_out, cbar)
+        fpm, entering_candidates = update_entering_candidates(
+            entering_candidates,
+            fpm,
+            will_out_row_num,
+            cbar,
+            variables_num,
+            extra_numbers_num,
+            basic_variables,
+        )
 
         basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
         active_yield_points = get_active_yield_points(basic_variables, yield_points_pieces)
