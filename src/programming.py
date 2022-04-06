@@ -318,6 +318,19 @@ def calculate_bbar(b, b_matrix_inv):
     return bbar
 
 
+def calculate_cbar(c, cb, variables_num, full_a_matrix, b_matrix_inv):
+    pi_transpose = np.dot(cb, b_matrix_inv)
+    cbar = np.zeros(2 * variables_num)
+    for i in range(2 * variables_num):
+        cbar[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
+    return cbar
+
+
+def update_cb(c, cb, will_in, will_out_row_num):
+    cb[will_out_row_num] = c[will_in]
+    return cb
+
+
 def get_will_out(abar, bbar, basic_variables):
     # TODO: we check b/a to be positive, correct way is to check a to be positive
     # b is not always positive
@@ -420,14 +433,6 @@ def update_basic_variables(basic_variables, will_out_row_num, will_in):
     return basic_variables
 
 
-def reset(basic_variables, b_history, b):
-    # INCOMPLETE:
-    for basic_variable in basic_variables:
-        b_history += b
-        b = 0
-    return basic_variables, b
-
-
 def update_entering_candidates(
         entering_candidates,
         old_fpm,
@@ -463,6 +468,46 @@ def update_entering_candidates(
 
     entering_candidates.append(new_fpm_candidate)
     return new_fpm, entering_candidates
+
+
+def pivot(
+        c,
+        cb,
+        fpm,
+        abar,
+        will_in,
+        variables_num,
+        entering_candidates,
+        extra_numbers_num,
+        yield_points_pieces,
+        full_a_matrix,
+        basic_variables,
+        b_matrix_inv,
+        will_out_row_num):
+
+    cbar = calculate_cbar(c, cb, variables_num, full_a_matrix, b_matrix_inv)
+    cb = update_cb(c, cb, will_in, will_out_row_num)
+    fpm, entering_candidates = update_entering_candidates(
+        entering_candidates,
+        fpm,
+        will_out_row_num,
+        cbar,
+        variables_num,
+        extra_numbers_num,
+        basic_variables,
+    )
+    basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
+    active_yield_points = get_active_yield_points(basic_variables, yield_points_pieces)
+    b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
+    return cb, fpm, basic_variables, b_matrix_inv, active_yield_points, entering_candidates
+
+
+def reset(basic_variables, b_history, b):
+    # INCOMPLETE:
+    for basic_variable in basic_variables:
+        b_history += b
+        b = 0
+    return basic_variables, b
 
 
 def solve_by_mahini_approach(mp_data):
@@ -509,30 +554,24 @@ def solve_by_mahini_approach(mp_data):
             if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
                 pass
 
-        pi_transpose = np.dot(cb, b_matrix_inv)
-        cbar = np.zeros(2 * variables_num)
-
-        for i in range(2 * variables_num):
-            cbar[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
-
-        cb[will_out_row_num] = c[will_in]
-
-        fpm, entering_candidates = update_entering_candidates(
-            entering_candidates,
-            fpm,
-            will_out_row_num,
-            cbar,
-            variables_num,
-            extra_numbers_num,
-            basic_variables,
-        )
-
-        basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
-        active_yield_points = get_active_yield_points(basic_variables, yield_points_pieces)
-        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
+        (cb, fpm, basic_variables,
+         b_matrix_inv, active_yield_points,
+         entering_candidates) = pivot(
+                                    c,
+                                    cb,
+                                    fpm,
+                                    abar,
+                                    will_in,
+                                    variables_num,
+                                    entering_candidates,
+                                    extra_numbers_num,
+                                    yield_points_pieces,
+                                    full_a_matrix,
+                                    basic_variables,
+                                    b_matrix_inv,
+                                    will_out_row_num)
 
     bbar = np.dot(b_matrix_inv, b)
-
     empty_xn = np.zeros((variables_num, 1))
     xn = np.matrix(empty_xn)
     for i in range(variables_num):
