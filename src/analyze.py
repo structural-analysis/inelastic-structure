@@ -1,6 +1,7 @@
 import numpy as np
 from src.workshop import create_structure
-from src.programming import prepare_raw_data, solve_by_mahini_approach
+from src.functions import prepare_raw_data
+from src.programming import solve_by_mahini_approach
 
 structure = create_structure()
 load_limit = structure.load_limit

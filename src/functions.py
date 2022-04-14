@@ -135,3 +135,61 @@ def load_condensation(force, ku0, boundaries):
     phat = ptr + np.dot(np.transpose(ku0), p0r)
 
     return phat, p0r
+
+
+def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
+
+    # possible minmax are:
+    # minimization: min, maximization: max
+
+    minmax = "max"
+
+    # analysis_type = "static"
+    phi = structure.phi
+    p0 = structure.p0
+    pv = structure.pv
+    yield_points_pieces = structure.yield_points_pieces
+
+    phi_pv_phi = phi.T * pv * phi
+    phi_p0 = phi.T * p0
+
+    extra_numbers_num = 2 if include_displacement_limit else 1
+    total_yield_pieces_num = phi.shape[1]
+    variables_num = extra_numbers_num + total_yield_pieces_num
+
+    empty_a = np.zeros((variables_num, variables_num))
+    raw_a = np.matrix(empty_a)
+
+    # np.savetxt("phiPvPhi.csv", phi_pv_phi, delimiter=",")
+    # np.savetxt("phiP0.csv", phi_p0, delimiter=",")
+
+    raw_a[0:total_yield_pieces_num, 0:total_yield_pieces_num] = phi_pv_phi[0:total_yield_pieces_num, 0:total_yield_pieces_num]
+    raw_a[0:total_yield_pieces_num, total_yield_pieces_num] = phi_p0[0:total_yield_pieces_num, 0]
+    raw_a[total_yield_pieces_num, total_yield_pieces_num] = 1.0
+    b = np.ones((variables_num))
+
+    # if analysis_type == "dynamic":
+    #     pass
+    #     b[0:-extra_numbers_num] = b[0:-extra_numbers_num] - np.dot(phi_pv_phi, xn_previous[0:-extra_numbers_num])
+    # elif analysis_type == "static":
+    #     b[0:-extra_numbers_num] = b[0:-extra_numbers_num]
+
+    b[-extra_numbers_num] = load_limit
+
+    # possible inequality_condition are:
+    # lt: Less Than or Equal  gt: Larger Than or Eqaul  eq: Equal
+    inequality_condition = np.full((variables_num), "lt")
+
+    c = np.zeros(2 * variables_num)
+    c[0:total_yield_pieces_num] = 1.0
+    mp_data = {
+        "variables_num": variables_num,
+        "extra_numbers_num": extra_numbers_num,
+        "raw_a": raw_a,
+        "b": b,
+        "c": c,
+        "minmax": minmax,
+        "inequality_condition": inequality_condition,
+        "yield_points_pieces": yield_points_pieces
+    }
+    return mp_data
