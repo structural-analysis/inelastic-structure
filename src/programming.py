@@ -63,11 +63,11 @@ def solve_by_mahini_approach(mp_data):
                     if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
                         pass
 
+                old_fpm = fpm
+                fpm = get_new_fpm(basic_variables, will_out_row_num)
                 pi_transpose = np.dot(cb, b_matrix_inv)
                 cbar = calculate_cbar(pi_transpose)
                 cb = update_cb(cb, will_in, will_out_row_num)
-                old_fpm = fpm
-                fpm = get_new_fpm(basic_variables, will_out_row_num)
                 entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
                 basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
                 active_yield_points = get_active_yield_points(basic_variables)
@@ -286,5 +286,31 @@ def calculate_r(spm, basic_variables, abar_fpm, b_matrix_inv):
     return r
 
 
-def unload(basic_variables, will_out):
-    pass
+def unload(will_out_row_num, basic_variables, b_matrix_inv, abar):
+    # TODO: should handle if third pivot column is a y not x. possible bifurcation.
+    # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
+    prow = will_out_row_num
+    unloading_pivot_elements = [
+        {"row": prow, "column": prow + variables_num},
+        {"row": basic_variables[prow], "column": basic_variables[prow] + variables_num},
+        {"row": prow, "column": basic_variables[basic_variables[prow]]},
+    ]
+    for element in unloading_pivot_elements:
+
+        # TODO: NEXT WEEK: 
+        # 1 - write update_b_matrix_inverse based on row and column
+        # 2 - unload and enter functions are like each-other and update and return same things
+        # 3 - we can write all lines like cbar, ... inside unload and enter functions
+
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+        basic_variables = update_basic_variables(basic_variables, element["row"], element["column"])
+
+    new_fpm = get_new_fpm(basic_variables, will_out_row_num)
+    return new_fpm, basic_variables, b_matrix_inv
+
+    active_yield_points = get_active_yield_points(basic_variables)
+    pi_transpose = np.dot(cb, b_matrix_inv)
+    cbar = calculate_cbar(pi_transpose)
+    cb = update_cb(cb, will_in, will_out_row_num)
+    old_fpm = fpm
+    entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
