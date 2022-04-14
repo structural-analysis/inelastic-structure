@@ -385,11 +385,12 @@ def update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num, variables_num)
     return updated_b_matrix_inv
 
 
-def get_min_cost_variable_num(entering_candidates):
-    candidates_costs = [candidate["variable_cost"] for candidate in entering_candidates]
-    min_cost_candidate_num = min(range(len(candidates_costs)), key=candidates_costs.__getitem__)
-    min_cost_variable_num = entering_candidates[min_cost_candidate_num]["variable_num"]
-    return min_cost_variable_num
+def get_sorted_candidates(entering_candidates):
+    sorted_candidates = sorted(entering_candidates, key=lambda d: d['variable_cost']) 
+    # candidates_costs = [candidate["variable_cost"] for candidate in entering_candidates]
+    # min_cost_candidate_num = min(range(len(candidates_costs)), key=candidates_costs.__getitem__)
+    # min_cost_variable_num = entering_candidates[min_cost_candidate_num]["variable_num"]
+    return sorted_candidates
 
 
 def is_variable_plastic_multiplier(variable_num, variables_num, extra_numbers_num):
@@ -447,7 +448,10 @@ def update_entering_candidates(
             entering_candidates.remove(candidate)
             break
 
-    # TODO: check when test opm
+    # TODO: check when test opm and spm
+    # IMPORTANT FIXME: this update must change for spm and opm events
+    # or better to use separate functions
+
     if basic_variables[will_out_row_num] >= variables_num:
         new_fpm = basic_variables[will_out_row_num] - variables_num
     else:
@@ -502,12 +506,20 @@ def pivot(
     return cb, fpm, basic_variables, b_matrix_inv, active_yield_points, entering_candidates
 
 
-def reset(basic_variables, b_history, b):
+def reset(basic_variables, variables_num, b_history, b):
     # INCOMPLETE:
-    for basic_variable in basic_variables:
-        b_history += b
-        b = 0
-    return basic_variables, b
+    for i, basic_variable in enumerate(basic_variables):
+        if basic_variable < variables_num:
+            b_history[i] += b[i]
+            b[i] = 0
+    return b, b_history
+
+
+def calculate_r(spm, basic_variables, abar_fpm, b_matrix_inv):
+    slack_column_num = spm
+    spm_row_num = np.where(basic_variables == spm)[0][0]
+    r = abar_fpm[spm_row_num] / b_matrix_inv[spm_row_num, slack_column_num]
+    return r
 
 
 def solve_by_mahini_approach(mp_data):
@@ -524,6 +536,7 @@ def solve_by_mahini_approach(mp_data):
     active_yield_points = []
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
+    b_history = np.zeros((variables_num))
     fpm = variables_num - extra_numbers_num
 
     entering_candidates = [
@@ -537,46 +550,91 @@ def solve_by_mahini_approach(mp_data):
     will_out = 0
 
     while will_out != landa_bar_var_num:
-        min_cost_variable_num = get_min_cost_variable_num(entering_candidates)
+        min_candidate_index = 0
+        sorted_candidates = get_sorted_candidates(entering_candidates)
+        min_cost_variable_num = sorted_candidates[min_candidate_index]["variable_num"]
+        abar_fpm = calculate_abar(full_a_matrix, fpm, b_matrix_inv)
 
-        if is_candidate_fpm(min_cost_variable_num, variables_num, extra_numbers_num):
-            will_in = get_will_in(fpm)
-        else:
-            pass
+        while True:
 
-        abar = calculate_abar(full_a_matrix, will_in, b_matrix_inv)
-        bbar = calculate_bbar(b, b_matrix_inv)
-        will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
+            if is_candidate_fpm(min_cost_variable_num, variables_num, extra_numbers_num):
+                will_in = fpm
+                abar = calculate_abar(full_a_matrix, will_in, b_matrix_inv)
+                bbar = calculate_bbar(b, b_matrix_inv)
+                will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
 
-        if is_will_out_opm(will_out, variables_num, extra_numbers_num):
-            pass
-        else:
-            if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
-                pass
+                if is_will_out_opm(will_out, variables_num, extra_numbers_num):
+                    # FIXME: first we must determine correct unloading
+                    pass
+                else:
+                    if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
+                        pass
 
-        (cb, fpm, basic_variables,
-         b_matrix_inv, active_yield_points,
-         entering_candidates) = pivot(
-                                    c,
-                                    cb,
-                                    fpm,
-                                    abar,
-                                    will_in,
-                                    variables_num,
-                                    entering_candidates,
-                                    extra_numbers_num,
-                                    yield_points_pieces,
-                                    full_a_matrix,
-                                    basic_variables,
-                                    b_matrix_inv,
-                                    will_out_row_num)
+                (cb, fpm, basic_variables,
+                    b_matrix_inv, active_yield_points,
+                    entering_candidates) = pivot(
+                        c,
+                        cb,
+                        fpm,
+                        abar,
+                        will_in,
+                        variables_num,
+                        entering_candidates,
+                        extra_numbers_num,
+                        yield_points_pieces,
+                        full_a_matrix,
+                        basic_variables,
+                        b_matrix_inv,
+                        will_out_row_num,)
+                break
+
+            else:
+                # FIXME: first we must determine correct unloading
+                # updating entering candidated is different for spm, see function
+                spm = min_cost_variable_num - variables_num
+                r = calculate_r(
+                    spm,
+                    basic_variables,
+                    abar_fpm,
+                    b_matrix_inv,
+                )
+                if r < 0:
+                    b, b_history = reset(
+                        basic_variables,
+                        variables_num,
+                        b_history,
+                        b)
+                    will_in = spm
+                    abar = calculate_abar(full_a_matrix, will_in, b_matrix_inv)
+                    bbar = calculate_bbar(b, b_matrix_inv)
+                    will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
+
+                    (cb, fpm, basic_variables,
+                        b_matrix_inv, active_yield_points,
+                        entering_candidates) = pivot(
+                            c,
+                            cb,
+                            fpm,
+                            abar,
+                            will_in,
+                            variables_num,
+                            entering_candidates,
+                            extra_numbers_num,
+                            yield_points_pieces,
+                            full_a_matrix,
+                            basic_variables,
+                            b_matrix_inv,
+                            will_out_row_num,)
+                else:
+                    min_candidate_index += 1
+                    min_cost_variable_num = sorted_candidates[min_candidate_index]["variable_num"]
 
     bbar = np.dot(b_matrix_inv, b)
     empty_xn = np.zeros((variables_num, 1))
     xn = np.matrix(empty_xn)
     for i in range(variables_num):
-        if int(basic_variables[i]) < variables_num:
-            xn[int(basic_variables[i]), 0] = bbar[i]
+        if basic_variables[i] < variables_num:
+            xn[basic_variables[i], 0] = bbar[i]
     plastic_multipliers = xn[0:-extra_numbers_num, 0]
 
     return plastic_multipliers
