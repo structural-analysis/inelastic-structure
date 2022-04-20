@@ -71,7 +71,7 @@ def solve_by_mahini_approach(mp_data):
                 entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
                 basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
                 active_yield_points = get_active_yield_points(basic_variables)
-                b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num)
+                b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, will_in, will_out_row_num)
                 break
 
             else:
@@ -137,8 +137,11 @@ def update_cb(cb, will_in, will_out_row_num):
 def get_will_out(abar, bbar, basic_variables):
     # TODO: we check b/a to be positive, correct way is to check a to be positive
     # b is not always positive
-    # TODO: exclude load variable
+    # TODO: exclude load variable, look mahini find_pivot function
     # TODO: do not divide zero values
+    # TODO: use sign function like mahini find_pivot function
+    # TODO: for hardening parameters extra care must be taken.
+
     # ba = np.round(ba, 5)
     ba = bbar / abar
     minba = min(ba[ba > 0])
@@ -173,9 +176,10 @@ def get_fpm(will_out, variables_num):
     return int(fpm)
 
 
-def update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num):
+def update_b_matrix_inverse(b_matrix_inv, will_in, will_out_row_num):
     e = np.eye(variables_num)
     eta = np.zeros(variables_num)
+    abar = calculate_abar(will_in, b_matrix_inv)
     will_out_item = abar[will_out_row_num]
 
     for i, item in enumerate(abar):
@@ -286,7 +290,7 @@ def calculate_r(spm, basic_variables, abar_fpm, b_matrix_inv):
     return r
 
 
-def unload(will_out_row_num, basic_variables, b_matrix_inv, abar):
+def unload(will_out_row_num, basic_variables, b_matrix_inv, will_in):
     # TODO: should handle if third pivot column is a y not x. possible bifurcation.
     # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
     prow = will_out_row_num
@@ -297,20 +301,19 @@ def unload(will_out_row_num, basic_variables, b_matrix_inv, abar):
     ]
     for element in unloading_pivot_elements:
 
-        # TODO: NEXT WEEK: 
-        # 1 - write update_b_matrix_inverse based on row and column
+        # TODO: NEXT WEEK:
         # 2 - unload and enter functions are like each-other and update and return same things
         # 3 - we can write all lines like cbar, ... inside unload and enter functions
 
-        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, will_in, element["row"])
         basic_variables = update_basic_variables(basic_variables, element["row"], element["column"])
 
     new_fpm = get_new_fpm(basic_variables, will_out_row_num)
     return new_fpm, basic_variables, b_matrix_inv
 
-    active_yield_points = get_active_yield_points(basic_variables)
-    pi_transpose = np.dot(cb, b_matrix_inv)
-    cbar = calculate_cbar(pi_transpose)
-    cb = update_cb(cb, will_in, will_out_row_num)
-    old_fpm = fpm
-    entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
+    # active_yield_points = get_active_yield_points(basic_variables)
+    # pi_transpose = np.dot(cb, b_matrix_inv)
+    # cbar = calculate_cbar(pi_transpose)
+    # cb = update_cb(cb, will_in, will_out_row_num)
+    # old_fpm = fpm
+    # entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
