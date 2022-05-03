@@ -141,6 +141,7 @@ def get_will_out(abar, bbar, basic_variables):
     # TODO: do not divide zero values
     # TODO: use sign function like mahini find_pivot function
     # TODO: for hardening parameters extra care must be taken.
+    # TODO: check mahini code line 123, make sure whether reset before this function is necessary or not.
 
     # ba = np.round(ba, 5)
     ba = bbar / abar
@@ -262,6 +263,7 @@ def update_entering_candidates(
         "variable_cost": cbar[new_fpm],
     }
 
+    # if fpm != lambda:
     if old_fpm != variables_num - extra_numbers_num:
         old_fpm_slack_num = variables_num + old_fpm
         old_fpm_slack_candidate = {
