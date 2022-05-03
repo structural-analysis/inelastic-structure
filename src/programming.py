@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 # from openpyxl import load_workbook
 # import os
 
@@ -7,21 +8,43 @@ import numpy as np
 # workbook = load_workbook(filename=workbook_path)
 
 
+def get_slack_var_num(primary_var_num):
+    return primary_var_num + variables_num
+
+
+def get_primary_var_num(slack_var_num):
+    return slack_var_num - variables_num
+
+
+class FPM(Enum):
+    var_num: int
+    cost: float
+
+
+class SlackCandidate():
+    def __init__(self, var_num, cost):
+        self.var_num = var_num
+        self.cost = cost
+
+
 def solve_by_mahini_approach(mp_data):
 
     global variables_num
+    global extra_numbers_num
+    global landa_var_num
     global a_matrix
     global b
     global c
-    global extra_numbers_num
     global yield_points_pieces
     global full_a_matrix
 
     variables_num = mp_data["variables_num"]
+    extra_numbers_num = mp_data["extra_numbers_num"]
+    landa_var_num = variables_num - extra_numbers_num
     a_matrix = np.array(mp_data["raw_a"])
     b = mp_data["b"]
     c = -1 * mp_data["c"]
-    extra_numbers_num = mp_data["extra_numbers_num"]
+    cbar = c
     yield_points_pieces = mp_data["yield_points_pieces"]
 
     full_a_matrix = get_full_a_matrix()
@@ -30,70 +53,51 @@ def solve_by_mahini_approach(mp_data):
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
     b_history = np.zeros((variables_num))
-    fpm = variables_num - extra_numbers_num
-
-    entering_candidates = [
-        {
-            "variable_num": fpm,
-            "variable_cost": 0,
-        }
-    ]
-
+    fpm = FPM
+    fpm.var_num = landa_var_num
+    fpm.cost = 0
     landa_bar_var_num = 2 * variables_num - extra_numbers_num
-    will_out = 0
+    fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb, cbar)
 
-    while will_out != landa_bar_var_num:
-        min_candidate_index = 0
-        sorted_candidates = get_sorted_candidates(entering_candidates)
-        min_cost_variable_num = sorted_candidates[min_candidate_index]["variable_num"]
-        abar_fpm = calculate_abar(fpm, b_matrix_inv)
+    while will_out_var_num != landa_bar_var_num:
+        # b, b_history = reset(basic_variables, b_history)
+        sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, cbar)
+        will_in_col_num = fpm.var_num
+        abar = calculate_abar(will_in_col_num, b_matrix_inv)
+        bbar = calculate_bbar(b_matrix_inv)
+        will_out_row_num = get_will_out(abar, bbar)
+        will_out_var_num = basic_variables[will_out_row_num]
 
-        while True:
-
-            if is_candidate_fpm(min_cost_variable_num):
-                will_in = fpm
-                abar = calculate_abar(will_in, b_matrix_inv)
-                bbar = calculate_bbar(b_matrix_inv)
-                will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
-
-                if is_will_out_opm(will_out):
-                    # FIXME: first we must determine correct unloading
-                    pass
-                else:
-                    if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
-                        pass
-
-                old_fpm = fpm
-                fpm = get_new_fpm(basic_variables, will_out_row_num)
-                pi_transpose = np.dot(cb, b_matrix_inv)
-                cbar = calculate_cbar(pi_transpose)
-                cb = update_cb(cb, will_in, will_out_row_num)
-                entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
-                basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in)
-                active_yield_points = get_active_yield_points(basic_variables)
-                b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, will_in, will_out_row_num)
+        for slack_candidate in sorted_slack_candidates:
+            if is_candidate_fpm(fpm, slack_candidate):
                 break
-
             else:
-                spm = min_cost_variable_num - variables_num
+                spm_var_num = get_primary_var_num(slack_candidate.var_num)
                 r = calculate_r(
-                    spm,
-                    basic_variables,
-                    abar_fpm,
-                    b_matrix_inv,
+                    spm_var_num=spm_var_num,
+                    basic_variables=basic_variables,
+                    abar=abar,
+                    b_matrix_inv=b_matrix_inv,
                 )
-                if r < 0:
-                    b, b_history = reset(
-                        basic_variables,
-                        b_history)
-                    will_in = spm
-                    abar = calculate_abar(will_in, b_matrix_inv)
-                    bbar = calculate_bbar(b_matrix_inv)
-                    will_out, will_out_row_num = get_will_out(abar, bbar, basic_variables)
-                    # reset and unload here
+                if r > 0:
+                    continue
                 else:
-                    min_candidate_index += 1
-                    min_cost_variable_num = sorted_candidates[min_candidate_index]["variable_num"]
+                    pass
+
+        # if is_will_out_opm(will_out):
+        #     # FIXME: first we must determine correct unloading
+        #     pass
+        # else:
+        #     if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
+        #         pass
+
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num)
+        cb = update_cb(cb, will_in_col_num, will_out_row_num)
+        pi_transpose = np.dot(cb, b_matrix_inv)
+        cbar = calculate_cbar(pi_transpose)
+        basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
+        fpm = update_fpm(will_out_row_num, cbar)
+
 
     bbar = np.dot(b_matrix_inv, b)
     empty_xn = np.zeros((variables_num, 1))
@@ -106,13 +110,25 @@ def solve_by_mahini_approach(mp_data):
     return plastic_multipliers
 
 
+def enter_landa(fpm, b_matrix_inv, basic_variables, cb, cbar):
+    will_in_col_num = fpm.var_num
+    a = full_a_matrix[:, will_in_col_num]
+    will_out_row_num = get_will_out(a, b)
+    will_out_var_num = basic_variables[will_out_row_num]
+    cb = update_cb(cb, will_in_col_num, will_out_row_num)
+    basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
+    b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, a, will_out_row_num)
+    fpm = update_fpm(will_out_row_num, cbar)
+    return fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num
+
+
 def get_will_in(fpm):
     will_in = fpm
     return will_in
 
 
-def calculate_abar(will_in, b_matrix_inv):
-    a = full_a_matrix[:, will_in]
+def calculate_abar(col, b_matrix_inv):
+    a = full_a_matrix[:, col]
     abar = np.dot(b_matrix_inv, a)
     return abar
 
@@ -134,7 +150,7 @@ def update_cb(cb, will_in, will_out_row_num):
     return cb
 
 
-def get_will_out(abar, bbar, basic_variables):
+def get_will_out(abar, bbar):
     # TODO: we check b/a to be positive, correct way is to check a to be positive
     # b is not always positive
     # TODO: exclude load variable, look mahini find_pivot function
@@ -147,8 +163,7 @@ def get_will_out(abar, bbar, basic_variables):
     ba = bbar / abar
     minba = min(ba[ba > 0])
     will_out_row_num = np.where(ba == minba)[0][0]
-    will_out = basic_variables[will_out_row_num]
-    return will_out, will_out_row_num
+    return will_out_row_num
 
 
 def get_initial_basic_variables():
@@ -171,16 +186,9 @@ def get_full_a_matrix():
     return full_a_matrix
 
 
-def get_fpm(will_out, variables_num):
-    # TODO: check wether is possible to a x be will_out or not
-    fpm = will_out - variables_num
-    return int(fpm)
-
-
-def update_b_matrix_inverse(b_matrix_inv, will_in, will_out_row_num):
+def update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num):
     e = np.eye(variables_num)
     eta = np.zeros(variables_num)
-    abar = calculate_abar(will_in, b_matrix_inv)
     will_out_item = abar[will_out_row_num]
 
     for i, item in enumerate(abar):
@@ -193,21 +201,12 @@ def update_b_matrix_inverse(b_matrix_inv, will_in, will_out_row_num):
     return updated_b_matrix_inv
 
 
-def get_sorted_candidates(entering_candidates):
-    sorted_candidates = sorted(entering_candidates, key=lambda d: d['variable_cost']) 
-    # candidates_costs = [candidate["variable_cost"] for candidate in entering_candidates]
-    # min_cost_candidate_num = min(range(len(candidates_costs)), key=candidates_costs.__getitem__)
-    # min_cost_variable_num = entering_candidates[min_cost_candidate_num]["variable_num"]
-    return sorted_candidates
-
-
 def is_variable_plastic_multiplier(variable_num):
-    return False if variable_num >= variables_num - extra_numbers_num else True
+    return False if variable_num >= landa_var_num else True
 
 
-def is_candidate_fpm(min_cost_variable_num):
-    # fpm: free plastic multiplier
-    if is_variable_plastic_multiplier(min_cost_variable_num) or min_cost_variable_num == variables_num - extra_numbers_num:
+def is_candidate_fpm(fpm, slack_candidate):
+    if fpm.cost <= slack_candidate.cost:
         return True
     else:
         return False
@@ -237,43 +236,30 @@ def is_fpm_for_an_active_yield_point(fpm, active_yield_points):
     return True if fpm in active_yield_points else False
 
 
-def update_basic_variables(basic_variables, will_out_row_num, will_in):
-    basic_variables[will_out_row_num] = will_in
+def update_basic_variables(basic_variables, will_out_row_num, will_in_col_num):
+    basic_variables[will_out_row_num] = will_in_col_num
     return basic_variables
 
 
-def get_new_fpm(basic_variables, will_out_row_num):
-    new_fpm = basic_variables[will_out_row_num] - variables_num
-    return new_fpm
+def update_fpm(will_out_row_num, cbar):
+    fpm = FPM
+    fpm.var_num = will_out_row_num
+    fpm.cost = cbar[will_out_row_num]
+    return fpm
 
 
-def update_entering_candidates(
-        entering_candidates,
-        old_fpm,
-        new_fpm,
-        cbar):
-
-    for candidate in entering_candidates:
-        if candidate["variable_num"] == old_fpm:
-            entering_candidates.remove(candidate)
-            break
-
-    new_fpm_candidate = {
-        "variable_num": new_fpm,
-        "variable_cost": cbar[new_fpm],
-    }
-
-    # if fpm != lambda:
-    if old_fpm != variables_num - extra_numbers_num:
-        old_fpm_slack_num = variables_num + old_fpm
-        old_fpm_slack_candidate = {
-            "variable_num": old_fpm_slack_num,
-            "variable_cost": cbar[old_fpm_slack_num],
-        }
-        entering_candidates.append(old_fpm_slack_candidate)
-
-    entering_candidates.append(new_fpm_candidate)
-    return entering_candidates
+def get_sorted_slack_candidates(basic_variables, cbar):
+    slack_candidates = []
+    for var in basic_variables:
+        if var < landa_var_num:
+            slack_var_num = get_slack_var_num(var)
+            slack_candidate = SlackCandidate(
+                var_num=slack_var_num,
+                cost=cbar[slack_var_num]
+            )
+            slack_candidates.append(slack_candidate)
+    slack_candidates.sort(key=lambda y: y.cost)
+    return slack_candidates
 
 
 def reset(basic_variables, b_history):
@@ -285,33 +271,45 @@ def reset(basic_variables, b_history):
     return b, b_history
 
 
-def calculate_r(spm, basic_variables, abar_fpm, b_matrix_inv):
-    slack_column_num = spm
-    spm_row_num = np.where(basic_variables == spm)[0][0]
-    r = abar_fpm[spm_row_num] / b_matrix_inv[spm_row_num, slack_column_num]
+def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):
+    spm_row_num = get_var_row_num(spm_var_num, basic_variables)
+    r = abar[spm_row_num] / b_matrix_inv[spm_row_num, spm_var_num]
     return r
 
 
-def unload(will_out_row_num, basic_variables, b_matrix_inv, will_in):
+def get_var_row_num(var_num, basic_variables):
+    row_num = np.where(basic_variables == var_num)[0][0]
+    return row_num
+
+
+def unload(pm_var_num, basic_variables, b_matrix_inv):
     # TODO: should handle if third pivot column is a y not x. possible bifurcation.
     # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
-    prow = will_out_row_num
+    # TODO: loading whole b_inverse in input and output is costly, try like mahini method.
+
+    exiting_row_num = get_var_row_num(pm_var_num, basic_variables)
+
     unloading_pivot_elements = [
-        {"row": prow, "column": prow + variables_num},
-        {"row": basic_variables[prow], "column": basic_variables[prow] + variables_num},
-        {"row": prow, "column": basic_variables[basic_variables[prow]]},
+        {
+            "row": exiting_row_num,
+            "column": get_slack_var_num(exiting_row_num),
+        },
+        {
+            "row": pm_var_num,
+            "column": get_slack_var_num(pm_var_num),
+        },
+        {
+            "row": exiting_row_num,
+            "column": basic_variables[pm_var_num],
+        },
     ]
+
     for element in unloading_pivot_elements:
-
-        # TODO: NEXT WEEK:
-        # 2 - unload and enter functions are like each-other and update and return same things
-        # 3 - we can write all lines like cbar, ... inside unload and enter functions
-
-        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, will_in, element["row"])
+        abar = calculate_abar(element["column"], b_matrix_inv)
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
         basic_variables = update_basic_variables(basic_variables, element["row"], element["column"])
 
-    new_fpm = get_new_fpm(basic_variables, will_out_row_num)
-    return new_fpm, basic_variables, b_matrix_inv
+    return basic_variables, b_matrix_inv
 
     # active_yield_points = get_active_yield_points(basic_variables)
     # pi_transpose = np.dot(cb, b_matrix_inv)
