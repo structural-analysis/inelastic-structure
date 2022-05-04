@@ -21,6 +21,11 @@ class FPM(Enum):
     cost: float
 
 
+class WillOut(Enum):
+    row_num: int
+    var_num: int
+
+
 class SlackCandidate():
     def __init__(self, var_num, cost):
         self.var_num = var_num
@@ -44,12 +49,11 @@ def solve_by_mahini_approach(mp_data):
     a_matrix = np.array(mp_data["raw_a"])
     b = mp_data["b"]
     c = -1 * mp_data["c"]
-    cbar = c
+    bbar = b
     yield_points_pieces = mp_data["yield_points_pieces"]
 
     full_a_matrix = get_full_a_matrix()
     basic_variables = get_initial_basic_variables()
-    active_yield_points = []
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
     b_history = np.zeros((variables_num))
@@ -57,21 +61,19 @@ def solve_by_mahini_approach(mp_data):
     fpm.var_num = landa_var_num
     fpm.cost = 0
     landa_bar_var_num = 2 * variables_num - extra_numbers_num
-    fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb, cbar)
+    fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
 
     while will_out_var_num != landa_bar_var_num:
-        # b, b_history = reset(basic_variables, b_history)
-        sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, cbar)
+        sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
         will_in_col_num = fpm.var_num
         abar = calculate_abar(will_in_col_num, b_matrix_inv)
-        bbar = calculate_bbar(b_matrix_inv)
+        bbar = calculate_bbar(b_matrix_inv, bbar)
         will_out_row_num = get_will_out(abar, bbar)
         will_out_var_num = basic_variables[will_out_row_num]
+        b_history, bbar = reset(basic_variables, b_history, bbar)
 
-        for slack_candidate in sorted_slack_candidates:
-            if is_candidate_fpm(fpm, slack_candidate):
-                break
-            else:
+        for slack_candidate in sorted_slack_candidates + [fpm]:
+            if not is_candidate_fpm(fpm, slack_candidate):
                 spm_var_num = get_primary_var_num(slack_candidate.var_num)
                 r = calculate_r(
                     spm_var_num=spm_var_num,
@@ -82,49 +84,105 @@ def solve_by_mahini_approach(mp_data):
                 if r > 0:
                     continue
                 else:
-                    pass
+                    basic_variables, b_matrix_inv, cb = unload(
+                        pm_var_num=spm_var_num,
+                        basic_variables=basic_variables,
+                        b_matrix_inv=b_matrix_inv,
+                        cb=cb,
+                    )
+                    break
+            else:
+                if is_will_out_var_opm(will_out_var_num):
+                    basic_variables, b_matrix_inv, cb = unload(
+                        pm_var_num=will_out_var_num,
+                        basic_variables=basic_variables,
+                        b_matrix_inv=b_matrix_inv,
+                        cb=cb,
+                    )
+                    break
+                else:
+                    basic_variables, b_matrix_inv, cb, fpm = enter_fpm(
+                        basic_variables=basic_variables,
+                        b_matrix_inv=b_matrix_inv,
+                        cb=cb,
+                        will_out_row_num=will_out_row_num,
+                        will_in_col_num=will_in_col_num,
+                        abar=abar,
+                    )
+                    break
 
-        # if is_will_out_opm(will_out):
-        #     # FIXME: first we must determine correct unloading
-        #     pass
-        # else:
-        #     if is_fpm_for_an_active_yield_point(fpm, active_yield_points):
-        #         pass
-
-        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num)
-        cb = update_cb(cb, will_in_col_num, will_out_row_num)
-        pi_transpose = np.dot(cb, b_matrix_inv)
-        cbar = calculate_cbar(pi_transpose)
-        basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
-        fpm = update_fpm(will_out_row_num, cbar)
-
-
-    bbar = np.dot(b_matrix_inv, b)
+    bbar = np.dot(b_matrix_inv, bbar)
+    b_history, bbar = reset(basic_variables, b_history, bbar)
+    btotal = bbar + b_history
     empty_xn = np.zeros((variables_num, 1))
     xn = np.matrix(empty_xn)
     for i in range(variables_num):
         if basic_variables[i] < variables_num:
-            xn[basic_variables[i], 0] = bbar[i]
+            xn[basic_variables[i], 0] = btotal[i]
     plastic_multipliers = xn[0:-extra_numbers_num, 0]
 
     return plastic_multipliers
 
 
-def enter_landa(fpm, b_matrix_inv, basic_variables, cb, cbar):
+def enter_landa(fpm, b_matrix_inv, basic_variables, cb):
     will_in_col_num = fpm.var_num
     a = full_a_matrix[:, will_in_col_num]
     will_out_row_num = get_will_out(a, b)
     will_out_var_num = basic_variables[will_out_row_num]
-    cb = update_cb(cb, will_in_col_num, will_out_row_num)
     basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
     b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, a, will_out_row_num)
+    cb = update_cb(cb, will_in_col_num, will_out_row_num)
+    cbar = calculate_cbar(cb, b_matrix_inv)
     fpm = update_fpm(will_out_row_num, cbar)
     return fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num
 
 
-def get_will_in(fpm):
-    will_in = fpm
-    return will_in
+def enter_fpm(basic_variables, b_matrix_inv, cb, will_out_row_num, will_in_col_num, abar):
+    b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, will_out_row_num)
+    cb = update_cb(cb, will_in_col_num, will_out_row_num)
+    cbar = calculate_cbar(cb, b_matrix_inv)
+    basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
+    fpm = update_fpm(will_out_row_num, cbar)
+    return basic_variables, b_matrix_inv, cb, fpm
+
+
+def unload(pm_var_num, basic_variables, b_matrix_inv, cb):
+    # TODO: should handle if third pivot column is a y not x. possible bifurcation.
+    # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
+    # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
+
+    exiting_row_num = get_var_row_num(pm_var_num, basic_variables)
+
+    unloading_pivot_elements = [
+        {
+            "row": exiting_row_num,
+            "column": get_slack_var_num(exiting_row_num),
+        },
+        {
+            "row": pm_var_num,
+            "column": get_slack_var_num(pm_var_num),
+        },
+        {
+            "row": exiting_row_num,
+            "column": basic_variables[pm_var_num],
+        },
+    ]
+
+    for element in unloading_pivot_elements:
+        abar = calculate_abar(element["column"], b_matrix_inv)
+        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+        cb = update_cb(
+            cb=cb,
+            will_in_col_num=element["column"],
+            will_out_row_num=element["row"]
+        )
+        basic_variables = update_basic_variables(
+            basic_variables=basic_variables,
+            will_out_row_num=element["row"],
+            will_in_col_num=element["column"]
+        )
+
+    return basic_variables, b_matrix_inv, cb
 
 
 def calculate_abar(col, b_matrix_inv):
@@ -133,20 +191,21 @@ def calculate_abar(col, b_matrix_inv):
     return abar
 
 
-def calculate_bbar(b_matrix_inv):
-    bbar = np.dot(b_matrix_inv, b)
+def calculate_bbar(b_matrix_inv, bbar):
+    bbar = np.dot(b_matrix_inv, bbar)
     return bbar
 
 
-def calculate_cbar(pi_transpose):
+def calculate_cbar(cb, b_matrix_inv):
+    pi_transpose = np.dot(cb, b_matrix_inv)
     cbar = np.zeros(2 * variables_num)
     for i in range(2 * variables_num):
         cbar[i] = c[i] - np.dot(pi_transpose, full_a_matrix[:, i])
     return cbar
 
 
-def update_cb(cb, will_in, will_out_row_num):
-    cb[will_out_row_num] = c[will_in]
+def update_cb(cb, will_in_col_num, will_out_row_num):
+    cb[will_out_row_num] = c[will_in_col_num]
     return cb
 
 
@@ -212,28 +271,28 @@ def is_candidate_fpm(fpm, slack_candidate):
         return False
 
 
-def is_will_out_opm(will_out):
+def is_will_out_var_opm(will_out_var_num):
     # opm: obstacle plastic multiplier
-    return is_variable_plastic_multiplier(will_out)
+    return is_variable_plastic_multiplier(will_out_var_num)
 
 
-def get_yield_point_num_from_piece(piece):
-    for yield_point_num, yield_point_pieces in enumerate(yield_points_pieces):
-        if piece in yield_point_pieces:
-            return yield_point_num
+# def get_yield_point_num_from_piece(piece):
+#     for yield_point_num, yield_point_pieces in enumerate(yield_points_pieces):
+#         if piece in yield_point_pieces:
+#             return yield_point_num
 
 
-def get_active_yield_points(basic_variables):
-    active_yield_points = []
-    for variable in basic_variables:
-        active_yield_point = get_yield_point_num_from_piece(variable)
-        if active_yield_point is not None:
-            active_yield_points.append(active_yield_point)
-    return active_yield_points
+# def get_active_yield_points(basic_variables):
+#     active_yield_points = []
+#     for variable in basic_variables:
+#         active_yield_point = get_yield_point_num_from_piece(variable)
+#         if active_yield_point is not None:
+#             active_yield_points.append(active_yield_point)
+#     return active_yield_points
 
 
-def is_fpm_for_an_active_yield_point(fpm, active_yield_points):
-    return True if fpm in active_yield_points else False
+# def is_fpm_for_an_active_yield_point(fpm, active_yield_points):
+#     return True if fpm in active_yield_points else False
 
 
 def update_basic_variables(basic_variables, will_out_row_num, will_in_col_num):
@@ -248,7 +307,8 @@ def update_fpm(will_out_row_num, cbar):
     return fpm
 
 
-def get_sorted_slack_candidates(basic_variables, cbar):
+def get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb):
+    cbar = calculate_cbar(cb, b_matrix_inv)
     slack_candidates = []
     for var in basic_variables:
         if var < landa_var_num:
@@ -262,13 +322,12 @@ def get_sorted_slack_candidates(basic_variables, cbar):
     return slack_candidates
 
 
-def reset(basic_variables, b_history):
-    # INCOMPLETE:
+def reset(basic_variables, b_history, bbar):
     for i, basic_variable in enumerate(basic_variables):
         if basic_variable < variables_num:
-            b_history[i] += b[i]
-            b[i] = 0
-    return b, b_history
+            b_history[i] += bbar[i]
+            bbar[i] = 0
+    return b_history, bbar
 
 
 def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):
@@ -280,40 +339,3 @@ def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):
 def get_var_row_num(var_num, basic_variables):
     row_num = np.where(basic_variables == var_num)[0][0]
     return row_num
-
-
-def unload(pm_var_num, basic_variables, b_matrix_inv):
-    # TODO: should handle if third pivot column is a y not x. possible bifurcation.
-    # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
-    # TODO: loading whole b_inverse in input and output is costly, try like mahini method.
-
-    exiting_row_num = get_var_row_num(pm_var_num, basic_variables)
-
-    unloading_pivot_elements = [
-        {
-            "row": exiting_row_num,
-            "column": get_slack_var_num(exiting_row_num),
-        },
-        {
-            "row": pm_var_num,
-            "column": get_slack_var_num(pm_var_num),
-        },
-        {
-            "row": exiting_row_num,
-            "column": basic_variables[pm_var_num],
-        },
-    ]
-
-    for element in unloading_pivot_elements:
-        abar = calculate_abar(element["column"], b_matrix_inv)
-        b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
-        basic_variables = update_basic_variables(basic_variables, element["row"], element["column"])
-
-    return basic_variables, b_matrix_inv
-
-    # active_yield_points = get_active_yield_points(basic_variables)
-    # pi_transpose = np.dot(cb, b_matrix_inv)
-    # cbar = calculate_cbar(pi_transpose)
-    # cb = update_cb(cb, will_in, will_out_row_num)
-    # old_fpm = fpm
-    # entering_candidates = update_entering_candidates(entering_candidates, old_fpm, fpm, cbar)
