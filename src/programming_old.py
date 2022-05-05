@@ -134,19 +134,15 @@ def update_cb(cb, will_in, will_out_row_num):
     return cb
 
 
+# using new get_will_out to check whether tripod example works without reset or not.
 def get_will_out(abar, bbar, basic_variables):
-    # TODO: we check b/a to be positive, correct way is to check a to be positive
-    # b is not always positive
-    # TODO: exclude load variable, look mahini find_pivot function
-    # TODO: do not divide zero values
-    # TODO: use sign function like mahini find_pivot function
-    # TODO: for hardening parameters extra care must be taken.
-    # TODO: check mahini code line 123, make sure whether reset before this function is necessary or not.
-
-    # ba = np.round(ba, 5)
-    ba = bbar / abar
-    minba = min(ba[ba > 0])
-    will_out_row_num = np.where(ba == minba)[0][0]
+    positive_abar_indices = np.where(abar > 0)[0]
+    positive_abar = abar[positive_abar_indices]
+    ba = bbar[positive_abar_indices] / positive_abar
+    zipped_ba = np.row_stack([positive_abar_indices, ba])
+    mask = np.argsort(zipped_ba[1])
+    sorted_zipped_ba = zipped_ba[:, mask]
+    will_out_row_num = int(sorted_zipped_ba[0, 0])
     will_out = basic_variables[will_out_row_num]
     return will_out, will_out_row_num
 
