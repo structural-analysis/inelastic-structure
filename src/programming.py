@@ -1,11 +1,14 @@
 import numpy as np
 from enum import Enum
+from src.settings import settings
 # from openpyxl import load_workbook
 # import os
 
 # app_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 # workbook_path = app_dir + '/data/skew.xlsx'
 # workbook = load_workbook(filename=workbook_path)
+
+computational_zero = settings.computational_zero
 
 
 def get_slack_var_num(primary_var_num):
@@ -62,15 +65,23 @@ def solve_by_mahini_approach(mp_data):
     fpm.cost = 0
     landa_bar_var_num = 2 * variables_num - extra_numbers_num
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
+    landa_row_num = will_out_row_num
+    print(f"bbar=\n{bbar[:,None]}")
+    print(f"{will_out_row_num=}")
+    print("--------------------")
 
     while will_out_var_num != landa_bar_var_num:
         sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
         will_in_col_num = fpm.var_num
         abar = calculate_abar(will_in_col_num, b_matrix_inv)
         bbar = calculate_bbar(b_matrix_inv, bbar)
-        will_out_row_num = get_will_out(abar, bbar)
+        will_out_row_num = get_will_out(abar, bbar, landa_row_num)
         will_out_var_num = basic_variables[will_out_row_num]
+        print(f"bbar=\n{bbar[:,None]}")
         b_history, bbar = reset(basic_variables, b_history, bbar)
+
+        print(f"{will_out_row_num=}")
+        print("--------------------")
 
         for slack_candidate in sorted_slack_candidates + [fpm]:
             if not is_candidate_fpm(fpm, slack_candidate):
@@ -84,6 +95,7 @@ def solve_by_mahini_approach(mp_data):
                 if r > 0:
                     continue
                 else:
+                    print("unload r < 0")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=spm_var_num,
                         basic_variables=basic_variables,
@@ -93,6 +105,7 @@ def solve_by_mahini_approach(mp_data):
                     break
             else:
                 if is_will_out_var_opm(will_out_var_num):
+                    print("unload opm")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=will_out_var_num,
                         basic_variables=basic_variables,
@@ -101,6 +114,7 @@ def solve_by_mahini_approach(mp_data):
                     )
                     break
                 else:
+                    print("Enter FPM")
                     basic_variables, b_matrix_inv, cb, fpm = enter_fpm(
                         basic_variables=basic_variables,
                         b_matrix_inv=b_matrix_inv,
@@ -111,6 +125,7 @@ def solve_by_mahini_approach(mp_data):
                     )
                     break
 
+    print(f"{basic_variables=}")
     bbar = np.dot(b_matrix_inv, bbar)
     b_history, bbar = reset(basic_variables, b_history, bbar)
     btotal = bbar + b_history
@@ -209,19 +224,23 @@ def update_cb(cb, will_in_col_num, will_out_row_num):
     return cb
 
 
-def get_will_out(abar, bbar):
-    # TODO: we check b/a to be positive, correct way is to check a to be positive
-    # b is not always positive
-    # TODO: exclude load variable, look mahini find_pivot function
-    # TODO: do not divide zero values
-    # TODO: use sign function like mahini find_pivot function
+def get_will_out(abar, bbar, landa_row_num=None):
     # TODO: for hardening parameters extra care must be taken.
-    # TODO: check mahini code line 123, make sure whether reset before this function is necessary or not.
+    # TODO: handle unbounded problem,
+    # when there is no positive a remaining (structure failure), e.g. stop the process.
 
-    # ba = np.round(ba, 5)
-    ba = bbar / abar
-    minba = min(ba[ba > 0])
-    will_out_row_num = np.where(ba == minba)[0][0]
+    positive_abar_indices = np.where(abar > 0)[0]
+    positive_abar = abar[positive_abar_indices]
+    ba = bbar[positive_abar_indices] / positive_abar
+    zipped_ba = np.row_stack([positive_abar_indices, ba])
+    mask = np.argsort(zipped_ba[1])
+    sorted_zipped_ba = zipped_ba[:, mask]
+
+    will_out_row_num = int(sorted_zipped_ba[0, 0])
+    if landa_row_num:
+        if landa_row_num == int(sorted_zipped_ba[0, 0]):
+            will_out_row_num = int(sorted_zipped_ba[0, 1])
+
     return will_out_row_num
 
 

@@ -1,0 +1,4 @@
+name,material,a,ix,iy,zp,has_axial_yield
+strong_beam,steel,5e-4,100e-8,0,5.0e-5,true
+column,steel,5e-4,100e-8,0,5.0e-5,true
+weak_beam,steel,5e-4,100e-8,0,5.0e-5,true
