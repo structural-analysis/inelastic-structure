@@ -66,9 +66,6 @@ def solve_by_mahini_approach(mp_data):
     landa_bar_var_num = 2 * variables_num - extra_numbers_num
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
     landa_row_num = will_out_row_num
-    print(f"bbar=\n{bbar[:,None]}")
-    print(f"{will_out_row_num=}")
-    print("--------------------")
 
     while will_out_var_num != landa_bar_var_num:
         sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
@@ -77,11 +74,7 @@ def solve_by_mahini_approach(mp_data):
         bbar = calculate_bbar(b_matrix_inv, bbar)
         will_out_row_num = get_will_out(abar, bbar, landa_row_num)
         will_out_var_num = basic_variables[will_out_row_num]
-        print(f"bbar=\n{bbar[:,None]}")
         b_history, bbar = reset(basic_variables, b_history, bbar)
-
-        print(f"{will_out_row_num=}")
-        print("--------------------")
 
         for slack_candidate in sorted_slack_candidates + [fpm]:
             if not is_candidate_fpm(fpm, slack_candidate):
@@ -114,7 +107,7 @@ def solve_by_mahini_approach(mp_data):
                     )
                     break
                 else:
-                    print("Enter FPM")
+                    print("enter fpm")
                     basic_variables, b_matrix_inv, cb, fpm = enter_fpm(
                         basic_variables=basic_variables,
                         b_matrix_inv=b_matrix_inv,
@@ -125,7 +118,6 @@ def solve_by_mahini_approach(mp_data):
                     )
                     break
 
-    print(f"{basic_variables=}")
     bbar = np.dot(b_matrix_inv, bbar)
     b_history, bbar = reset(basic_variables, b_history, bbar)
     btotal = bbar + b_history
@@ -225,7 +217,7 @@ def update_cb(cb, will_in_col_num, will_out_row_num):
 
 
 def get_will_out(abar, bbar, landa_row_num=None):
-    # TODO: for hardening parameters extra care must be taken.
+    # TODO: see mahini find_pivot for handling hardening parameters
     # TODO: handle unbounded problem,
     # when there is no positive a remaining (structure failure), e.g. stop the process.
 
