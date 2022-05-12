@@ -67,6 +67,10 @@ def solve_by_mahini_approach(mp_data):
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
     landa_row_num = will_out_row_num
 
+    print(f"{basic_variables=}")
+    print("enter landa")
+    print(f"first fpm = {fpm.var_num}")
+
     while will_out_var_num != landa_bar_var_num:
         sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
         will_in_col_num = fpm.var_num
@@ -75,6 +79,10 @@ def solve_by_mahini_approach(mp_data):
         will_out_row_num = get_will_out(abar, bbar, landa_row_num)
         will_out_var_num = basic_variables[will_out_row_num]
         b_history, bbar = reset(basic_variables, b_history, bbar)
+
+        print(f"{will_out_row_num=}")
+        print(f"{abar=}")
+        print(f"{bbar=}")
 
         for slack_candidate in sorted_slack_candidates + [fpm]:
             if not is_candidate_fpm(fpm, slack_candidate):
@@ -89,6 +97,7 @@ def solve_by_mahini_approach(mp_data):
                     continue
                 else:
                     print("unload r < 0")
+                    print(f"{spm_var_num=}")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=spm_var_num,
                         basic_variables=basic_variables,
@@ -99,6 +108,7 @@ def solve_by_mahini_approach(mp_data):
             else:
                 if is_will_out_var_opm(will_out_var_num):
                     print("unload opm")
+                    print(f"{will_out_var_num=}")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=will_out_var_num,
                         basic_variables=basic_variables,
@@ -108,6 +118,7 @@ def solve_by_mahini_approach(mp_data):
                     break
                 else:
                     print("enter fpm")
+                    print(f"previous fpm = {fpm.var_num}")
                     basic_variables, b_matrix_inv, cb, fpm = enter_fpm(
                         basic_variables=basic_variables,
                         b_matrix_inv=b_matrix_inv,
@@ -116,7 +127,9 @@ def solve_by_mahini_approach(mp_data):
                         will_in_col_num=will_in_col_num,
                         abar=abar,
                     )
+                    print(f"next fpm = {fpm.var_num}")
                     break
+        print(f"{basic_variables=}")
 
     bbar = np.dot(b_matrix_inv, bbar)
     b_history, bbar = reset(basic_variables, b_history, bbar)
@@ -134,6 +147,8 @@ def solve_by_mahini_approach(mp_data):
 def enter_landa(fpm, b_matrix_inv, basic_variables, cb):
     will_in_col_num = fpm.var_num
     a = full_a_matrix[:, will_in_col_num]
+    print(f"first abar: {a}")
+    print(f"first bbar: {b}")
     will_out_row_num = get_will_out(a, b)
     will_out_var_num = basic_variables[will_out_row_num]
     basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
@@ -220,12 +235,14 @@ def get_will_out(abar, bbar, landa_row_num=None):
     # TODO: see mahini find_pivot for handling hardening parameters
     # TODO: handle unbounded problem,
     # when there is no positive a remaining (structure failure), e.g. stop the process.
+    # IMPORTANT TODO: sort twice: first time based on slackcosts like mahini find_pivot
 
-    positive_abar_indices = np.where(abar > 0)[0]
+    abar = zero_out_small_values(abar)
+    positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
     positive_abar = abar[positive_abar_indices]
     ba = bbar[positive_abar_indices] / positive_abar
     zipped_ba = np.row_stack([positive_abar_indices, ba])
-    mask = np.argsort(zipped_ba[1])
+    mask = np.argsort(zipped_ba[1], kind="stable")
     sorted_zipped_ba = zipped_ba[:, mask]
 
     will_out_row_num = int(sorted_zipped_ba[0, 0])
@@ -350,3 +367,9 @@ def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):
 def get_var_row_num(var_num, basic_variables):
     row_num = np.where(basic_variables == var_num)[0][0]
     return row_num
+
+
+def zero_out_small_values(array):
+    low_values_flags = abs(array) < settings.computational_zero
+    array[low_values_flags] = 0
+    return array

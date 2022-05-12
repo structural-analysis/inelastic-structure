@@ -175,6 +175,7 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
     #     b[0:-extra_numbers_num] = b[0:-extra_numbers_num]
 
     b[-extra_numbers_num] = load_limit
+    # b[-extra_numbers_num] = 1
 
     # possible inequality_condition are:
     # lt: Less Than or Equal  gt: Larger Than or Eqaul  eq: Equal

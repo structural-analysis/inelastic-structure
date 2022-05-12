@@ -28,3 +28,8 @@ scaled_elastic_nodal_disp = np.matrix(np.dot(load_limit, structure.elastic_nodal
 nodal_disps_sensitivity_matrix = structure.nodal_disps_sensitivity_matrix
 plastic_nodal_disp = nodal_disps_sensitivity_matrix * phi_x
 elastoplastic_nodal_disp = scaled_elastic_nodal_disp + plastic_nodal_disp[0, 0]
+
+if __name__ == "__main__":
+    print(f"{plastic_multipliers=}")
+    print(f"{elastoplastic_elements_forces=}")
+    print(f"{elastoplastic_nodal_disp=}")
