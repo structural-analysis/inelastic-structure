@@ -97,6 +97,7 @@ def solve_by_mahini_approach(mp_data):
                     continue
                 else:
                     print("unload r < 0")
+                    print(f"fpm before unload= {fpm.var_num}")
                     print(f"{spm_var_num=}")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=spm_var_num,
@@ -189,7 +190,8 @@ def unload(pm_var_num, basic_variables, b_matrix_inv, cb):
             "column": basic_variables[pm_var_num],
         },
     ]
-
+    print(f"{basic_variables=}")
+    print(f"{unloading_pivot_elements=}")
     for element in unloading_pivot_elements:
         abar = calculate_abar(element["column"], b_matrix_inv)
         b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
