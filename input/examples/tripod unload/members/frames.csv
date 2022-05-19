@@ -1,0 +1,4 @@
+section,start_node,end_node,ends_fixity
+beam1,0,3,fix_fix
+beam2,1,3,fix_fix
+beam3,2,3,fix_fix
