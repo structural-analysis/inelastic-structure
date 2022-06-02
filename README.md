@@ -6,6 +6,7 @@ all units are SI (N, m, s)
 ## TODO:
 
 - solve some big examples
+- add deformation and force control
 - clean and use classes
 - calculate responses in every load increment
 - include hardening and softening
