@@ -35,7 +35,7 @@ def create_materials():
 
 def create_sections(materials):
     sections = {}
-    sections_array = np.loadtxt(fname=sections_path, usecols=range(8), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    sections_array = np.loadtxt(fname=sections_path, usecols=range(11), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
         sections[sections_array[i, 0]] = FrameSection(
             material=materials[sections_array[i, 1]],
@@ -45,6 +45,9 @@ def create_sections(materials):
             zp=float(sections_array[i, 5]),
             has_axial_yield=sections_array[i, 6],
             abar0=float(sections_array[i, 7]),
+            ap=float(sections_array[i, 8]),
+            mp=float(sections_array[i, 9]),
+            is_direct_capacity=sections_array[i, 10],
         )
     return sections
 
@@ -84,6 +87,11 @@ def create_structure():
     }
     # FIXME: read nodes_num from input
     structure = Structure(
-        nodes_num=nodes_num, dim=dim, elements=frames, boundaries=boundaries_array, loads=loads, load_limit=load_limit
+        nodes_num=nodes_num,
+        dim=dim,
+        elements=frames,
+        boundaries=boundaries_array,
+        loads=loads,
+        load_limit=load_limit,
     )
     return structure

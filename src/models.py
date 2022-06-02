@@ -2,7 +2,6 @@ import scipy.linalg
 import numpy as np
 
 from src.functions import sqrt
-from src.settings import settings
 
 
 class Node:
@@ -21,15 +20,16 @@ class Material:
 
 
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0):
+    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0, ap=0, mp=0, is_direct_capacity=False):
         self.a = a
         self.ix = ix
         self.iy = iy
         self.zp = zp
         self.e = material.e
         self.sy = material.sy
-        self.mp = self.zp * self.sy
-        self.ap = self.a * self.sy
+        self.is_direct_capacity = is_direct_capacity
+        self.mp = mp if is_direct_capacity.lower() == "true" else self.zp * self.sy
+        self.ap = ap if is_direct_capacity.lower() == "true" else self.a * self.sy
         self.abar0 = abar0
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
         if not self.has_axial_yield:
