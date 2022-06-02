@@ -1,2 +1,2 @@
-name,material,a,ix,iy,zp,has_axial_yield
-rect,steel,80.0e-4,2666.6667e-8,0,4.0e-4,true
+name,material,a,ix,iy,zp,has_axial_yield,abar0
+rect,steel,80.0e-4,2666.6667e-8,0,4.0e-4,true,0.15

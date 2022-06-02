@@ -21,7 +21,7 @@ class Material:
 
 
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str):
+    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0):
         self.a = a
         self.ix = ix
         self.iy = iy
@@ -30,7 +30,7 @@ class FrameSection:
         self.sy = material.sy
         self.mp = self.zp * self.sy
         self.ap = self.a * self.sy
-        abar0 = settings.abar0
+        self.abar0 = abar0
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
         if not self.has_axial_yield:
             self.yield_components_num = 1

@@ -35,7 +35,7 @@ def create_materials():
 
 def create_sections(materials):
     sections = {}
-    sections_array = np.loadtxt(fname=sections_path, usecols=range(7), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    sections_array = np.loadtxt(fname=sections_path, usecols=range(8), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
         sections[sections_array[i, 0]] = FrameSection(
             material=materials[sections_array[i, 1]],
@@ -44,6 +44,7 @@ def create_sections(materials):
             iy=float(sections_array[i, 4]),
             zp=float(sections_array[i, 5]),
             has_axial_yield=sections_array[i, 6],
+            abar0=float(sections_array[i, 7]),
         )
     return sections
 
