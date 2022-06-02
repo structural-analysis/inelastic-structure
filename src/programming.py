@@ -100,8 +100,9 @@ def solve_by_mahini_approach(mp_data):
             else:
                 if is_will_out_var_opm(will_out_var_num):
                     print("unload opm")
+                    opm_var_num = will_out_var_num
                     basic_variables, b_matrix_inv, cb = unload(
-                        pm_var_num=will_out_var_num,
+                        pm_var_num=opm_var_num,
                         basic_variables=basic_variables,
                         b_matrix_inv=b_matrix_inv,
                         cb=cb,
