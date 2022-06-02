@@ -38,8 +38,22 @@ class FrameSection:
         else:
             self.yield_components_num = 2
             self.phi = np.matrix([
-                [1 / self.ap, 0, -1 / self.ap, -1 / self.ap, 0, 1 / self.ap],
-                [(1 - abar0) / self.mp, 1 / self.mp, (1 - abar0) / self.mp, -(1 - abar0) / self.mp, -1 / self.mp, -(1 - abar0) / self.mp]
+                [
+                    1 / self.ap,
+                    0,
+                    -1 / self.ap,
+                    -1 / self.ap,
+                    0,
+                    1 / self.ap,
+                ],
+                [
+                    (1 - abar0) / self.mp,
+                    1 / self.mp,
+                    (1 - abar0) / self.mp,
+                    -(1 - abar0) / self.mp,
+                    -1 / self.mp,
+                    -(1 - abar0) / self.mp,
+                ]
             ])
         self.yield_pieces_num = self.phi.shape[1]
 

@@ -59,7 +59,8 @@ def solve_by_mahini_approach(mp_data):
     basic_variables = get_initial_basic_variables()
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
-    b_history = np.zeros((variables_num))
+    empty_x_history = np.zeros((variables_num, 1))
+    x_history = np.matrix(empty_x_history)
     fpm = FPM
     fpm.var_num = landa_var_num
     fpm.cost = 0
@@ -67,22 +68,14 @@ def solve_by_mahini_approach(mp_data):
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
     landa_row_num = will_out_row_num
 
-    print(f"{basic_variables=}")
-    print("enter landa")
-    print(f"first fpm = {fpm.var_num}")
-
-    while will_out_var_num != landa_bar_var_num:
+    while basic_variables[landa_var_num] == landa_bar_var_num:
         sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
         will_in_col_num = fpm.var_num
         abar = calculate_abar(will_in_col_num, b_matrix_inv)
         bbar = calculate_bbar(b_matrix_inv, bbar)
         will_out_row_num = get_will_out(abar, bbar, landa_row_num)
         will_out_var_num = basic_variables[will_out_row_num]
-        b_history, bbar = reset(basic_variables, b_history, bbar)
-
-        print(f"{will_out_row_num=}")
-        print(f"{abar=}")
-        print(f"{bbar=}")
+        x_history, bbar = reset(basic_variables, x_history, bbar)
 
         for slack_candidate in sorted_slack_candidates + [fpm]:
             if not is_candidate_fpm(fpm, slack_candidate):
@@ -97,8 +90,6 @@ def solve_by_mahini_approach(mp_data):
                     continue
                 else:
                     print("unload r < 0")
-                    print(f"fpm before unload= {fpm.var_num}")
-                    print(f"{spm_var_num=}")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=spm_var_num,
                         basic_variables=basic_variables,
@@ -109,7 +100,6 @@ def solve_by_mahini_approach(mp_data):
             else:
                 if is_will_out_var_opm(will_out_var_num):
                     print("unload opm")
-                    print(f"{will_out_var_num=}")
                     basic_variables, b_matrix_inv, cb = unload(
                         pm_var_num=will_out_var_num,
                         basic_variables=basic_variables,
@@ -119,7 +109,6 @@ def solve_by_mahini_approach(mp_data):
                     break
                 else:
                     print("enter fpm")
-                    print(f"previous fpm = {fpm.var_num}")
                     basic_variables, b_matrix_inv, cb, fpm = enter_fpm(
                         basic_variables=basic_variables,
                         b_matrix_inv=b_matrix_inv,
@@ -128,28 +117,17 @@ def solve_by_mahini_approach(mp_data):
                         will_in_col_num=will_in_col_num,
                         abar=abar,
                     )
-                    print(f"next fpm = {fpm.var_num}")
                     break
-        print(f"{basic_variables=}")
 
-    bbar = np.dot(b_matrix_inv, bbar)
-    b_history, bbar = reset(basic_variables, b_history, bbar)
-    btotal = bbar + b_history
-    empty_xn = np.zeros((variables_num, 1))
-    xn = np.matrix(empty_xn)
-    for i in range(variables_num):
-        if basic_variables[i] < variables_num:
-            xn[basic_variables[i], 0] = btotal[i]
-    plastic_multipliers = xn[0:-extra_numbers_num, 0]
-
+    bbar = calculate_bbar(b_matrix_inv, bbar)
+    x_history, bbar = reset(basic_variables, x_history, bbar)
+    plastic_multipliers = x_history[0:-extra_numbers_num, 0]
     return plastic_multipliers
 
 
 def enter_landa(fpm, b_matrix_inv, basic_variables, cb):
     will_in_col_num = fpm.var_num
     a = full_a_matrix[:, will_in_col_num]
-    print(f"first abar: {a}")
-    print(f"first bbar: {b}")
     will_out_row_num = get_will_out(a, b)
     will_out_var_num = basic_variables[will_out_row_num]
     basic_variables = update_basic_variables(basic_variables, will_out_row_num, will_in_col_num)
@@ -173,6 +151,8 @@ def unload(pm_var_num, basic_variables, b_matrix_inv, cb):
     # TODO: should handle if third pivot column is a y not x. possible bifurcation.
     # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
     # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
+    # TODO: check line 60 of unload and line 265 in mclp of mahini code
+    # (probable usage: in case when unload is last step)
 
     exiting_row_num = get_var_row_num(pm_var_num, basic_variables)
 
@@ -190,8 +170,6 @@ def unload(pm_var_num, basic_variables, b_matrix_inv, cb):
             "column": basic_variables[pm_var_num],
         },
     ]
-    print(f"{basic_variables=}")
-    print(f"{unloading_pivot_elements=}")
     for element in unloading_pivot_elements:
         abar = calculate_abar(element["column"], b_matrix_inv)
         b_matrix_inv = update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
@@ -352,12 +330,12 @@ def get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb):
     return slack_candidates
 
 
-def reset(basic_variables, b_history, bbar):
+def reset(basic_variables, x_history, bbar):
     for i, basic_variable in enumerate(basic_variables):
         if basic_variable < variables_num:
-            b_history[i] += bbar[i]
+            x_history[basic_variables[i], 0] += bbar[i]
             bbar[i] = 0
-    return b_history, bbar
+    return x_history, bbar
 
 
 def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):
