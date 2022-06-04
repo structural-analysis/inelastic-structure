@@ -59,8 +59,9 @@ def solve_by_mahini_approach(mp_data):
     basic_variables = get_initial_basic_variables()
     b_matrix_inv = np.eye(variables_num)
     cb = np.zeros(variables_num)
-    empty_x_history = np.zeros((variables_num, 1))
-    x_history = np.matrix(empty_x_history)
+    empty_x_cumulative = np.zeros((variables_num, 1))
+    x_cumulative = np.matrix(empty_x_cumulative)
+    x_history = []
     fpm = FPM
     fpm.var_num = landa_var_num
     fpm.cost = 0
@@ -75,7 +76,8 @@ def solve_by_mahini_approach(mp_data):
         bbar = calculate_bbar(b_matrix_inv, bbar)
         will_out_row_num = get_will_out(abar, bbar, landa_row_num)
         will_out_var_num = basic_variables[will_out_row_num]
-        x_history, bbar = reset(basic_variables, x_history, bbar)
+        x_cumulative, bbar = reset(basic_variables, x_cumulative, bbar)
+        x_history.append(x_cumulative.copy())
 
         for slack_candidate in sorted_slack_candidates + [fpm]:
             if not is_candidate_fpm(fpm, slack_candidate):
@@ -121,9 +123,9 @@ def solve_by_mahini_approach(mp_data):
                     break
 
     bbar = calculate_bbar(b_matrix_inv, bbar)
-    x_history, bbar = reset(basic_variables, x_history, bbar)
-    plastic_multipliers = x_history[0:-extra_numbers_num, 0]
-    return plastic_multipliers
+    x_cumulative, bbar = reset(basic_variables, x_cumulative, bbar)
+    x_history.append(x_cumulative.copy())
+    return x_history
 
 
 def enter_landa(fpm, b_matrix_inv, basic_variables, cb):
@@ -331,12 +333,12 @@ def get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb):
     return slack_candidates
 
 
-def reset(basic_variables, x_history, bbar):
+def reset(basic_variables, x_cumulative, bbar):
     for i, basic_variable in enumerate(basic_variables):
         if basic_variable < variables_num:
-            x_history[basic_variables[i], 0] += bbar[i]
+            x_cumulative[basic_variables[i], 0] += bbar[i]
             bbar[i] = 0
-    return x_history, bbar
+    return x_cumulative, bbar
 
 
 def calculate_r(spm_var_num, basic_variables, abar, b_matrix_inv):

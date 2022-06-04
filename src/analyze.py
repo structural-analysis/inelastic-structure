@@ -6,7 +6,8 @@ from src.programming import solve_by_mahini_approach
 structure = create_structure()
 load_limit = structure.load_limit
 mp_data = prepare_raw_data(structure=structure, load_limit=load_limit)
-plastic_multipliers = solve_by_mahini_approach(mp_data)
+x_history = solve_by_mahini_approach(mp_data)
+plastic_multipliers = x_history[-1][0:-mp_data["extra_numbers_num"]]
 
 phi = structure.phi
 phi_x = phi * plastic_multipliers

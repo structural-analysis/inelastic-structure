@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "3story_perfect"
+    example_name: str = "tripod_unload"
     computational_zero = 1e-10
 
 
