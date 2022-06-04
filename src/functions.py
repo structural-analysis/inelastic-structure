@@ -137,7 +137,7 @@ def load_condensation(force, ku0, boundaries):
     return phat, p0r
 
 
-def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
+def prepare_raw_data(structure, include_displacement_limit=False):
 
     # possible minmax are:
     # minimization: min, maximization: max
@@ -145,6 +145,7 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
     minmax = "max"
 
     # analysis_type = "static"
+    load_limit = structure.load_limit
     phi = structure.phi
     p0 = structure.p0
     pv = structure.pv
@@ -191,6 +192,7 @@ def prepare_raw_data(structure, load_limit, include_displacement_limit=False):
         "c": c,
         "minmax": minmax,
         "inequality_condition": inequality_condition,
-        "yield_points_pieces": yield_points_pieces
+        "yield_points_pieces": yield_points_pieces,
+        "load_limit": load_limit,
     }
     return mp_data

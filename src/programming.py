@@ -1,12 +1,6 @@
 import numpy as np
 from enum import Enum
 from src.settings import settings
-# from openpyxl import load_workbook
-# import os
-
-# app_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-# workbook_path = app_dir + '/data/skew.xlsx'
-# workbook = load_workbook(filename=workbook_path)
 
 computational_zero = settings.computational_zero
 
