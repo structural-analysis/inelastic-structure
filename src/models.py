@@ -178,7 +178,7 @@ class FrameElement2D:
         # displacements: numpy matrix
         # fixed_forces: numpy matrix
         k = self.k
-        f = (k * displacements + fixed_forces).T
+        f = k * displacements + fixed_forces
         return f
 
 
@@ -430,13 +430,13 @@ class Structure:
                 element_force = element.get_nodal_force(elements_disps[i, 0], fixed_force)
                 elements_forces[i, 0] = element_force
                 if not element.has_axial_yield:
-                    p0[current_p0_row] = element_force[0, 2]
-                    p0[current_p0_row + 1] = element_force[0, 5]
+                    p0[current_p0_row] = element_force[2, 0]
+                    p0[current_p0_row + 1] = element_force[5, 0]
                 else:
                     p0[current_p0_row] = element_force[0, 0]
-                    p0[current_p0_row + 1] = element_force[0, 2]
-                    p0[current_p0_row + 2] = element_force[0, 3]
-                    p0[current_p0_row + 3] = element_force[0, 5]
+                    p0[current_p0_row + 1] = element_force[2, 0]
+                    p0[current_p0_row + 2] = element_force[3, 0]
+                    p0[current_p0_row + 3] = element_force[5, 0]
             current_p0_row = current_p0_row + element.total_ycn
         return {"elements_forces": elements_forces, "p0": p0}
 
@@ -497,13 +497,13 @@ class Structure:
                             elements_disps_sensitivity_matrix[i_affected_element, pv_column] = affected_elem_disp[0, 0]
 
                             if not element.has_axial_yield:
-                                pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 2]
-                                pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 5]
+                                pv[current_affected_element_ycns, pv_column] = affected_element_force[2, 0]
+                                pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[5, 0]
                             else:
                                 pv[current_affected_element_ycns, pv_column] = affected_element_force[0, 0]
-                                pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[0, 2]
-                                pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[0, 3]
-                                pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[0, 5]
+                                pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[2, 0]
+                                pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[3, 0]
+                                pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[5, 0]
                             current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].total_ycn
 
                         pv_column += 1

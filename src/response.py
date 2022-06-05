@@ -24,6 +24,10 @@ def calculate_responses(structure, x_history, mp_data):
     elements_forces_sensitivity_matrix = structure.elements_forces_sensitivity_matrix
     elements_forces = np.zeros([increments_num, elements_num], dtype=object)
 
+    # elements displacements
+    elements_disps_sensitivity_matrix = structure.elements_disps_sensitivity_matrix
+    elements_disps = np.zeros([increments_num, elements_num], dtype=object)
+
     for i, x in enumerate(x_history):
         pms = x[0:-extra_vars_num]
         load_level = x[landa_var_num][0, 0]
@@ -44,6 +48,13 @@ def calculate_responses(structure, x_history, mp_data):
         for j in range(elements_num):
             elements_forces[i, j] = elastoplastic_elements_forces[j, 0]
 
+        # elements disps
+        scaled_elastic_elements_disps = np.matrix(np.dot(load_level, structure.elastic_elements_disps))
+        plastic_elements_disps = elements_disps_sensitivity_matrix * phi_x
+        elastoplastic_elements_disps = scaled_elastic_elements_disps + plastic_elements_disps
+        for j in range(elements_num):
+            elements_disps[i, j] = elastoplastic_elements_disps[j, 0]
+
     for i in range(increments_num):
         increment_dir = os.path.join(outputs_dir, example_name, str(i))
         os.makedirs(increment_dir, exist_ok=True)
@@ -51,20 +62,21 @@ def calculate_responses(structure, x_history, mp_data):
         load_levels_path = os.path.join(increment_dir, "load_levels.csv")
         nodal_disps_path = os.path.join(increment_dir, "nodal_disps.csv")
         elements_forces_path = os.path.join(increment_dir, "elements_forces.csv")
-
-        np.savetxt(fname=load_levels_path, X=np.array([load_levels[i, 0]]), delimiter=",")
-        np.savetxt(fname=nodal_disps_path, X=nodal_disps[i, :], delimiter=",")
+        elements_disps_path = os.path.join(increment_dir, "elements_disps.csv")
 
         current_increment_elements_forces = elements_forces[i, :]
-        current_increment_elements_forces_compact = np.zeros([max_element_dof_num, elements_num])
-
+        empty_current_increment_elements_forces_compact = np.zeros([max_element_dof_num, elements_num])
+        current_increment_elements_forces_compact = np.matrix(empty_current_increment_elements_forces_compact)
         for j in range(elements_num):
             current_increment_elements_forces_compact[:, j] = current_increment_elements_forces[j]
 
-        np.savetxt(fname=elements_forces_path, X=current_increment_elements_forces_compact, delimiter=",")
+        current_increment_elements_disps = elements_disps[i, :]
+        empty_current_increment_elements_disps_compact = np.zeros([max_element_dof_num, elements_num])
+        current_increment_elements_disps_compact = np.matrix(empty_current_increment_elements_disps_compact)
+        for j in range(elements_num):
+            current_increment_elements_disps_compact[:, j] = current_increment_elements_disps[j]
 
-        # # elements displacements
-        # scaled_elastic_elements_disps = np.matrix(np.dot(load_level, structure.elastic_elements_disps))
-        # elements_disps_sensitivity_matrix = structure.elements_disps_sensitivity_matrix
-        # plastic_elements_disps = elements_disps_sensitivity_matrix * phi_x
-        # elastoplastic_elements_disps = scaled_elastic_elements_disps + plastic_elements_disps
+        np.savetxt(fname=load_levels_path, X=np.array([load_levels[i, 0]]), delimiter=",")
+        np.savetxt(fname=nodal_disps_path, X=nodal_disps[i, :], delimiter=",")
+        np.savetxt(fname=elements_forces_path, X=current_increment_elements_forces_compact, delimiter=",")
+        np.savetxt(fname=elements_disps_path, X=current_increment_elements_disps_compact, delimiter=",")
