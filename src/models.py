@@ -69,6 +69,7 @@ class FrameElement2D:
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
     def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, yield_points: tuple[FrameYieldPoint, FrameYieldPoint]):
         self.nodes = nodes
+        self.total_dofs_num = 6
         # for frame elements yield points coincide on fem nodes
         self.yield_points = yield_points
         self.start = nodes[0]
@@ -286,6 +287,7 @@ class Structure:
     def __init__(self, nodes_num, dim, elements, boundaries, loads, load_limit):
         self.nodes_num = nodes_num
         self.node_n_dof = 3 if dim.lower() == "2d" else 6
+        self.total_dofs_num = self.node_n_dof * self.nodes_num
         self.elements = elements
         self.ycn = self._ycn()
         self.boundaries = boundaries

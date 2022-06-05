@@ -1,6 +1,8 @@
 # Inelastic Structure
-
 all units are SI (N, m, s)
+each element object must have these variables (e.g.):
+nodes
+total_dofs_num
 
 
 ## TODO:
@@ -11,6 +13,7 @@ all units are SI (N, m, s)
 - clean and use classes
 - calculate responses in every load increment
 - include hardening and softening
+- write tests for all examples, checking outputs vs inputs.
 - separate loading from structure
 - add plate element
 - dynamic analysis

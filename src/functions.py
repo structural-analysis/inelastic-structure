@@ -154,10 +154,11 @@ def prepare_raw_data(structure, include_displacement_limit=False):
     phi_pv_phi = phi.T * pv * phi
     phi_p0 = phi.T * p0
 
-    extra_numbers_num = 2 if include_displacement_limit else 1
+    extra_vars_num = 2 if include_displacement_limit else 1
     total_yield_pieces_num = phi.shape[1]
-    variables_num = extra_numbers_num + total_yield_pieces_num
-
+    variables_num = extra_vars_num + total_yield_pieces_num
+    landa_var_num = variables_num - extra_vars_num
+    landa_bar_var_num = 2 * variables_num - extra_vars_num
     empty_a = np.zeros((variables_num, variables_num))
     raw_a = np.matrix(empty_a)
 
@@ -171,12 +172,12 @@ def prepare_raw_data(structure, include_displacement_limit=False):
 
     # if analysis_type == "dynamic":
     #     pass
-    #     b[0:-extra_numbers_num] = b[0:-extra_numbers_num] - np.dot(phi_pv_phi, xn_previous[0:-extra_numbers_num])
+    #     b[0:-extra_vars_num] = b[0:-extra_vars_num] - np.dot(phi_pv_phi, xn_previous[0:-extra_vars_num])
     # elif analysis_type == "static":
-    #     b[0:-extra_numbers_num] = b[0:-extra_numbers_num]
+    #     b[0:-extra_vars_num] = b[0:-extra_vars_num]
 
-    b[-extra_numbers_num] = load_limit
-    # b[-extra_numbers_num] = 1
+    b[-extra_vars_num] = load_limit
+    # b[-extra_vars_num] = 1
 
     # possible inequality_condition are:
     # lt: Less Than or Equal  gt: Larger Than or Eqaul  eq: Equal
@@ -184,9 +185,12 @@ def prepare_raw_data(structure, include_displacement_limit=False):
 
     c = np.zeros(2 * variables_num)
     c[0:total_yield_pieces_num] = 1.0
+
     mp_data = {
         "variables_num": variables_num,
-        "extra_numbers_num": extra_numbers_num,
+        "landa_var_num": landa_var_num,
+        "landa_bar_var_num": landa_bar_var_num,
+        "extra_vars_num": extra_vars_num,
         "raw_a": raw_a,
         "b": b,
         "c": c,
@@ -196,3 +200,12 @@ def prepare_raw_data(structure, include_displacement_limit=False):
         "load_limit": load_limit,
     }
     return mp_data
+
+
+
+def get_elements_max_dof_num(elements):
+    max_dof_num = 0
+    for element in elements:
+        if element.total_dofs_num >= max_dof_num:
+            max_dof_num = element.total_dofs_num
+    return max_dof_num

@@ -32,7 +32,7 @@ class SlackCandidate():
 def solve_by_mahini_approach(mp_data):
 
     global variables_num
-    global extra_numbers_num
+    global extra_vars_num
     global landa_var_num
     global a_matrix
     global b
@@ -41,8 +41,9 @@ def solve_by_mahini_approach(mp_data):
     global full_a_matrix
 
     variables_num = mp_data["variables_num"]
-    extra_numbers_num = mp_data["extra_numbers_num"]
-    landa_var_num = variables_num - extra_numbers_num
+    extra_vars_num = mp_data["extra_vars_num"]
+    landa_var_num = mp_data["landa_var_num"]
+    landa_bar_var_num = mp_data["landa_bar_var_num"]
     a_matrix = np.array(mp_data["raw_a"])
     b = mp_data["b"]
     c = -1 * mp_data["c"]
@@ -59,7 +60,6 @@ def solve_by_mahini_approach(mp_data):
     fpm = FPM
     fpm.var_num = landa_var_num
     fpm.cost = 0
-    landa_bar_var_num = 2 * variables_num - extra_numbers_num
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
     landa_row_num = will_out_row_num
 
