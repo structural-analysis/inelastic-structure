@@ -13,6 +13,8 @@ materials_path = os.path.join(examples_dir, example_name, "materials.csv")
 sections_path = os.path.join(examples_dir, example_name, "elements/sections.csv")
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
 general_info_path = os.path.join(examples_dir, example_name, "general.csv")
+load_limit_path = os.path.join(examples_dir, example_name, "limits/load.csv")
+disp_limits_path = os.path.join(examples_dir, example_name, "limits/disp.csv")
 
 
 def create_nodes():
@@ -73,25 +75,34 @@ def create_frames():
 
 
 def create_structure():
-    boundaries_array = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+    boundaries = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
     general_info = np.loadtxt(fname=general_info_path, usecols=range(3), delimiter=",", ndmin=1, skiprows=1, dtype=str)
+    load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
+    disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+
     frames = create_frames()
     nodes_num = int(general_info[0])
     dim = general_info[1]
-    load_limit = float(general_info[2])
+
+    limits = {
+        "load_limit": load_limit,
+        "disp_limits": disp_limits
+    }
+
     loads = {
         "joint_loads": joint_loads,
         "concentrated_member_loads": [],
         "distributed_load": [],
     }
-    # FIXME: read nodes_num from input
+
     structure = Structure(
         nodes_num=nodes_num,
         dim=dim,
         elements=frames,
-        boundaries=boundaries_array,
+        boundaries=boundaries,
         loads=loads,
-        load_limit=load_limit,
+        limits=limits,
     )
+
     return structure

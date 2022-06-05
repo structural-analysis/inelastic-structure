@@ -29,10 +29,9 @@ class SlackCandidate():
         self.cost = cost
 
 
-def solve_by_mahini_approach(mp_data):
+def solve_by_mahini_approach(analysis_data):
 
     global variables_num
-    global extra_vars_num
     global landa_var_num
     global a_matrix
     global b
@@ -40,15 +39,14 @@ def solve_by_mahini_approach(mp_data):
     global yield_points_pieces
     global full_a_matrix
 
-    variables_num = mp_data["variables_num"]
-    extra_vars_num = mp_data["extra_vars_num"]
-    landa_var_num = mp_data["landa_var_num"]
-    landa_bar_var_num = mp_data["landa_bar_var_num"]
-    a_matrix = np.array(mp_data["raw_a"])
-    b = mp_data["b"]
-    c = -1 * mp_data["c"]
+    variables_num = analysis_data["variables_num"]
+    landa_var_num = analysis_data["landa_var_num"]
+    landa_bar_var_num = analysis_data["landa_bar_var_num"]
+    a_matrix = np.array(analysis_data["raw_a"])
+    b = analysis_data["b"]
+    c = -1 * analysis_data["c"]
     bbar = b
-    yield_points_pieces = mp_data["yield_points_pieces"]
+    yield_points_pieces = analysis_data["yield_points_pieces"]
 
     full_a_matrix = get_full_a_matrix()
     basic_variables = get_initial_basic_variables()
@@ -119,7 +117,20 @@ def solve_by_mahini_approach(mp_data):
     bbar = calculate_bbar(b_matrix_inv, bbar)
     x_cumulative, bbar = reset(basic_variables, x_cumulative, bbar)
     x_history.append(x_cumulative.copy())
-    return x_history
+
+    pms_history = []
+    load_level_history = []
+    for x in x_history:
+        pms = x[0:landa_var_num]
+        load_level = x[landa_var_num][0, 0]
+        pms_history.append(pms)
+        load_level_history.append(load_level)
+
+    result = {
+        "pms_history": pms_history,
+        "load_level_history": load_level_history
+    }
+    return result
 
 
 def enter_landa(fpm, b_matrix_inv, basic_variables, cb):

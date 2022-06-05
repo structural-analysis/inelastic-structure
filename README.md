@@ -7,11 +7,11 @@ total_dofs_num
 
 ## TODO:
 
-- solve some big examples
 - visualizations
+- handle load_limit * loads like mahini. see saved image, take care for precision.
+- handle extra constraints in calculations (starting from get_analysis_data())
 - add deformation and force control
 - clean and use classes
-- calculate responses in every load increment
 - include hardening and softening
 - write tests for all examples, checking outputs vs inputs.
 - separate loading from structure

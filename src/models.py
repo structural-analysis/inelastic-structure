@@ -284,7 +284,7 @@ class RectangularThinPlateElement:
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     # ycn: yield components num
-    def __init__(self, nodes_num, dim, elements, boundaries, loads, load_limit):
+    def __init__(self, nodes_num, dim, elements, boundaries, loads, limits):
         self.nodes_num = nodes_num
         self.node_n_dof = 3 if dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_n_dof * self.nodes_num
@@ -292,7 +292,7 @@ class Structure:
         self.ycn = self._ycn()
         self.boundaries = boundaries
         self.loads = loads
-        self.load_limit = load_limit
+        self.limits = limits
         self.k = self.assemble()
         self.reduced_k = self.apply_boundry_conditions()
         self.f = self.apply_loading()
