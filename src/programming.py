@@ -41,12 +41,12 @@ def solve_by_mahini_approach(analysis_data):
 
     variables_num = analysis_data["variables_num"]
     landa_var_num = analysis_data["landa_var_num"]
-    landa_bar_var_num = analysis_data["landa_bar_var_num"]
     a_matrix = np.array(analysis_data["raw_a"])
     b = analysis_data["b"]
     c = -1 * analysis_data["c"]
     bbar = b
     yield_points_pieces = analysis_data["yield_points_pieces"]
+    limits_slacks = analysis_data["limits_slacks"]
 
     full_a_matrix = get_full_a_matrix()
     basic_variables = get_initial_basic_variables()
@@ -61,7 +61,7 @@ def solve_by_mahini_approach(analysis_data):
     fpm, b_matrix_inv, basic_variables, cb, will_out_row_num, will_out_var_num = enter_landa(fpm, b_matrix_inv, basic_variables, cb)
     landa_row_num = will_out_row_num
 
-    while basic_variables[landa_var_num] == landa_bar_var_num:
+    while limits_slacks.issubset(set(basic_variables)):
         sorted_slack_candidates = get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
         will_in_col_num = fpm.var_num
         abar = calculate_abar(will_in_col_num, b_matrix_inv)
