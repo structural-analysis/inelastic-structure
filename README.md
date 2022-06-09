@@ -7,11 +7,7 @@ total_dofs_num
 
 ## TODO:
 
-- solve some big examples
 - visualizations
-- add deformation and force control
-- clean and use classes
-- calculate responses in every load increment
 - include hardening and softening
 - write tests for all examples, checking outputs vs inputs.
 - separate loading from structure

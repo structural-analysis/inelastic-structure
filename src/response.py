@@ -8,10 +8,10 @@ example_name = settings.example_name
 example_dir = os.path.join(outputs_dir, example_name)
 
 
-def calculate_responses(structure, x_history, mp_data):
-    increments_num = len(x_history)
-    extra_vars_num = mp_data["extra_vars_num"]
-    landa_var_num = mp_data["landa_var_num"]
+def calculate_responses(structure, result):
+    pms_history = result["pms_history"]
+    load_level_history = result["load_level_history"]
+    increments_num = len(load_level_history)
     phi = structure.phi
     total_dofs_num = structure.total_dofs_num
     elements_num = len(structure.elements)
@@ -28,9 +28,9 @@ def calculate_responses(structure, x_history, mp_data):
     elements_disps_sensitivity_matrix = structure.elements_disps_sensitivity_matrix
     elements_disps = np.zeros([increments_num, elements_num], dtype=object)
 
-    for i, x in enumerate(x_history):
-        pms = x[0:-extra_vars_num]
-        load_level = x[landa_var_num][0, 0]
+    for i in range(increments_num):
+        pms = pms_history[i]
+        load_level = load_level_history[i]
         phi_x = phi * pms
 
         load_levels[i, 0] = load_level
