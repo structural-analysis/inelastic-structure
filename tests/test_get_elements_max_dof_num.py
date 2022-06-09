@@ -5,21 +5,26 @@ class Element1():
     def __init__(self):
         self.total_dofs_num = 3
 
+
 class Element2():
     def __init__(self):
         self.total_dofs_num = 6
+
 
 class Element3():
     def __init__(self):
         self.total_dofs_num = 12
 
+
 class Element4():
     def __init__(self):
         self.total_dofs_num = 2
 
+
 class Element5():
     def __init__(self):
         self.total_dofs_num = 9
+
 
 element1 = Element1()
 element2 = Element2()
