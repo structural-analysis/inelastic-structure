@@ -1,14 +1,12 @@
 import os
 import numpy as np
-from src.settings import settings
 from src.functions import get_elements_max_dof_num
 
+
 outputs_dir = "output/examples/"
-example_name = settings.example_name
-example_dir = os.path.join(outputs_dir, example_name)
 
 
-def calculate_responses(structure, result):
+def calculate_responses(structure, result, example_name):
     pms_history = result["pms_history"]
     load_level_history = result["load_level_history"]
     increments_num = len(load_level_history)
