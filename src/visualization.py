@@ -10,19 +10,16 @@ example_name = settings.example_name
 yield_components = {
     "x": "Np",
     "y": "Mp",
-    "z": "M2p"
 }
 
 
 def get_yield_points():
     x_points = [0.15, 0.3, 0.45, 0.6, 1]
     y_points = [0.2, 0.3, 0.7, 1.0, 0.5]
-    z_points = [1, 1, 1, 1, 1]
     points_label = [0, 1, 2, 3, 4]
     yield_points = {
         "x": x_points,
         "y": y_points,
-        "z": z_points,
         "label": points_label,
     }
     return yield_points
@@ -30,18 +27,15 @@ def get_yield_points():
 
 def get_yield_surface():
     np_surface = [-1, -0.77, 0.77, 1, 0.77, -0.77, -1]
-    # y values
     mp_surface = [0, 1, 1, 0, -1, -1, 0]
-    z_surface = [0, 1, 1, 0, -1, -1, 0]
     yield_surface = {
         "x": np_surface,
         "y": mp_surface,
-        "z": z_surface,
     }
     return yield_surface
 
 
-def generate_lines(ax, yield_surface):
+def draw_yield_surface(ax, yield_surface):
     x_list = yield_surface.get("x")
     y_list = yield_surface.get("y")
     z_list = yield_surface.get("z")
@@ -49,6 +43,12 @@ def generate_lines(ax, yield_surface):
         ax.plot(x_list, y_list, c="black")
     else:
         ax.plot_wireframe(x_list, y_list, z_list, c="black")
+
+
+def draw_lines(ax, yield_surface):
+    x_list = yield_surface.get("x")
+    y_list = yield_surface.get("y")
+    ax.plot(x_list, y_list, c="black")
 
 
 def draw_yield_points(ax, yield_points):
@@ -64,18 +64,14 @@ def draw_yield_points(ax, yield_points):
         for i in range(len(points_labels)):
             ax.scatter(x_points[i], y_points[i], z_points[i], color='red', s=10)
             ax.text(x_points[i], y_points[i], z_points[i], s=f"{i}", size=10, color='k')
-    # ax.scatter(x_points, y_points, s=10, c="red")
-    # for i, txt in enumerate(points_labels):
-    #     ax.annotate(txt, (x_points[i], y_points[i]))
 
 
 def draw_yield_condition(ax, yield_points, yield_surface):
-    # points = yield_points.get("x"), yield_points.get("y"), yield_points.get("label")
     draw_yield_points(
         ax,
         yield_points,
     )
-    generate_lines(
+    draw_yield_surface(
         ax,
         yield_surface,
     )
@@ -128,12 +124,9 @@ def generate_increments_yield_surfaces(increments_num, yield_components, yield_p
     plt.show()
 
 
-yield_points = get_yield_points()
-yield_surface = get_yield_surface()
-generate_increments_yield_surfaces(10, yield_components, yield_points, yield_surface)
-
-
 def generate_elements(frames_array, nodes_array):
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    ax = add_diagram_to_figure(fig, (1, 1), (0, 0))
     for frame_label, frame_element in enumerate(frames_array):
         beginning_node = int(frame_element[1])
         end_node = int(frame_element[2])
@@ -143,7 +136,11 @@ def generate_elements(frames_array, nodes_array):
         end_y = int(nodes_array[end_node][1])
         x_list = [beginning_x, end_x]
         y_list = [beginning_y, end_y]
-        generate_lines(x_list, y_list)
+        element_coords = {
+            "x": x_list,
+            "y": y_list,
+        }
+        draw_lines(ax, element_coords)
 
 
 def visualize_2d_frame(example_name):
@@ -160,14 +157,16 @@ def visualize_2d_frame(example_name):
         nodes.append([x, y])
     generate_elements(frames_array, nodes_array)
 
-# visualize_2d_frame(example_name)
-# draw_yield_condition(yield_points, yield_surface)
-# edit_plot_labes()
 
-# plt.show()
+yield_points = get_yield_points()
+yield_surface = get_yield_surface()
+generate_increments_yield_surfaces(10, yield_components, yield_points, yield_surface)
+visualize_2d_frame(example_name)
+
+plt.show()
 
 
-def wireframe_3d_example():
+def surface_3d_example():
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -190,6 +189,6 @@ def wireframe_3d_example():
     fig = plt.figure()
     plt3d = fig.add_subplot(1, 1, 1, projection='3d')
 
-    plt3d.plot_wireframe(xx, yy, z, rstride=1, cstride=1,)
-    plt3d.plot_wireframe(xx, yy, z2, rstride=1, cstride=1,)
+    plt3d.plot_surface(xx, yy, z, rstride=1, cstride=1, alpha=0.5, color="gray")
+    plt3d.plot_surface(xx, yy, z2, rstride=1, cstride=1, alpha=0.5, color="gray")
     plt.show()
