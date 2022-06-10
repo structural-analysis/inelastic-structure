@@ -1,6 +1,10 @@
 import os
 import numpy as np
-from src.models import Node, Material, FrameSection, FrameElement2D, Structure, FrameYieldPoint
+from src.models.points import Node, FrameYieldPoint
+from src.models.materials import Material
+from src.models.sections import FrameSection
+from src.models.elements import FrameElement2D
+from src.models.structure import Structure
 
 examples_dir = "input/examples/"
 global_cords_dir = "global_cords.csv"

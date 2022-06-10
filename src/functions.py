@@ -1,18 +1,4 @@
-import math
 import numpy as np
-
-
-# math functions
-def sin(t):
-    return math.sin(t)
-
-
-def cos(t):
-    return math.cos(t)
-
-
-def sqrt(t):
-    return math.sqrt(t)
 
 
 def apply_boundry_conditions(joints_restraints, matrix):
@@ -135,11 +121,3 @@ def load_condensation(force, ku0, boundaries):
     phat = ptr + np.dot(np.transpose(ku0), p0r)
 
     return phat, p0r
-
-
-def get_elements_max_dof_num(elements):
-    max_dof_num = 0
-    for element in elements:
-        if element.total_dofs_num >= max_dof_num:
-            max_dof_num = element.total_dofs_num
-    return max_dof_num

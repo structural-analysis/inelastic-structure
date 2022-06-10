@@ -1,5 +1,4 @@
 import numpy as np
-from enum import Enum
 from src.settings import settings
 
 computational_zero = settings.computational_zero
@@ -13,12 +12,12 @@ def get_primary_var_num(slack_var_num):
     return slack_var_num - variables_num
 
 
-class FPM(Enum):
+class FPM():
     var_num: int
     cost: float
 
 
-class WillOut(Enum):
+class WillOut():
     row_num: int
     var_num: int
 

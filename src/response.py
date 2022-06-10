@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from src.functions import get_elements_max_dof_num
+from src.models.functions import get_elements_max_dof_num
 
 
 outputs_dir = "output/examples/"
