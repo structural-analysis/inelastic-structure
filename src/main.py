@@ -1,14 +1,15 @@
 from src.workshop import create_structure
-from src.programming import solve_by_mahini_approach
+from src.program.main import MahiniMethod
 from src.response import calculate_responses
-from src.prepare import get_analysis_data
+from src.program.prepare import RawData
 from src.settings import settings
 
 
 def run(example_name):
     structure = create_structure(example_name)
-    analysis_data = get_analysis_data(structure)
-    result = solve_by_mahini_approach(analysis_data)
+    raw_data = RawData(structure)
+    mahini_method = MahiniMethod(raw_data)
+    result = mahini_method.solve()
     calculate_responses(structure, result, example_name)
 
 
