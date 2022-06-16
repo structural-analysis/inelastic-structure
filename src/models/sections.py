@@ -3,7 +3,7 @@ from .materials import Material
 
 
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0, ap=0, mp=0, is_direct_capacity=False):
+    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0, ap=0, mp=0, is_direct_capacity=False, include_softening=False, alpha=0, ep1=0, ep2=0):
         self.a = a
         self.ix = ix
         self.iy = iy
@@ -15,12 +15,20 @@ class FrameSection:
         self.ap = ap if is_direct_capacity.lower() == "true" else self.a * self.sy
         self.abar0 = abar0
         self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
-        if not self.has_axial_yield:
-            self.yield_components_num = 1
-            self.phi = np.matrix([-1 / self.mp, 1 / self.mp])
-        else:
-            self.yield_components_num = 2
-            self.phi = np.matrix([
+        self.yield_components_num = 2 if self.has_axial_yield else 1
+        self.phi = self._create_phi()
+        self.yield_pieces_num = self.phi.shape[1]
+
+        self.include_softening = True if include_softening.lower() == "true" else False
+        self.alpha = alpha
+        self.ep1 = ep1
+        self.ep2 = ep2
+
+        self.softening_slope = self._get_softening_slope() if self.include_softening else 0
+
+    def _create_phi(self):
+        if self.has_axial_yield:
+            phi = np.matrix([
                 [
                     1 / self.ap,
                     0,
@@ -30,15 +38,21 @@ class FrameSection:
                     1 / self.ap,
                 ],
                 [
-                    (1 - abar0) / self.mp,
+                    (1 - self.abar0) / self.mp,
                     1 / self.mp,
-                    (1 - abar0) / self.mp,
-                    -(1 - abar0) / self.mp,
+                    (1 - self.abar0) / self.mp,
+                    -(1 - self.abar0) / self.mp,
                     -1 / self.mp,
-                    -(1 - abar0) / self.mp,
+                    -(1 - self.abar0) / self.mp,
                 ]
             ])
-        self.yield_pieces_num = self.phi.shape[1]
+        else:
+            phi = np.matrix([-1 / self.mp, 1 / self.mp])
+        return phi
+
+    def _get_softening_slope(self):
+        # for normalization divided by self.mp:
+        return (self.alpha - 1) / (self.ep2 - self.ep1)
 
 
 class PlateSection:

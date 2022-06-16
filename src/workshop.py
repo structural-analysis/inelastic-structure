@@ -41,7 +41,7 @@ def create_materials(example_name):
 def create_sections(materials, example_name):
     sections = {}
     sections_path = os.path.join(examples_dir, example_name, sections_dir)
-    sections_array = np.loadtxt(fname=sections_path, usecols=range(11), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    sections_array = np.loadtxt(fname=sections_path, usecols=range(15), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     for i in range(sections_array.shape[0]):
         sections[sections_array[i, 0]] = FrameSection(
             material=materials[sections_array[i, 1]],
@@ -54,6 +54,10 @@ def create_sections(materials, example_name):
             ap=float(sections_array[i, 8]),
             mp=float(sections_array[i, 9]),
             is_direct_capacity=sections_array[i, 10],
+            include_softening=sections_array[i, 11],
+            alpha=float(sections_array[i, 12]),
+            ep1=float(sections_array[i, 13]),
+            ep2=float(sections_array[i, 14]),
         )
     return sections
 
