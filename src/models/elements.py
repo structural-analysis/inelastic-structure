@@ -1,29 +1,59 @@
 import numpy as np
 from math import sqrt
 
-from .points import Node, FrameYieldPoint
+from .points import Node
 from .sections import FrameSection, PlateSection
+
+
+class YieldSpecs:
+    points_num: int
+    pieces_num: int
+    components_num: int
+
+
+class Elements:
+    def __init__(self, elements_array):
+        self.all = elements_array
+        self.num = len(elements_array)
+        self.yield_specs = self.get_yield_specs()
+
+    def get_yield_specs(self):
+        yield_points_num = 0
+        yield_components_num = 0
+        yield_pieces_num = 0
+
+        for element in self.all:
+            yield_points_num += element.yield_points_num
+            yield_components_num += element.yield_components_num
+            yield_pieces_num += element.yield_pieces_num
+
+        yield_specs = YieldSpecs()
+        yield_specs.points_num = yield_points_num
+        yield_specs.components_num = yield_components_num
+        yield_specs.pieces_num = yield_pieces_num
+
+        return yield_specs
 
 
 class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, yield_points: tuple[FrameYieldPoint, FrameYieldPoint]):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
         self.nodes = nodes
-        self.total_dofs_num = 6
-        # for frame elements yield points coincide on fem nodes
-        self.yield_points = yield_points
-        self.start = nodes[0]
-        self.end = nodes[1]
         self.ends_fixity = ends_fixity
         self.section = section
-        self.a = section.a
-        self.i = section.ix
-        self.e = section.e
-        self.mp = section.mp
-        self.has_axial_yield = section.has_axial_yield
-        self.total_ycn = 2 * section.yield_components_num
+        self.total_dofs_num = 6
+        self.yield_points_num = 2
+        self.yield_components_num = self.yield_points_num * self.section.yield_components_num
+        self.yield_pieces_num = self.yield_points_num * self.section.yield_pieces_num
+        self.has_axial_yield = self.section.has_axial_yield
+        self.start = nodes[0]
+        self.end = nodes[1]
+        self.a = self.section.a
+        self.i = self.section.ix
+        self.e = self.section.e
+        self.mp = self.section.mp
         self.l = self._length()
         self.k = self._stiffness()
         self.t = self._transform_matrix()

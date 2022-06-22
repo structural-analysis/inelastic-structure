@@ -1,9 +1,9 @@
 import os
 import numpy as np
-from src.models.points import Node, FrameYieldPoint
+from src.models.points import Node
 from src.models.materials import Material
 from src.models.sections import FrameSection
-from src.models.elements import FrameElement2D
+from src.models.elements import Elements, FrameElement2D
 from src.models.structure import Structure
 
 examples_dir = "input/examples/"
@@ -71,13 +71,11 @@ def create_frames(example_name):
     frames = []
     for i in range(frames_array.shape[0]):
         section = sections[frames_array[i, 0]]
-        yield_point = FrameYieldPoint(section)
         frames.append(
             FrameElement2D(
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
                 ends_fixity=frames_array[i, 3],
                 section=section,
-                yield_points=(yield_point, yield_point)
             )
         )
     return frames
@@ -96,7 +94,7 @@ def create_structure(example_name):
     load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
     disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
 
-    frames = create_frames(example_name)
+    elements_array = create_frames(example_name)
     nodes_num = int(general_info[0])
     dim = general_info[1]
 
@@ -114,7 +112,7 @@ def create_structure(example_name):
     structure = Structure(
         nodes_num=nodes_num,
         dim=dim,
-        elements=frames,
+        elements=Elements(elements_array),
         boundaries=boundaries,
         loads=loads,
         limits=limits,
