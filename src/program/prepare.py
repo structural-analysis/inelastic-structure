@@ -20,6 +20,7 @@ class RawData:
         self.limits_slacks = set(range(self.landa_bar_var_num, 2 * self.vars_num))
         self.b = self._get_b_column()
         self.c = self._get_costs_row()
+        # TODO: structure.h * -1 because alpha = 1-h*xbars
 
     def _create_table(self):
         vars_num = self.vars_num

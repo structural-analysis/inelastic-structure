@@ -30,7 +30,10 @@ class Structure:
         self.dv = self._nodal_disp_limits_sensitivity_rows()
         self.phi = self._create_phi()
         self.include_softening = include_softening
-        # self.q = self._create_q()
+        self.q = self._create_q()
+        self.h = self._create_h()
+        self.w = self._create_w()
+        self.cs = self._create_cs()
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
         element_global_stiffness = np.dot(np.dot(np.transpose(element_transform), element_stiffness), element_transform)
@@ -267,8 +270,46 @@ class Structure:
                 current_row = current_row + element.section.phi.shape[0]
         return phi
 
-    # def _create_q(self):
-    #     empty_q = np.zeros((2 * self.yield_specs.points_num, self.yield_specs.pieces_num))
-    #     q_matrix = np.matrix(empty_q)
-    #     for element in self.elements:
-    #         if element.section.include_softening:
+    def _create_q(self):
+        empty_q = np.zeros((2 * self.yield_specs.points_num, self.yield_specs.pieces_num))
+        q = np.matrix(empty_q)
+        yield_point_num_counter = 0
+        yield_pieces_num_counter = 0
+        for element in self.elements:
+            for _ in range(element.yield_points_num):
+                q[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, yield_pieces_num_counter:element.section.yield_pieces_num + yield_pieces_num_counter] = element.section.q
+                yield_point_num_counter += 1
+                yield_pieces_num_counter += element.section.yield_pieces_num
+        return q
+
+    def _create_h(self):
+        empty_h = np.zeros((self.yield_specs.pieces_num, 2 * self.yield_specs.points_num))
+        h = np.matrix(empty_h)
+        yield_point_num_counter = 0
+        yield_pieces_num_counter = 0
+        for element in self.elements:
+            for _ in range(element.yield_points_num):
+                h[yield_pieces_num_counter:element.section.yield_pieces_num + yield_pieces_num_counter, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.h
+                yield_point_num_counter += 1
+                yield_pieces_num_counter += element.section.yield_pieces_num
+        return h
+
+    def _create_w(self):
+        empty_w = np.zeros((2 * self.yield_specs.points_num, 2 * self.yield_specs.points_num))
+        w = np.matrix(empty_w)
+        yield_point_num_counter = 0
+        for element in self.elements:
+            for _ in range(element.yield_points_num):
+                w[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.w
+                yield_point_num_counter += 1
+        return w
+
+    def _create_cs(self):
+        empty_cs = np.zeros((2 * self.yield_specs.points_num, 1))
+        cs = np.matrix(empty_cs)
+        yield_point_num_counter = 0
+        for element in self.elements:
+            for _ in range(element.yield_points_num):
+                cs[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 0] = element.section.cs
+                yield_point_num_counter += 1
+        return cs

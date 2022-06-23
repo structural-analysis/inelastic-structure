@@ -21,11 +21,11 @@ class FrameSection:
 
         self.softening = nonlinear["softening"] if nonlinear["softening"] else {}
         self.alpha = float(self.softening.get("alpha", 1))
-        self.ep1 = float(self.softening.get("ep1", 1e3))
-        self.ep2 = float(self.softening.get("ep2", 1e5))
-        self.h = self._get_softening_slope()
-        self.h_matrix = self._get_h_matrix()
-        self.q_matrix = self._get_q_matrix()
+        self.ep1 = float(self.softening.get("ep1", 1e5))
+        self.ep2 = float(self.softening.get("ep2", 1e7))
+        self.softening_slope = self._get_softening_slope()
+        self.h = self._get_h()
+        self.q = self._get_q()
         self.w = np.matrix([[-1, -1], [1, 0]])
         self.cs = np.matrix([[self.ep1], [self.ep2 - self.ep1]])
 
@@ -57,21 +57,21 @@ class FrameSection:
         # for normalization divided by self.mp:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
-    def _get_h_matrix(self):
-        h_matrix = np.matrix([
-            [self.h, 0],
-            [self.h, 0],
-            [self.h, 0],
-            [self.h, 0],
-            [self.h, 0],
-            [self.h, 0],
+    def _get_h(self):
+        h = np.matrix([
+            [self.softening_slope, 0],
+            [self.softening_slope, 0],
+            [self.softening_slope, 0],
+            [self.softening_slope, 0],
+            [self.softening_slope, 0],
+            [self.softening_slope, 0],
         ])
-        return h_matrix
+        return h
 
-    def _get_q_matrix(self):
-        q_matrix = np.matrix(np.zeros([2, self.yield_pieces_num]))
-        q_matrix[0, :] = np.linalg.norm(self.phi, axis=0)
-        return q_matrix
+    def _get_q(self):
+        q = np.matrix(np.zeros([2, self.yield_pieces_num]))
+        q[0, :] = np.linalg.norm(self.phi, axis=0)
+        return q
 
 
 class PlateSection:
