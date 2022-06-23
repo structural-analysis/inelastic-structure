@@ -1,4 +1,0 @@
-name,material,a,ix,iy,zp,has_axial_yield,abar0,ap,mp,is_direct_capacity,include_softening,alpha,ep1,ep2,
-sec1,steel,1.5e-2,2.77e-4,0,0,true,0.15,4.2e6,5.488e5,true,true,0.7,0,0.8119,
-sec2,steel,2.32e-3,1.58e-5,0,0,true,0.15,7.424e5,5.76e4,true,true,0.7,0,0.4211,
-sec3,steel,3.9e-3,8.38e-6,0,0,true,0.15,1.365e6,5.775e4,true,false,0.7,0,0,

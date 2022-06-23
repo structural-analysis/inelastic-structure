@@ -3,28 +3,27 @@ from .materials import Material
 
 
 class FrameSection:
-    def __init__(self, material: Material, a, ix, iy, zp, has_axial_yield: str, abar0, ap=0, mp=0, is_direct_capacity=False, include_softening=False, alpha=0, ep1=0, ep2=0):
+    def __init__(self, material: Material, a, ix, iy, nonlinear: dict):
         self.a = a
         self.ix = ix
         self.iy = iy
-        self.zp = zp
         self.e = material.e
         self.sy = material.sy
-        self.is_direct_capacity = is_direct_capacity
-        self.mp = mp if is_direct_capacity.lower() == "true" else self.zp * self.sy
-        self.ap = ap if is_direct_capacity.lower() == "true" else self.a * self.sy
-        self.abar0 = abar0
-        self.has_axial_yield = True if has_axial_yield.lower() == "true" else False
+        self.is_direct_capacity = bool(nonlinear["is_direct_capacity"])
+        self.has_axial_yield = bool(nonlinear["has_axial_yield"])
+        self.zp = float(nonlinear["zp"])
+        self.abar0 = float(nonlinear["abar0"])
+        self.mp = float(nonlinear["mp"]) if self.is_direct_capacity else self.zp * self.sy
+        self.ap = float(nonlinear["ap"]) if self.is_direct_capacity else self.a * self.sy
         self.phi = self._create_phi()
         self.yield_components_num = 2 if self.has_axial_yield else 1
         self.yield_pieces_num = self.phi.shape[1]
 
-        # softening specifics
-        self.include_softening = True if include_softening.lower() == "true" else False
-        self.alpha = alpha
-        self.ep1 = ep1
-        self.ep2 = ep2
-        self.h = self._get_softening_slope() if self.include_softening else 0
+        self.softening = nonlinear["softening"] if nonlinear["softening"] else {}
+        self.alpha = float(self.softening.get("alpha", 1))
+        self.ep1 = float(self.softening.get("ep1", 1e3))
+        self.ep2 = float(self.softening.get("ep2", 1e5))
+        self.h = self._get_softening_slope()
         self.h_matrix = self._get_h_matrix()
         self.q_matrix = self._get_q_matrix()
         self.w = np.matrix([[-1, -1], [1, 0]])

@@ -267,6 +267,7 @@ class Structure:
         return phi
 
     # def _create_q(self):
-    #     empty_q = np.zeros((2 * self.yield_specs.points_num, ))
+    #     empty_q = np.zeros((2 * self.yield_specs.points_num, self.yield_specs.pieces_num))
+    #     q_matrix = np.matrix(empty_q)
     #     for element in self.elements:
     #         if element.section.include_softening:

@@ -1,4 +1,5 @@
 import os
+import yaml
 import numpy as np
 from src.models.points import Node
 from src.models.materials import Material
@@ -11,7 +12,7 @@ global_cords_dir = "global_cords.csv"
 boundaries_dir = "boundaries.csv"
 joint_loads_dir = "loads/joint_loads.csv"
 materials_dir = "materials.csv"
-sections_dir = "elements/sections.csv"
+sections_dir = "sections"
 frames_dir = "members/frames.csv"
 general_dir = "general.csv"
 load_limit_dir = "limits/load.csv"
@@ -41,24 +42,16 @@ def create_materials(example_name):
 def create_sections(materials, example_name):
     sections = {}
     sections_path = os.path.join(examples_dir, example_name, sections_dir)
-    sections_array = np.loadtxt(fname=sections_path, usecols=range(15), delimiter=",", ndmin=2, skiprows=1, dtype=str)
-    for i in range(sections_array.shape[0]):
-        sections[sections_array[i, 0]] = FrameSection(
-            material=materials[sections_array[i, 1]],
-            a=float(sections_array[i, 2]),
-            ix=float(sections_array[i, 3]),
-            iy=float(sections_array[i, 4]),
-            zp=float(sections_array[i, 5]),
-            has_axial_yield=sections_array[i, 6],
-            abar0=float(sections_array[i, 7]),
-            ap=float(sections_array[i, 8]),
-            mp=float(sections_array[i, 9]),
-            is_direct_capacity=sections_array[i, 10],
-            include_softening=sections_array[i, 11],
-            alpha=float(sections_array[i, 12]),
-            ep1=float(sections_array[i, 13]),
-            ep2=float(sections_array[i, 14]),
-        )
+    for section_path in os.scandir(sections_path):
+        with open(section_path, "r") as section_file:
+            section = yaml.safe_load(section_file)
+            sections[section["name"]] = FrameSection(
+                material=materials[section["material"]],
+                a=float(section["a"]),
+                ix=float(section["ix"]),
+                iy=float(section["iy"]),
+                nonlinear=section["nonlinear"],
+            )
     return sections
 
 
