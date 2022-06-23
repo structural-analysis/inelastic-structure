@@ -58,14 +58,9 @@ class FrameSection:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
     def _get_h(self):
-        h = np.matrix([
-            [self.softening_slope, 0],
-            [self.softening_slope, 0],
-            [self.softening_slope, 0],
-            [self.softening_slope, 0],
-            [self.softening_slope, 0],
-            [self.softening_slope, 0],
-        ])
+        empty_h = np.zeros([self.yield_pieces_num, 2])
+        h = np.matrix(empty_h)
+        h[:, 0] = self.softening_slope
         return h
 
     def _get_q(self):
