@@ -1,0 +1,13 @@
+name: beam1
+material: steel
+a: 1.1e-2
+ix: 1.10916666667e-3
+iy: 0
+nonlinear:
+  is_direct_capacity: false
+  has_axial_yield: true
+  zp: 3.025e-3
+  abar0: 0.77
+  ap: 0
+  mp: 0
+  softening: null

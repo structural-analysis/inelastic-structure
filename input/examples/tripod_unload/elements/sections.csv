@@ -1,4 +1,0 @@
-name,material,a,ix,iy,zp,has_axial_yield,abar0,ap,mp,is_direct_capacity
-beam1,steel,1.1e-2,1.10916666667e-3,0,3.025e-3,true,0.77,0,0,false
-beam2,steel,1e-3,8.33333333e-7,0,2.50e-5,true,0.77,0,0,false
-beam3,steel,2.1e-2,7.7175e-3,0,1.1025e-2,true,0.77,0,0,false
