@@ -83,13 +83,14 @@ def create_structure(example_name):
 
     boundaries = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
-    general_info = np.loadtxt(fname=general_info_path, usecols=range(3), delimiter=",", ndmin=1, skiprows=1, dtype=str)
+    general_info = np.loadtxt(fname=general_info_path, usecols=range(4), delimiter=",", ndmin=1, skiprows=1, dtype=str)
     load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
     disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
 
     elements_array = create_frames(example_name)
     nodes_num = int(general_info[0])
     dim = general_info[1]
+    include_softening = True if general_info[3].lower == "true" else False
 
     limits = {
         "load_limit": load_limit,
@@ -109,6 +110,7 @@ def create_structure(example_name):
         boundaries=boundaries,
         loads=loads,
         limits=limits,
+        include_softening=include_softening,
     )
 
     return structure

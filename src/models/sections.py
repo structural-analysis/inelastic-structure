@@ -9,8 +9,8 @@ class FrameSection:
         self.iy = iy
         self.e = material.e
         self.sy = material.sy
-        self.is_direct_capacity = bool(nonlinear["is_direct_capacity"])
-        self.has_axial_yield = bool(nonlinear["has_axial_yield"])
+        self.is_direct_capacity = nonlinear["is_direct_capacity"]
+        self.has_axial_yield = nonlinear["has_axial_yield"]
         self.zp = float(nonlinear["zp"])
         self.abar0 = float(nonlinear["abar0"])
         self.mp = float(nonlinear["mp"]) if self.is_direct_capacity else self.zp * self.sy

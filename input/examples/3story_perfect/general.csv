@@ -1,2 +1,2 @@
-nodes_num,structure_dim,load_limit
-14,2d,1
+nodes_num,structure_dim,load_limit,include_softening
+14,2d,1,false

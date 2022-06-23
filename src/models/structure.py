@@ -4,7 +4,7 @@ import numpy as np
 
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
-    def __init__(self, nodes_num, dim, elements, boundaries, loads, limits):
+    def __init__(self, nodes_num, dim, elements, boundaries, loads, limits, include_softening):
         self.nodes_num = nodes_num
         self.node_dof_num = 3 if dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dof_num * self.nodes_num
@@ -29,6 +29,7 @@ class Structure:
         self.nodal_disps_sensitivity_matrix = self._sensitivity_matrices()["nodal_disps_sensitivity_matrix"]
         self.dv = self._nodal_disp_limits_sensitivity_rows()
         self.phi = self._create_phi()
+        self.include_softening = include_softening
         # self.q = self._create_q()
 
     def _transform_loc_2d_matrix_to_glob(self, element_transform, element_stiffness):
