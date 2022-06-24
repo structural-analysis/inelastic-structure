@@ -8,7 +8,7 @@ class Structure:
         self.nodes_num = nodes_num
         self.node_dof_num = 3 if dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dof_num * self.nodes_num
-        self.elements = elements.all
+        self.elements = elements.list
         self.elements_num = elements.num
         self.yield_specs = elements.yield_specs
         self.boundaries = boundaries
@@ -146,7 +146,7 @@ class Structure:
             if element.__class__.__name__ == "FrameElement2D":
                 element_force = element.get_nodal_force(elements_disps[i, 0], fixed_force)
                 elements_forces[i, 0] = element_force
-                if not element.has_axial_yield:
+                if not element.section.nonlinear.has_axial_yield:
                     p0[current_p0_row] = element_force[2, 0]
                     p0[current_p0_row + 1] = element_force[5, 0]
                 else:
@@ -154,7 +154,7 @@ class Structure:
                     p0[current_p0_row + 1] = element_force[2, 0]
                     p0[current_p0_row + 2] = element_force[3, 0]
                     p0[current_p0_row + 3] = element_force[5, 0]
-            current_p0_row = current_p0_row + element.yield_components_num
+            current_p0_row = current_p0_row + element.yield_specs.components_num
         return {"elements_forces": elements_forces, "p0": p0}
 
     def _sensitivity_matrices(self):
@@ -208,7 +208,7 @@ class Structure:
                             elements_forces_sensitivity_matrix[i_affected_element, pv_column] = affected_element_force
                             elements_disps_sensitivity_matrix[i_affected_element, pv_column] = affected_elem_disp[0, 0]
 
-                            if not element.has_axial_yield:
+                            if not element.section.nonlinear.has_axial_yield:
                                 pv[current_affected_element_ycns, pv_column] = affected_element_force[2, 0]
                                 pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[5, 0]
                             else:
@@ -216,7 +216,7 @@ class Structure:
                                 pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[2, 0]
                                 pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[3, 0]
                                 pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[5, 0]
-                            current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].yield_components_num
+                            current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].yield_specs.components_num
 
                         pv_column += 1
         results = {
@@ -262,12 +262,12 @@ class Structure:
         current_row = 0
         current_column = 0
         for element in self.elements:
-            for _ in range(element.yield_points_num):
-                for yield_section_row in range(element.section.phi.shape[0]):
-                    for yield_section_column in range(element.section.phi.shape[1]):
-                        phi[current_row + yield_section_row, current_column + yield_section_column] = element.section.phi[yield_section_row, yield_section_column]
-                current_column = current_column + element.section.phi.shape[1]
-                current_row = current_row + element.section.phi.shape[0]
+            for _ in range(element.yield_specs.points_num):
+                for yield_section_row in range(element.section.yield_specs.phi.shape[0]):
+                    for yield_section_column in range(element.section.yield_specs.phi.shape[1]):
+                        phi[current_row + yield_section_row, current_column + yield_section_column] = element.section.yield_specs.phi[yield_section_row, yield_section_column]
+                current_column = current_column + element.section.yield_specs.phi.shape[1]
+                current_row = current_row + element.section.yield_specs.phi.shape[0]
         return phi
 
     def _create_q(self):
@@ -276,10 +276,10 @@ class Structure:
         yield_point_num_counter = 0
         yield_pieces_num_counter = 0
         for element in self.elements:
-            for _ in range(element.yield_points_num):
-                q[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, yield_pieces_num_counter:element.section.yield_pieces_num + yield_pieces_num_counter] = element.section.q
+            for _ in range(element.yield_specs.points_num):
+                q[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, yield_pieces_num_counter:element.section.yield_specs.pieces_num + yield_pieces_num_counter] = element.section.softening.q
                 yield_point_num_counter += 1
-                yield_pieces_num_counter += element.section.yield_pieces_num
+                yield_pieces_num_counter += element.section.yield_specs.pieces_num
         return q
 
     def _create_h(self):
@@ -288,10 +288,10 @@ class Structure:
         yield_point_num_counter = 0
         yield_pieces_num_counter = 0
         for element in self.elements:
-            for _ in range(element.yield_points_num):
-                h[yield_pieces_num_counter:element.section.yield_pieces_num + yield_pieces_num_counter, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.h
+            for _ in range(element.yield_specs.points_num):
+                h[yield_pieces_num_counter:element.section.yield_specs.pieces_num + yield_pieces_num_counter, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.softening.h
                 yield_point_num_counter += 1
-                yield_pieces_num_counter += element.section.yield_pieces_num
+                yield_pieces_num_counter += element.section.yield_specs.pieces_num
         return h
 
     def _create_w(self):
@@ -299,8 +299,8 @@ class Structure:
         w = np.matrix(empty_w)
         yield_point_num_counter = 0
         for element in self.elements:
-            for _ in range(element.yield_points_num):
-                w[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.w
+            for _ in range(element.yield_specs.points_num):
+                w[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.softening.w
                 yield_point_num_counter += 1
         return w
 
@@ -309,7 +309,7 @@ class Structure:
         cs = np.matrix(empty_cs)
         yield_point_num_counter = 0
         for element in self.elements:
-            for _ in range(element.yield_points_num):
-                cs[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 0] = element.section.cs
+            for _ in range(element.yield_specs.points_num):
+                cs[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 0] = element.section.softening.cs
                 yield_point_num_counter += 1
         return cs

@@ -2,16 +2,15 @@ import os
 import yaml
 import numpy as np
 from src.models.points import Node
-from src.models.materials import Material
-from src.models.sections import FrameSection
-from src.models.elements import Elements, FrameElement2D
+from src.models.sections.frame import FrameSection
+from src.models.elements.main import Elements
+from src.models.elements.frame import FrameElement2D
 from src.models.structure import Structure
 
 examples_dir = "input/examples/"
 global_cords_dir = "global_cords.csv"
 boundaries_dir = "boundaries.csv"
 joint_loads_dir = "loads/joint_loads.csv"
-materials_dir = "materials.csv"
 sections_dir = "sections"
 frames_dir = "members/frames.csv"
 general_dir = "general.csv"
@@ -30,27 +29,14 @@ def create_nodes(example_name):
     return nodes
 
 
-def create_materials(example_name):
-    materials = {}
-    materials_path = os.path.join(examples_dir, example_name, materials_dir)
-    materials_array = np.loadtxt(fname=materials_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=1, dtype=str)
-    for i in range(materials_array.shape[0]):
-        materials[materials_array[i, 0]] = Material(name=materials_array[i, 0])
-    return materials
-
-
-def create_sections(materials, example_name):
+def create_sections(example_name):
     sections = {}
     sections_path = os.path.join(examples_dir, example_name, sections_dir)
     for section_path in os.scandir(sections_path):
         with open(section_path, "r") as section_file:
             section = yaml.safe_load(section_file)
             sections[section["name"]] = FrameSection(
-                material=materials[section["material"]],
-                a=float(section["a"]),
-                ix=float(section["ix"]),
-                iy=float(section["iy"]),
-                nonlinear=section["nonlinear"],
+                input=section["input"],
             )
     return sections
 
@@ -58,8 +44,7 @@ def create_sections(materials, example_name):
 def create_frames(example_name):
     frames_path = os.path.join(examples_dir, example_name, frames_dir)
     nodes = create_nodes(example_name)
-    materials = create_materials(example_name)
-    sections = create_sections(materials, example_name)
+    sections = create_sections(example_name)
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     frames = []
     for i in range(frames_array.shape[0]):

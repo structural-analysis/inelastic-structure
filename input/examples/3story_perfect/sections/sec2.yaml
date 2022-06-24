@@ -1,13 +1,18 @@
 name: sec2
-material: steel
-a: 2.32e-3
-ix: 1.58e-5
-iy: 0
-nonlinear:
-  is_direct_capacity: true
-  has_axial_yield: true
-  zp: 0
-  abar0: 0.15
-  ap: 7.424e+5
-  mp: 5.76e+4
+input:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+  geometry:
+    a: 2.32e-3
+    ix: 1.58e-5
+    iy: 0
+  nonlinear:
+    is_direct_capacity: true
+    has_axial_yield: true
+    zp: 0
+    abar0: 0.15
+    ap: 7.424e+5
+    mp: 5.76e+4
   softening: null
