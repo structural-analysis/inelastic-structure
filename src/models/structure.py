@@ -8,8 +8,7 @@ class Structure:
         self.nodes_num = nodes_num
         self.node_dof_num = 3 if dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dof_num * self.nodes_num
-        self.elements = elements.list
-        self.elements_num = elements.num
+        self.elements = elements
         self.yield_specs = elements.yield_specs
         self.boundaries = boundaries
         self.loads = loads
@@ -42,7 +41,7 @@ class Structure:
     def assemble(self):
         empty_stiffness = np.zeros((self.node_dof_num * self.nodes_num, self.node_dof_num * self.nodes_num))
         structure_stiffness = np.matrix(empty_stiffness)
-        for element in self.elements:
+        for element in self.elements.list:
             element_nodes_num = len(element.nodes)
             element_dof_num = element.k.shape[0]
             element_node_dof_num = element_dof_num / element_nodes_num
@@ -97,9 +96,9 @@ class Structure:
         return reduced_f
 
     def get_elements_disps(self, disp):
-        empty_elements_disps = np.zeros((self.elements_num, 1), dtype=object)
+        empty_elements_disps = np.zeros((self.elements.num, 1), dtype=object)
         elements_disps = np.matrix(empty_elements_disps)
-        for i_element, element in enumerate(self.elements):
+        for i_element, element in enumerate(self.elements.list):
             element_dof_num = element.k.shape[0]
             element_nodes_num = len(element.nodes)
             element_node_dof_num = int(element_dof_num / element_nodes_num)
@@ -136,13 +135,13 @@ class Structure:
         fixed_force = np.matrix(fixed_force)
 
         # calculate p0
-        empty_elements_forces = np.zeros((self.elements_num, 1), dtype=object)
+        empty_elements_forces = np.zeros((self.elements.num, 1), dtype=object)
         elements_forces = np.matrix(empty_elements_forces)
         empty_p0 = np.zeros((self.yield_specs.components_num, 1))
         p0 = np.matrix(empty_p0)
         current_p0_row = 0
 
-        for i, element in enumerate(self.elements):
+        for i, element in enumerate(self.elements.list):
             if element.__class__.__name__ == "FrameElement2D":
                 element_force = element.get_nodal_force(elements_disps[i, 0], fixed_force)
                 elements_forces[i, 0] = element_force
@@ -159,13 +158,13 @@ class Structure:
 
     def _sensitivity_matrices(self):
         # fv: equivalent global force vector for a yield component's udef
-        elements = self.elements
+        elements = self.elements.list
         empty_pv = np.zeros((self.yield_specs.components_num, self.yield_specs.components_num))
         pv = np.matrix(empty_pv)
         pv_column = 0
 
-        empty_elements_forces_sensitivity_matrix = np.zeros((self.elements_num, self.yield_specs.components_num), dtype=object)
-        empty_elements_disps_sensitivity_matrix = np.zeros((self.elements_num, self.yield_specs.components_num), dtype=object)
+        empty_elements_forces_sensitivity_matrix = np.zeros((self.elements.num, self.yield_specs.components_num), dtype=object)
+        empty_elements_disps_sensitivity_matrix = np.zeros((self.elements.num, self.yield_specs.components_num), dtype=object)
         empty_nodal_disps_sensitivity_matrix = np.zeros((1, self.yield_specs.components_num), dtype=object)
 
         elements_forces_sensitivity_matrix = np.matrix(empty_elements_forces_sensitivity_matrix)
@@ -204,7 +203,7 @@ class Structure:
                                 fixed_force = np.zeros((self.node_dof_num * 2, 1))
                                 fixed_force = np.matrix(fixed_force)
                             # FIXME: affected_elem_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
-                            affected_element_force = self.elements[i_affected_element].get_nodal_force(affected_elem_disp[0, 0], fixed_force)
+                            affected_element_force = self.elements.list[i_affected_element].get_nodal_force(affected_elem_disp[0, 0], fixed_force)
                             elements_forces_sensitivity_matrix[i_affected_element, pv_column] = affected_element_force
                             elements_disps_sensitivity_matrix[i_affected_element, pv_column] = affected_elem_disp[0, 0]
 
@@ -216,7 +215,7 @@ class Structure:
                                 pv[current_affected_element_ycns + 1, pv_column] = affected_element_force[2, 0]
                                 pv[current_affected_element_ycns + 2, pv_column] = affected_element_force[3, 0]
                                 pv[current_affected_element_ycns + 3, pv_column] = affected_element_force[5, 0]
-                            current_affected_element_ycns = current_affected_element_ycns + self.elements[i_affected_element].yield_specs.components_num
+                            current_affected_element_ycns = current_affected_element_ycns + self.elements.list[i_affected_element].yield_specs.components_num
 
                         pv_column += 1
         results = {
@@ -261,7 +260,7 @@ class Structure:
         phi = np.matrix(empty_phi)
         current_row = 0
         current_column = 0
-        for element in self.elements:
+        for element in self.elements.list:
             for _ in range(element.yield_specs.points_num):
                 for yield_section_row in range(element.section.yield_specs.phi.shape[0]):
                     for yield_section_column in range(element.section.yield_specs.phi.shape[1]):
@@ -275,7 +274,7 @@ class Structure:
         q = np.matrix(empty_q)
         yield_point_num_counter = 0
         yield_pieces_num_counter = 0
-        for element in self.elements:
+        for element in self.elements.list:
             for _ in range(element.yield_specs.points_num):
                 q[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, yield_pieces_num_counter:element.section.yield_specs.pieces_num + yield_pieces_num_counter] = element.section.softening.q
                 yield_point_num_counter += 1
@@ -287,7 +286,7 @@ class Structure:
         h = np.matrix(empty_h)
         yield_point_num_counter = 0
         yield_pieces_num_counter = 0
-        for element in self.elements:
+        for element in self.elements.list:
             for _ in range(element.yield_specs.points_num):
                 h[yield_pieces_num_counter:element.section.yield_specs.pieces_num + yield_pieces_num_counter, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.softening.h
                 yield_point_num_counter += 1
@@ -298,7 +297,7 @@ class Structure:
         empty_w = np.zeros((2 * self.yield_specs.points_num, 2 * self.yield_specs.points_num))
         w = np.matrix(empty_w)
         yield_point_num_counter = 0
-        for element in self.elements:
+        for element in self.elements.list:
             for _ in range(element.yield_specs.points_num):
                 w[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 2 * yield_point_num_counter:2 * yield_point_num_counter + 2] = element.section.softening.w
                 yield_point_num_counter += 1
@@ -308,7 +307,7 @@ class Structure:
         empty_cs = np.zeros((2 * self.yield_specs.points_num, 1))
         cs = np.matrix(empty_cs)
         yield_point_num_counter = 0
-        for element in self.elements:
+        for element in self.elements.list:
             for _ in range(element.yield_specs.points_num):
                 cs[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 0] = element.section.softening.cs
                 yield_point_num_counter += 1

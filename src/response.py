@@ -12,19 +12,18 @@ def calculate_responses(structure, result, example_name):
     increments_num = len(load_level_history)
     phi = structure.phi
     total_dofs_num = structure.total_dofs_num
-    elements_num = len(structure.elements)
-    max_element_dof_num = get_elements_max_dof_num(structure.elements)
+    max_element_dof_num = get_elements_max_dof_num(structure.elements.list)
     load_levels = np.zeros([increments_num, 1])
 
     nodal_disps_sensitivity_matrix = structure.nodal_disps_sensitivity_matrix
     nodal_disps = np.zeros([increments_num, total_dofs_num])
 
     elements_forces_sensitivity_matrix = structure.elements_forces_sensitivity_matrix
-    elements_forces = np.zeros([increments_num, elements_num], dtype=object)
+    elements_forces = np.zeros([increments_num, structure.elements.num], dtype=object)
 
     # elements displacements
     elements_disps_sensitivity_matrix = structure.elements_disps_sensitivity_matrix
-    elements_disps = np.zeros([increments_num, elements_num], dtype=object)
+    elements_disps = np.zeros([increments_num, structure.elements.num], dtype=object)
 
     for i in range(increments_num):
         pms = pms_history[i]
@@ -43,14 +42,14 @@ def calculate_responses(structure, result, example_name):
         scaled_elastic_elements_forces = np.matrix(np.dot(load_level, structure.elastic_elements_forces))
         plastic_elements_forces = elements_forces_sensitivity_matrix * phi_x
         elastoplastic_elements_forces = scaled_elastic_elements_forces + plastic_elements_forces
-        for j in range(elements_num):
+        for j in range(structure.elements.num):
             elements_forces[i, j] = elastoplastic_elements_forces[j, 0]
 
         # elements disps
         scaled_elastic_elements_disps = np.matrix(np.dot(load_level, structure.elastic_elements_disps))
         plastic_elements_disps = elements_disps_sensitivity_matrix * phi_x
         elastoplastic_elements_disps = scaled_elastic_elements_disps + plastic_elements_disps
-        for j in range(elements_num):
+        for j in range(structure.elements.num):
             elements_disps[i, j] = elastoplastic_elements_disps[j, 0]
 
     for i in range(increments_num):
@@ -63,15 +62,15 @@ def calculate_responses(structure, result, example_name):
         elements_disps_path = os.path.join(increment_dir, "elements_disps.csv")
 
         current_increment_elements_forces = elements_forces[i, :]
-        empty_current_increment_elements_forces_compact = np.zeros([max_element_dof_num, elements_num])
+        empty_current_increment_elements_forces_compact = np.zeros([max_element_dof_num, structure.elements.num])
         current_increment_elements_forces_compact = np.matrix(empty_current_increment_elements_forces_compact)
-        for j in range(elements_num):
+        for j in range(structure.elements.num):
             current_increment_elements_forces_compact[:, j] = current_increment_elements_forces[j]
 
         current_increment_elements_disps = elements_disps[i, :]
-        empty_current_increment_elements_disps_compact = np.zeros([max_element_dof_num, elements_num])
+        empty_current_increment_elements_disps_compact = np.zeros([max_element_dof_num, structure.elements.num])
         current_increment_elements_disps_compact = np.matrix(empty_current_increment_elements_disps_compact)
-        for j in range(elements_num):
+        for j in range(structure.elements.num):
             current_increment_elements_disps_compact[:, j] = current_increment_elements_disps[j]
 
         np.savetxt(fname=load_levels_path, X=np.array([load_levels[i, 0]]), delimiter=",")
