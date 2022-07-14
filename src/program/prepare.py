@@ -5,15 +5,17 @@ class RawData:
     def __init__(self, structure):
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
-        self.disp_limits_num = self.disp_limits.shape[0]
-        self.limits_num = 1 + self.disp_limits_num * 2
         self.phi = structure.phi
         self.p0 = structure.p0
         self.pv = structure.pv
         self.d0 = structure.d0
         self.dv = structure.dv
-        self.yield_pieces_num = self.phi.shape[1]
-        self.vars_num = self.limits_num + self.yield_pieces_num
+
+        self.disp_limits_num = self.disp_limits.shape[0]
+        self.limits_num = 1 + self.disp_limits_num * 2
+        self.yield_pieces_num = structure.yield_specs.pieces_num
+        self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.general.include_softening else 0
+        self.vars_num = self.limits_num + self.yield_pieces_num + self.softening_vars_num
         self.table = self._create_table()
         self.landa_var_num = self.yield_pieces_num
         self.landa_bar_var_num = 2 * self.vars_num - self.limits_num
