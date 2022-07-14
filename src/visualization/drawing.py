@@ -1,38 +1,17 @@
 from typing import Tuple
 import matplotlib.pyplot as plt
-import numpy as np
-import os
 
 from src.settings import settings
+from src.visualization.get_data import (
+    get_yield_points,
+    get_yield_surface,
+    get_yield_components_data,
+    selected_increments_num,
+    selected_yield_points_num,
+)
 
+examples_dir = "input/examples/"
 example_name = settings.example_name
-
-yield_components = {
-    "x": "Np",
-    "y": "Mp",
-}
-
-
-def get_yield_points():
-    x_points = [0.15, 0.3, 0.45, 0.6, 1]
-    y_points = [0.2, 0.3, 0.7, 1.0, 0.5]
-    points_label = [0, 1, 2, 3, 4]
-    yield_points = {
-        "x": x_points,
-        "y": y_points,
-        "label": points_label,
-    }
-    return yield_points
-
-
-def get_yield_surface():
-    np_surface = [-1, -0.77, 0.77, 1, 0.77, -0.77, -1]
-    mp_surface = [0, 1, 1, 0, -1, -1, 0]
-    yield_surface = {
-        "x": np_surface,
-        "y": mp_surface,
-    }
-    return yield_surface
 
 
 def draw_yield_surface(ax, yield_surface):
@@ -106,62 +85,34 @@ def add_diagram_to_figure(
     return ax
 
 
-def generate_increments_yield_surfaces(increments_num, yield_components, yield_points, yield_surface):
+def generate_increments_yield_surfaces(increments_num, yield_components_num, yield_components, increments_yield_points, yield_surface):
     fig = plt.figure(figsize=plt.figaspect(0.5))
     maximum_diagram_in_row = 4
     figure_grid_size = calculate_figure_grid_size(increments_num, maximum_diagram_in_row)
-    dimension = "2d" if len(yield_components) == 2 else "3d"
+    dimension = f"{yield_components_num}d"
     # dimension = "3d"
     for increment in range(increments_num):
         x_position = increment // maximum_diagram_in_row
         y_position = increment % figure_grid_size[1]
         position = (x_position, y_position)
         ax = add_diagram_to_figure(fig, figure_grid_size, position, dimension)
-        draw_yield_condition(ax, yield_points, yield_surface)
+        draw_yield_condition(ax, increments_yield_points[increment], yield_surface)
         edit_plot_labes(yield_components)
         ax.set_title(f"Increment {increment}", fontsize=10)
     plt.tight_layout(h_pad=1)
     plt.show()
 
 
-def generate_elements(frames_array, nodes_array):
-    fig = plt.figure(figsize=plt.figaspect(0.5))
-    ax = add_diagram_to_figure(fig, (1, 1), (0, 0))
-    for frame_label, frame_element in enumerate(frames_array):
-        beginning_node = int(frame_element[1])
-        end_node = int(frame_element[2])
-        beginning_x = int(nodes_array[beginning_node][0])
-        beginning_y = int(nodes_array[beginning_node][1])
-        end_x = int(nodes_array[end_node][0])
-        end_y = int(nodes_array[end_node][1])
-        x_list = [beginning_x, end_x]
-        y_list = [beginning_y, end_y]
-        element_coords = {
-            "x": x_list,
-            "y": y_list,
-        }
-        draw_lines(ax, element_coords)
 
 
-def visualize_2d_frame(example_name):
-    examples_dir = "input/examples/"
-    frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
-    global_cords_path = os.path.join(examples_dir, example_name, "global_cords.csv")
-    frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
-
-    nodes = []
-    nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
-    for i in range(nodes_array.shape[0]):
-        x = nodes_array[i][0]
-        y = nodes_array[i][1]
-        nodes.append([x, y])
-    generate_elements(frames_array, nodes_array)
-
-
-yield_points = get_yield_points()
+increments_yield_points = get_yield_points(selected_increments_num, selected_yield_points_num)
+yield_components_data = get_yield_components_data()
+yield_components_num = yield_components_data.get("yield_components_num")
+yield_components = yield_components_data.get("yield_components")
 yield_surface = get_yield_surface()
-generate_increments_yield_surfaces(10, yield_components, yield_points, yield_surface)
-visualize_2d_frame(example_name)
+increments_num = len(increments_yield_points)
+generate_increments_yield_surfaces(increments_num, yield_components_num, yield_components, increments_yield_points, yield_surface)
+
 
 plt.show()
 

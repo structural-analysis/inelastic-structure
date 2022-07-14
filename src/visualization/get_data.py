@@ -1,0 +1,143 @@
+import numpy as np
+import os
+
+from src.settings import settings
+example_name = settings.example_name
+
+
+def find_subdir_count(path):
+    count1 = 0
+    for _, dirs, _ in os.walk(path):
+        count1 += len(dirs)
+
+    return count1
+
+
+examples_dir = "input/examples/"
+output_dir = "output/examples/"
+
+yield_surface_path = os.path.join(examples_dir, example_name, "visualization/yield_surface.csv")
+yield_points_path = os.path.join(examples_dir, example_name, "visualization/yield_points.csv")
+increments_path = os.path.join(examples_dir, example_name, "visualization/increments.csv")
+frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
+
+output_increments_path = os.path.join(output_dir, example_name)
+total_increments_num = find_subdir_count(output_increments_path)
+yield_data_path = os.path.join(output_dir, example_name, "yield_data.csv")
+
+increments_array = np.loadtxt(fname=increments_path, skiprows=1, delimiter=",", dtype=str)
+yield_points_array = np.loadtxt(fname=yield_points_path, skiprows=1, delimiter=",", dtype=str)
+yield_surface_array = np.loadtxt(fname=yield_surface_path, skiprows=1, delimiter=",", dtype=str)
+frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+yield_data_array = np.loadtxt(fname=yield_data_path, usecols=range(6), delimiter=",", ndmin=2, dtype=float)
+
+elements_num = frames_array.shape[0]
+
+element_yield_points_num = 2
+node_dof_num = 3
+
+if increments_array[0] == "all":
+    selected_increments_num = total_increments_num
+
+if yield_points_array[0] == "all":
+    selected_yield_points_num = elements_num * element_yield_points_num
+
+
+def get_yield_components_data():
+    yield_components_num = int(yield_surface_array[0])
+    if yield_components_num == 1:
+        yield_components = {
+            "x": yield_surface_array[1],
+        }
+        yield_components_dof = [
+            int(yield_surface_array[2])
+        ]
+
+    elif yield_components_num == 2:
+        yield_components = {
+            "x": yield_surface_array[1],
+            "y": yield_surface_array[2],
+        }
+        yield_components_dof = [
+            int(yield_surface_array[3]),
+            int(yield_surface_array[4]),
+        ]
+
+    elif yield_components_num == 3:
+        yield_components = {
+            "x": yield_surface_array[1],
+            "y": yield_surface_array[2],
+            "z": yield_surface_array[3],
+        }
+        yield_components_dof = [
+            int(yield_surface_array[4]),
+            int(yield_surface_array[5]),
+            int(yield_surface_array[6]),
+        ]
+    yield_components_data = {
+        "yield_components_num": yield_components_num,
+        "yield_components": yield_components,
+        "yield_components_dof": yield_components_dof,
+    }
+    return yield_components_data
+
+
+def get_yield_points(selected_increments_num, selected_yield_points_num):
+    yield_components_data = get_yield_components_data()
+    yield_components_num = yield_components_data.get("yield_components_num")
+    yield_components_dof = yield_components_data.get("yield_components_dof")
+
+    increments_yield_points = []
+
+    for increment in range(selected_increments_num):
+        elements_forces_path = os.path.join(output_dir, example_name, f"{increment}/elements_forces.csv")
+        elements_forces = np.loadtxt(fname=elements_forces_path, delimiter=",", ndmin=2, dtype=float)
+
+        yield_points_num = elements_forces.shape[1]
+        increment_yield_points = np.zeros((yield_components_num, yield_points_num))
+
+        for element_num in range(yield_points_num):
+            for element_yield_point in range(element_yield_points_num):
+                for yield_component in range(len(yield_components_dof)):
+                    dof = element_yield_point * node_dof_num + yield_component
+                    increment_yield_points[yield_component, element_num] = elements_forces[dof, element_num]
+
+    if yield_components_num == 1:
+        yield_points = {
+            "x": increment_yield_points[0, :],
+            "label": [i for i in range(elements_num)],
+        }
+    elif yield_components_num == 2:
+        yield_points = {
+            "x": increment_yield_points[0, :],
+            "y": increment_yield_points[1, :],
+            "label": [i for i in range(elements_num)],
+        }
+    elif yield_components_num == 3:
+        yield_points = {
+            "x": increment_yield_points[0, :],
+            "y": increment_yield_points[1, :],
+            "z": increment_yield_points[2, :],
+            "label": [i for i in range(elements_num)],
+        }
+    print(f"{yield_points=}")
+    increments_yield_points.append(yield_points)
+    # x_points = [0.15, 0.3, 0.45, 0.6, 1]
+    # y_points = [0.2, 0.3, 0.7, 1.0, 0.5]
+    # points_label = [0, 1, 2, 3, 4]
+    # yield_points = {
+    #     "x": x_points,
+    #     "y": y_points,
+    #     "label": points_label,
+    # }
+    return increments_yield_points
+
+
+def get_yield_surface():
+    np_surface = [-1, -0.77, 0.77, 1, 0.77, -0.77, -1]
+    mp_surface = [0, 1, 1, 0, -1, -1, 0]
+    yield_surface = {
+        "x": np_surface,
+        "y": mp_surface,
+    }
+    return yield_surface
