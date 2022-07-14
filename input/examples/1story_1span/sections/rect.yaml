@@ -1,13 +1,18 @@
 name: rect
-material: steel
-a: 80.0e-4
-ix: 2666.6667e-8
-iy: 0
-nonlinear:
-  is_direct_capacity: false
-  has_axial_yield: false
-  zp: 4.0e-4
-  abar0: 0.15
-  ap: 0
-  mp: 0
+input:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+  geometry:
+    a: 80.0e-4
+    ix: 2666.6667e-8
+    iy: 0
+  nonlinear:
+    is_direct_capacity: false
+    has_axial_yield: false
+    zp: 4.0e-4
+    abar0: 0.15
+    ap: 0
+    mp: 0
   softening: null

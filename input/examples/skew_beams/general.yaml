@@ -1,0 +1,4 @@
+nodes_num: 3
+structure_dim: 2d
+load_limit: 1
+include_softening: false
