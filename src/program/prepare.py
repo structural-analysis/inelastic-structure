@@ -11,47 +11,69 @@ class RawData:
         self.d0 = structure.d0
         self.dv = structure.dv
 
+        self.q = structure.q
+        self.h = structure.h
+        self.w = structure.w
+        self.cs = structure.cs
+
         self.disp_limits_num = self.disp_limits.shape[0]
         self.limits_num = 1 + self.disp_limits_num * 2
         self.yield_pieces_num = structure.yield_specs.pieces_num
         self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.general.include_softening else 0
-        self.vars_num = self.limits_num + self.yield_pieces_num + self.softening_vars_num
+
+        self.vars_num = self.yield_pieces_num + self.softening_vars_num + 1
+        self.slacks_num = self.yield_pieces_num + self.softening_vars_num + self.limits_num
+        self.constraints_num = self.slacks_num
+
         self.table = self._create_table()
-        self.landa_var_num = self.yield_pieces_num
-        self.landa_bar_var_num = 2 * self.vars_num - self.limits_num
-        self.limits_slacks = set(range(self.landa_bar_var_num, 2 * self.vars_num))
+        self.landa_var_num = self.yield_pieces_num + self.softening_vars_num
+        self.landa_bar_var_num = 2 * self.landa_var_num + 1
+
+        self.limits_slacks = set(range(self.landa_bar_var_num, self.landa_bar_var_num + self.limits_num))
         self.b = self._get_b_column()
         self.c = self._get_costs_row()
-        # TODO: structure.h * -1 because alpha = 1-h*xbars
 
     def _create_table(self):
-        vars_num = self.vars_num
+        constraints_num = self.constraints_num
         yield_pieces_num = self.yield_pieces_num
+        softening_vars_num = self.softening_vars_num
         disp_limits_num = self.disp_limits_num
+        vars_num = self.vars_num
+
         phi_pv_phi = self.phi.T * self.pv * self.phi
         phi_p0 = self.phi.T * self.p0
         dv_phi = self.dv * self.phi
-
-        empty_a = np.zeros((vars_num, vars_num))
+        empty_a = np.zeros((constraints_num, vars_num))
         raw_a = np.matrix(empty_a)
         raw_a[0:yield_pieces_num, 0:yield_pieces_num] = phi_pv_phi
-        raw_a[0:yield_pieces_num, yield_pieces_num] = phi_p0
-        raw_a[yield_pieces_num, yield_pieces_num] = 1.0
+
+        print(f"{yield_pieces_num=}")
+        print(f"{softening_vars_num=}")
+        if softening_vars_num:
+            raw_a[yield_pieces_num:(yield_pieces_num + softening_vars_num), 0:yield_pieces_num] = self.q
+            raw_a[0:yield_pieces_num, yield_pieces_num:(yield_pieces_num + softening_vars_num)] = - self.h
+            raw_a[yield_pieces_num:(yield_pieces_num + softening_vars_num), yield_pieces_num:(yield_pieces_num + softening_vars_num)] = self.w
+
+        landa_base_num = yield_pieces_num + softening_vars_num
+        raw_a[0:yield_pieces_num, landa_base_num] = phi_p0
+        raw_a[landa_base_num, landa_base_num] = 1.0
 
         if self.disp_limits.any():
-            raw_a[yield_pieces_num + 1:(yield_pieces_num + disp_limits_num + 1), 0:yield_pieces_num] = dv_phi
-            raw_a[(yield_pieces_num + disp_limits_num + 1):(yield_pieces_num + 2 * disp_limits_num + 1), 0:yield_pieces_num] = - dv_phi
+            disp_limit_base_num = yield_pieces_num + softening_vars_num + 1
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_num), 0:yield_pieces_num] = dv_phi
+            raw_a[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num), 0:yield_pieces_num] = - dv_phi
 
-            raw_a[yield_pieces_num + 1:(yield_pieces_num + disp_limits_num + 1), yield_pieces_num] = self.d0
-            raw_a[(yield_pieces_num + disp_limits_num + 1):(yield_pieces_num + 2 * disp_limits_num + 1), yield_pieces_num] = - self.d0
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_num), landa_base_num] = self.d0
+            raw_a[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num), landa_base_num] = - self.d0
 
         a_matrix = np.array(raw_a)
-        table = np.zeros((vars_num, 2 * vars_num))
-        table[0:vars_num, 0:vars_num] = a_matrix[0:vars_num, 0:vars_num]
-        j = vars_num
+        columns_num = vars_num + self.slacks_num
+        table = np.zeros((constraints_num, columns_num))
+        table[0:constraints_num, 0:vars_num] = a_matrix
 
         # Assigning diagonal arrays of slack variables.
-        for i in range(vars_num):
+        j = vars_num
+        for i in range(constraints_num):
             table[i, j] = 1.0
             j += 1
 
@@ -60,16 +82,20 @@ class RawData:
     def _get_b_column(self):
         yield_pieces_num = self.yield_pieces_num
         disp_limits_num = self.disp_limits_num
-        b = np.ones((self.vars_num))
-        b[yield_pieces_num] = self.load_limit
+
+        b = np.ones((self.constraints_num))
+        b[yield_pieces_num + self.softening_vars_num] = self.load_limit
+        if self.softening_vars_num:
+            b[yield_pieces_num:(yield_pieces_num + self.softening_vars_num)] = np.array(self.cs)[:, 0]
 
         if self.disp_limits.any():
-            b[yield_pieces_num + 1:(yield_pieces_num + disp_limits_num + 1)] = abs(self.disp_limits[:, 2])
-            b[(yield_pieces_num + disp_limits_num + 1):(yield_pieces_num + 2 * disp_limits_num + 1)] = abs(self.disp_limits[:, 2])
+            disp_limit_base_num = yield_pieces_num + self.softening_vars_num + 1
+            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_num)] = abs(self.disp_limits[:, 2])
+            b[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num)] = abs(self.disp_limits[:, 2])
 
         return b
 
     def _get_costs_row(self):
-        c = np.zeros(2 * self.vars_num)
+        c = np.zeros(self.vars_num + self.slacks_num)
         c[0:self.yield_pieces_num] = 1.0
         return -1 * c

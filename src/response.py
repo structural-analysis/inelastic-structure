@@ -78,39 +78,39 @@ def calculate_responses(structure, result, example_name):
         np.savetxt(fname=elements_forces_path, X=current_increment_elements_forces_compact, delimiter=",")
         np.savetxt(fname=elements_disps_path, X=current_increment_elements_disps_compact, delimiter=",")
 
-    elements_yield_points_num = 0
-    for element in structure.elements:
-        elements_yield_points_num += len(element.yield_points)
+    # elements_yield_points_num = 0
+    # for element in structure.elements:
+    #     elements_yield_points_num += len(element.yield_points)
 
-    empty_array = np.zeros((elements_yield_points_num, 6))
-    yield_points_data = np.matrix(empty_array)
-    yp_counter = 0
-    for i, element in enumerate(structure.elements):
-        element_yield_points_num = len(element.yield_points)
-        for j in range(element_yield_points_num):
-            if element.has_axial_yield:
-                components_num = 2
-                components_dofs = [0, 2]
-                yield_capacity = [element.section.ap, element.section.mp]
-                node_dof_num = 3
-                yield_points_data[yp_counter, 0:6] = np.array([[
-                    components_num,
-                    components_dofs[0],
-                    components_dofs[1],
-                    yield_capacity[0],
-                    yield_capacity[1],
-                    node_dof_num,
-                ]])
-            else:
-                components_num = 1
-                components_dofs = [2]
-                yield_capacity = [element.section.mp]
-                node_dof_num = 3
-                yield_points_data[yp_counter, 0:4] = np.array([[
-                    components_num,
-                    components_dofs[0],
-                    yield_capacity[0],
-                    node_dof_num,
-                ]])
-            yp_counter += 1
-    np.savetxt(fname=yield_points_data_path, X=yield_points_data, delimiter=",")
+    # empty_array = np.zeros((elements_yield_points_num, 6))
+    # yield_points_data = np.matrix(empty_array)
+    # yp_counter = 0
+    # for i, element in enumerate(structure.elements):
+    #     element_yield_points_num = len(element.yield_points)
+    #     for j in range(element_yield_points_num):
+    #         if element.has_axial_yield:
+    #             components_num = 2
+    #             components_dofs = [0, 2]
+    #             yield_capacity = [element.section.ap, element.section.mp]
+    #             node_dof_num = 3
+    #             yield_points_data[yp_counter, 0:6] = np.array([[
+    #                 components_num,
+    #                 components_dofs[0],
+    #                 components_dofs[1],
+    #                 yield_capacity[0],
+    #                 yield_capacity[1],
+    #                 node_dof_num,
+    #             ]])
+    #         else:
+    #             components_num = 1
+    #             components_dofs = [2]
+    #             yield_capacity = [element.section.mp]
+    #             node_dof_num = 3
+    #             yield_points_data[yp_counter, 0:4] = np.array([[
+    #                 components_num,
+    #                 components_dofs[0],
+    #                 yield_capacity[0],
+    #                 node_dof_num,
+    #             ]])
+    #         yp_counter += 1
+    # np.savetxt(fname=yield_points_data_path, X=yield_points_data, delimiter=",")

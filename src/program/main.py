@@ -6,6 +6,9 @@ from .functions import zero_out_small_values
 class MahiniMethod:
     def __init__(self, raw_data):
         self.vars_num = raw_data.vars_num
+        self.slacks_num = raw_data.slacks_num
+        self.constraints_num = raw_data.constraints_num
+
         self.landa_var_num = raw_data.landa_var_num
         self.limits_slacks = raw_data.limits_slacks
         self.table = raw_data.table
@@ -15,9 +18,9 @@ class MahiniMethod:
     def solve(self):
         bbar = self.b
         basic_variables = self.get_initial_basic_variables()
-        b_matrix_inv = np.eye(self.vars_num)
-        cb = np.zeros(self.vars_num)
-        empty_x_cumulative = np.zeros((self.vars_num, 1))
+        b_matrix_inv = np.eye(self.slacks_num)
+        cb = np.zeros(self.slacks_num)
+        empty_x_cumulative = np.zeros((self.constraints_num, 1))
         x_cumulative = np.matrix(empty_x_cumulative)
         x_history = []
         fpm = FPM
@@ -38,7 +41,7 @@ class MahiniMethod:
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
-                    spm_var_num = self.get_primary_var_num(slack_candidate.var_num)
+                    spm_var_num = self.get_var_num(slack_candidate.var_num)
                     r = self.calculate_r(
                         spm_var_num=spm_var_num,
                         basic_variables=basic_variables,
@@ -78,7 +81,6 @@ class MahiniMethod:
                             abar=abar,
                         )
                         break
-
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
@@ -97,11 +99,11 @@ class MahiniMethod:
         }
         return result
 
-    def get_slack_var_num(self, primary_var_num):
-        return primary_var_num + self.vars_num
+    def get_slack_num(self, var_num):
+        return var_num + self.vars_num
 
-    def get_primary_var_num(self, slack_var_num):
-        return slack_var_num - self.vars_num
+    def get_var_num(self, slack_num):
+        return slack_num - self.vars_num
 
     def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb):
         will_in_col_num = fpm.var_num
@@ -135,11 +137,11 @@ class MahiniMethod:
         unloading_pivot_elements = [
             {
                 "row": exiting_row_num,
-                "column": self.get_slack_var_num(exiting_row_num),
+                "column": self.get_slack_num(exiting_row_num),
             },
             {
                 "row": pm_var_num,
-                "column": self.get_slack_var_num(pm_var_num),
+                "column": self.get_slack_num(pm_var_num),
             },
             {
                 "row": exiting_row_num,
@@ -173,8 +175,8 @@ class MahiniMethod:
 
     def calculate_cbar(self, cb, b_matrix_inv):
         pi_transpose = np.dot(cb, b_matrix_inv)
-        cbar = np.zeros(2 * self.vars_num)
-        for i in range(2 * self.vars_num):
+        cbar = np.zeros(self.vars_num + self.slacks_num)
+        for i in range(self.vars_num + self.slacks_num):
             cbar[i] = self.c[i] - np.dot(pi_transpose, self.table[:, i])
         return cbar
 
@@ -203,14 +205,14 @@ class MahiniMethod:
         return will_out_row_num
 
     def get_initial_basic_variables(self):
-        basic_variables = np.zeros(self.vars_num, dtype=int)
-        for i in range(self.vars_num):
+        basic_variables = np.zeros(self.constraints_num, dtype=int)
+        for i in range(self.constraints_num):
             basic_variables[i] = self.vars_num + i
         return basic_variables
 
     def update_b_matrix_inverse(self, b_matrix_inv, abar, will_out_row_num):
-        e = np.eye(self.vars_num)
-        eta = np.zeros(self.vars_num)
+        e = np.eye(self.slacks_num)
+        eta = np.zeros(self.slacks_num)
         will_out_item = abar[will_out_row_num]
 
         for i, item in enumerate(abar):
@@ -250,7 +252,7 @@ class MahiniMethod:
         slack_candidates = []
         for var in basic_variables:
             if var < self.landa_var_num:
-                slack_var_num = self.get_slack_var_num(var)
+                slack_var_num = self.get_slack_num(var)
                 slack_candidate = SlackCandidate(
                     var_num=slack_var_num,
                     cost=cbar[slack_var_num]
