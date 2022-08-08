@@ -47,8 +47,6 @@ class RawData:
         raw_a = np.matrix(empty_a)
         raw_a[0:yield_pieces_num, 0:yield_pieces_num] = phi_pv_phi
 
-        print(f"{yield_pieces_num=}")
-        print(f"{softening_vars_num=}")
         if softening_vars_num:
             raw_a[yield_pieces_num:(yield_pieces_num + softening_vars_num), 0:yield_pieces_num] = self.q
             raw_a[0:yield_pieces_num, yield_pieces_num:(yield_pieces_num + softening_vars_num)] = - self.h
