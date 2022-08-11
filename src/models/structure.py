@@ -54,6 +54,7 @@ class Structure:
         self.k = self.get_stiffness()
         self.reduced_k = self.get_reduced_stiffness()
         self.f = self.get_load_vector()
+        self.yield_points_indices = self.get_yield_points_indices()
 
         self.elastic_nodal_disp = self.get_nodal_disp(self.f)
         self.elastic_elements_disps = self.get_elements_disps(self.elastic_nodal_disp)
@@ -351,3 +352,18 @@ class Structure:
                 cs[2 * yield_point_num_counter:2 * yield_point_num_counter + 2, 0] = element.section.softening.cs
                 yield_point_num_counter += 1
         return cs
+
+    def get_yield_points_indices(self):
+        yield_points_indices = []
+        index_counter = 0
+        for element in self.elements.list:
+            yield_point_pieces = int(element.yield_specs.pieces_num / element.yield_specs.points_num)
+            for _ in range(element.yield_specs.points_num):
+                yield_points_indices.append(
+                    {
+                        "begin": index_counter,
+                        "end": index_counter + yield_point_pieces - 1,
+                    }
+                )
+                index_counter += yield_point_pieces
+        return yield_points_indices

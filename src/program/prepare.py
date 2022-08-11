@@ -20,6 +20,7 @@ class RawData:
         self.limits_num = 1 + self.disp_limits_num * 2
         self.yield_pieces_num = structure.yield_specs.pieces_num
         self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.general.include_softening else 0
+        self.yield_points_indices = structure.yield_points_indices
 
         self.vars_num = self.yield_pieces_num + self.softening_vars_num + 1
         self.slacks_num = self.yield_pieces_num + self.softening_vars_num + self.limits_num

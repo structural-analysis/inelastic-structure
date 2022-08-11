@@ -6,8 +6,11 @@ from .functions import zero_out_small_values
 class MahiniMethod:
     def __init__(self, raw_data):
         self.vars_num = raw_data.vars_num
+        self.yield_pieces_num = raw_data.yield_pieces_num
+        self.softening_vars_num = raw_data.softening_vars_num
         self.slacks_num = raw_data.slacks_num
         self.constraints_num = raw_data.constraints_num
+        self.yield_points_indices = raw_data.yield_points_indices
 
         self.landa_var_num = raw_data.landa_var_num
         self.limits_slacks = raw_data.limits_slacks
@@ -196,12 +199,14 @@ class MahiniMethod:
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
-
-        will_out_row_num = int(sorted_zipped_ba[0, 0])
-        if landa_row_num:
-            if landa_row_num == int(sorted_zipped_ba[0, 0]):
-                will_out_row_num = int(sorted_zipped_ba[0, 1])
-
+        for i, ba in enumerate(sorted_zipped_ba[0, :]):
+            ba = int(ba)
+            will_out_row_num = ba
+            if landa_row_num:
+                if landa_row_num == ba:
+                    will_out_row_num = int(sorted_zipped_ba[0, i + 1])
+                    break
+            break
         return will_out_row_num
 
     def get_initial_basic_variables(self):
@@ -224,7 +229,7 @@ class MahiniMethod:
         updated_b_matrix_inv = np.dot(e, b_matrix_inv)
         return updated_b_matrix_inv
 
-    def is_variable_plastic_multiplier(self, variable_num):
+    def is_variable_plastic(self, variable_num):
         return False if variable_num >= self.landa_var_num else True
 
     def is_candidate_fpm(self, fpm, slack_candidate):
@@ -235,7 +240,7 @@ class MahiniMethod:
 
     def is_will_out_var_opm(self, will_out_var_num):
         # opm: obstacle plastic multiplier
-        return self.is_variable_plastic_multiplier(will_out_var_num)
+        return self.is_variable_plastic(will_out_var_num)
 
     def update_basic_variables(self, basic_variables, will_out_row_num, will_in_col_num):
         basic_variables[will_out_row_num] = will_in_col_num
@@ -276,3 +281,15 @@ class MahiniMethod:
     def get_var_row_num(self, var_num, basic_variables):
         row_num = np.where(basic_variables == var_num)[0][0]
         return row_num
+
+    def get_plastic_var_yield_point_num(self, pm):
+        for i, yield_point_indices in enumerate(self.yield_points_indices):
+            if yield_point_indices["begin"] <= pm and pm <= yield_point_indices["end"]:
+                yield_point_num = i
+                break
+        return yield_point_num
+
+    def get_softening_var_yield_point_num(self, sm):
+        yield_point_num = (sm - self.yield_pieces_num) // 2
+        # TODO: complete for pm slacks and softening slacks
+        return yield_point_num
