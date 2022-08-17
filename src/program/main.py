@@ -56,9 +56,6 @@ class MahiniMethod:
                         continue
                     else:
                         print("unload r < 0")
-                        # if self.softening_vars_num:
-                        #     softening_var = int(spm_var + self.primary_vars_num)
-
                         basic_variables, b_matrix_inv, cb = self.unload(
                             pm_var=spm_var,
                             basic_variables=basic_variables,
@@ -96,11 +93,10 @@ class MahiniMethod:
         pms_history = []
         load_level_history = []
         for x in x_history:
-            pms = x[0:self.landa_var]
+            pms = x[0:self.plastic_vars_num]
             load_level = x[self.landa_var][0, 0]
             pms_history.append(pms)
             load_level_history.append(load_level)
-
         result = {
             "pms_history": pms_history,
             "load_level_history": load_level_history
@@ -139,38 +135,55 @@ class MahiniMethod:
         # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
         # TODO: check line 60 of unload and line 265 in mclp of mahini code
         # (probable usage: in case when unload is last step)
+        pm_var_family = self.get_pm_var_family(pm_var)
 
-        exiting_row = self.get_var_row(pm_var, basic_variables)
+        for primary_var in pm_var_family:
+            if primary_var in basic_variables:
+                exiting_row = self.get_var_row(primary_var, basic_variables)
 
-        unloading_pivot_elements = [
-            {
-                "row": exiting_row,
-                "column": self.get_slack_var(exiting_row),
-            },
-            {
-                "row": pm_var,
-                "column": self.get_slack_var(pm_var),
-            },
-            {
-                "row": exiting_row,
-                "column": basic_variables[pm_var],
-            },
-        ]
-        for element in unloading_pivot_elements:
-            abar = self.calculate_abar(element["column"], b_matrix_inv)
-            b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
-            cb = self.update_cb(
-                cb=cb,
-                will_in_col=element["column"],
-                will_out_row=element["row"]
-            )
-            basic_variables = self.update_basic_variables(
-                basic_variables=basic_variables,
-                will_out_row=element["row"],
-                will_in_col=element["column"]
-            )
+                unloading_pivot_elements = [
+                    {
+                        "row": exiting_row,
+                        "column": self.get_slack_var(exiting_row),
+                    },
+                    {
+                        "row": primary_var,
+                        "column": self.get_slack_var(primary_var),
+                    },
+                    {
+                        "row": exiting_row,
+                        "column": basic_variables[primary_var],
+                    },
+                ]
+                for element in unloading_pivot_elements:
+                    abar = self.calculate_abar(element["column"], b_matrix_inv)
+                    b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+                    cb = self.update_cb(
+                        cb=cb,
+                        will_in_col=element["column"],
+                        will_out_row=element["row"]
+                    )
+                    basic_variables = self.update_basic_variables(
+                        basic_variables=basic_variables,
+                        will_out_row=element["row"],
+                        will_in_col=element["column"]
+                    )
 
         return basic_variables, b_matrix_inv, cb
+
+    def get_pm_var_family(self, pm_var):
+        if self.softening_vars_num:
+            yield_point = self.get_plastic_var_yield_point(pm_var)
+            pm_var_family = [
+                pm_var,
+                self.plastic_vars_num + yield_point * 2,
+                self.plastic_vars_num + yield_point * 2 + 1,
+            ]
+        else:
+            pm_var_family = [
+                pm_var,
+            ]
+        return pm_var_family
 
     def calculate_abar(self, col, b_matrix_inv):
         a = self.table[:, col]
@@ -205,7 +218,6 @@ class MahiniMethod:
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
-
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
 
@@ -220,35 +232,19 @@ class MahiniMethod:
 
             # if will in variable is softening
             else:
-                will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
-
-                for i, ba in enumerate(sorted_zipped_ba[0, :]):
-                    ba = int(ba)
-                    will_out_row = ba
-                    will_out_var = basic_variables[will_out_row]
-
-                    if will_out_var < self.plastic_vars_num:
-                        # plastic primary
-                        will_out_yield_point = self.get_plastic_var_yield_point(will_out_var)
-
-                    elif self.plastic_vars_num <= will_out_var < self.primary_vars_num - 1:
-                        # softening primary
-                        will_out_yield_point = self.get_softening_var_yield_point(will_out_var)
-
-                    elif self.primary_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num:
-                        # plastic slack
-                        primary_will_out_var = self.get_primary_var(will_out_var)
-                        will_out_yield_point = self.get_plastic_var_yield_point(primary_will_out_var)
-
-                    elif self.primary_vars_num + self.plastic_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num + self.softening_vars_num:
-                        # softening slack
-                        primary_will_out_var = self.get_primary_var(will_out_var)
-                        will_out_yield_point = self.get_softening_var_yield_point(primary_will_out_var)
-
-                    if landa_row != will_out_var and will_in_col_yield_point != will_out_yield_point:
-                        will_out_row = int(sorted_zipped_ba[0, i + 1])
-                        break
-                    break
+                will_out_row = int(sorted_zipped_ba[0, 0])
+                # when we reach load or disp limit:
+                if will_out_row >= self.primary_vars_num - 1:
+                    return will_out_row
+                else:
+                    will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
+                    for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
+                        will_out_row = int(ba_row)
+                        will_out_var = basic_variables[will_out_row]
+                        will_out_yield_point = self.get_will_out_yield_point(will_out_var)
+                        if landa_row != will_out_row and will_in_col_yield_point != will_out_yield_point:
+                            will_out_row = int(sorted_zipped_ba[0, i])
+                            break
 
         return will_out_row
 
@@ -333,3 +329,24 @@ class MahiniMethod:
         yield_point = (sm - self.plastic_vars_num) // 2
         # TODO: complete for pm slacks and softening slacks
         return yield_point
+
+    def get_will_out_yield_point(self, will_out_var):
+        if will_out_var < self.plastic_vars_num:
+            # plastic primary
+            will_out_yield_point = self.get_plastic_var_yield_point(will_out_var)
+
+        elif self.plastic_vars_num <= will_out_var < self.primary_vars_num - 1:
+            # softening primary
+            will_out_yield_point = self.get_softening_var_yield_point(will_out_var)
+
+        elif self.primary_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num:
+            # plastic slack
+            primary_will_out_var = self.get_primary_var(will_out_var)
+            will_out_yield_point = self.get_plastic_var_yield_point(primary_will_out_var)
+
+        elif self.primary_vars_num + self.plastic_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num + self.softening_vars_num:
+            # softening slack
+            primary_will_out_var = self.get_primary_var(will_out_var)
+            will_out_yield_point = self.get_softening_var_yield_point(primary_will_out_var)
+
+        return will_out_yield_point
