@@ -1,10 +1,10 @@
 
 class FPM():
-    var_num: int
+    var: int
     cost: float
 
 
 class SlackCandidate():
-    def __init__(self, var_num, cost):
-        self.var_num = var_num
+    def __init__(self, var, cost):
+        self.var = var
         self.cost = cost

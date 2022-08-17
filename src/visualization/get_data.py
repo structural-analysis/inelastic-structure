@@ -34,7 +34,7 @@ yield_data_array = np.loadtxt(fname=yield_data_path, usecols=range(6), delimiter
 elements_num = frames_array.shape[0]
 
 element_yield_points_num = 2
-node_dof_num = 3
+node_dofs_num = 3
 
 if increments_array[0] == "all":
     selected_increments_num = total_increments_num
@@ -99,7 +99,7 @@ def get_yield_points(selected_increments_num, selected_yield_points_num):
         for element_num in range(yield_points_num):
             for element_yield_point in range(element_yield_points_num):
                 for yield_component in range(len(yield_components_dof)):
-                    dof = element_yield_point * node_dof_num + yield_component
+                    dof = element_yield_point * node_dofs_num + yield_component
                     increment_yield_points[yield_component, element_num] = elements_forces[dof, element_num]
 
     if yield_components_num == 1:
