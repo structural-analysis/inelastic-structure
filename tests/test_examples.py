@@ -3,6 +3,7 @@ from src.main import run
 example_names = [
     # "1story_1span",
     "3story_perfect",
+    "3story_softening",
     "simple_beam",
     "skew_beams",
     # "triangle_truss",

@@ -55,23 +55,25 @@ class MahiniMethod:
                     if r > 0:
                         continue
                     else:
-                        print("unload r < 0")
-                        basic_variables, b_matrix_inv, cb = self.unload(
+                        print("unload spm")
+                        basic_variables, b_matrix_inv, cb, landa_row = self.unload(
                             pm_var=spm_var,
                             basic_variables=basic_variables,
                             b_matrix_inv=b_matrix_inv,
                             cb=cb,
+                            landa_row=landa_row,
                         )
                         break
                 else:
                     if self.is_will_out_var_opm(will_out_var):
                         print("unload opm")
                         opm_var = will_out_var
-                        basic_variables, b_matrix_inv, cb = self.unload(
+                        basic_variables, b_matrix_inv, cb, landa_row = self.unload(
                             pm_var=opm_var,
                             basic_variables=basic_variables,
                             b_matrix_inv=b_matrix_inv,
                             cb=cb,
+                            landa_row=landa_row,
                         )
                         break
                     else:
@@ -85,7 +87,6 @@ class MahiniMethod:
                             abar=abar,
                         )
                         break
-
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
@@ -129,14 +130,12 @@ class MahiniMethod:
         fpm = self.update_fpm(will_out_row, cbar)
         return basic_variables, b_matrix_inv, cb, fpm
 
-    def unload(self, pm_var, basic_variables, b_matrix_inv, cb):
+    def unload(self, pm_var, basic_variables, b_matrix_inv, cb, landa_row):
         # TODO: should handle if third pivot column is a y not x. possible bifurcation.
-        # TODO: must handle landa-row separately like mahini unload (e.g. softening, ...)
         # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
         # TODO: check line 60 of unload and line 265 in mclp of mahini code
         # (probable usage: in case when unload is last step)
         pm_var_family = self.get_pm_var_family(pm_var)
-
         for primary_var in pm_var_family:
             if primary_var in basic_variables:
                 exiting_row = self.get_var_row(primary_var, basic_variables)
@@ -169,7 +168,10 @@ class MahiniMethod:
                         will_in_col=element["column"]
                     )
 
-        return basic_variables, b_matrix_inv, cb
+                    if element["column"] == self.landa_var:
+                        landa_row = element["row"]
+
+        return basic_variables, b_matrix_inv, cb, landa_row
 
     def get_pm_var_family(self, pm_var):
         if self.softening_vars_num:
@@ -206,10 +208,8 @@ class MahiniMethod:
         return cb
 
     def get_will_out(self, abar, bbar, will_in_col=None, landa_row=None, basic_variables=None):
-        # TODO: see mahini find_pivot for handling hardening parameters
         # TODO: handle unbounded problem,
         # when there is no positive a remaining (structure failure), e.g. stop the process.
-        # IMPORTANT TODO: sort twice: first time based on slackcosts like mahini find_pivot
 
         abar = zero_out_small_values(abar)
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
@@ -218,12 +218,12 @@ class MahiniMethod:
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
+
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
 
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
-
             # if will in variable is plastic
             if will_in_col < self.plastic_vars_num or will_in_col == self.primary_vars_num:
                 # skip landa variable from exiting
@@ -234,18 +234,19 @@ class MahiniMethod:
             else:
                 will_out_row = int(sorted_zipped_ba[0, 0])
                 # when we reach load or disp limit:
-                if will_out_row >= self.primary_vars_num - 1:
-                    return will_out_row
-                else:
-                    will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
-                    for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
-                        will_out_row = int(ba_row)
+
+                will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
+                for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
+                    will_out_row = int(ba_row)
+                    if will_out_row != landa_row:
+                        # if exiting variable is load or disp limit
+                        if will_out_row >= self.primary_vars_num - 1:
+                            break
                         will_out_var = basic_variables[will_out_row]
                         will_out_yield_point = self.get_will_out_yield_point(will_out_var)
-                        if landa_row != will_out_row and will_in_col_yield_point != will_out_yield_point:
+                        if will_in_col_yield_point != will_out_yield_point:
                             will_out_row = int(sorted_zipped_ba[0, i])
                             break
-
         return will_out_row
 
     def get_initial_basic_variables(self):
