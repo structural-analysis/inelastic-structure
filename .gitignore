@@ -3,7 +3,7 @@
 __pycache__/
 *.xlsx#
 .flake8
-static/
+
 phiP0.csv
 phiPvPhi.csv
 
