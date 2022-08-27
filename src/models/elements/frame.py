@@ -12,14 +12,20 @@ class YieldSpecs:
         self.pieces_num = self.points_num * section.yield_specs.pieces_num
 
 
+class Mass:
+    def __init__(self, magnitude):
+        self.magnitude = magnitude
+
+
 class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, mass: Mass = None):
         self.nodes = nodes
         self.ends_fixity = ends_fixity
         self.section = section
+        self.mass = self._mass() if mass else None
         self.total_dofs_num = 6
         self.yield_specs = YieldSpecs(self.section)
         self.start = nodes[0]
