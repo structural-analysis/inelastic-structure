@@ -3,7 +3,7 @@ import yaml
 import numpy as np
 from src.models.points import Node
 from src.models.sections.frame import FrameSection
-from src.models.elements.frame import FrameElement2D
+from src.models.elements.frame import FrameElement2D, Mass
 from src.models.structure import Structure
 
 examples_dir = "input/examples/"
@@ -42,6 +42,7 @@ def create_sections(example_name):
 
 
 def create_masses(example_name):
+    # mass per length is applied in global direction so there is no need to transform.
     masses = {}
     masses_path = os.path.join(examples_dir, example_name, masses_dir)
     masses_array = np.loadtxt(fname=masses_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=float)
@@ -68,7 +69,7 @@ def create_frames(example_name):
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
                 ends_fixity=frames_array[i, 3],
                 section=section,
-                mass=masses.get(i, None)
+                mass=Mass(magnitude=masses.get(i)) if masses.get(i) else None
             )
         )
     return frames

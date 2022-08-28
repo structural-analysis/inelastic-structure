@@ -52,6 +52,7 @@ class Structure:
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
+        self.m = self.get_mass()
         self.reduced_k = self.get_reduced_stiffness()
         self.f = self.get_load_vector()
         self.yield_points_indices = self.get_yield_points_indices()
@@ -82,17 +83,8 @@ class Structure:
         empty_stiffness = np.zeros((self.general.total_dofs_num, self.general.total_dofs_num))
         structure_stiffness = np.matrix(empty_stiffness)
         for element in self.elements.list:
-            element_nodes_num = len(element.nodes)
-            element_dofs_num = element.k.shape[0]
-            element_node_dofs_num = element_dofs_num / element_nodes_num
             element_global_stiffness = self._transform_loc_2d_matrix_to_glob(element.t, element.k)
-            for i in range(element_dofs_num):
-                for j in range(element_dofs_num):
-                    local_element_node_row = int(j // element_node_dofs_num)
-                    p = int(element_node_dofs_num * element.nodes[local_element_node_row].num + j % element_node_dofs_num)
-                    local_element_node_column = int(i // element_node_dofs_num)
-                    q = int(element_node_dofs_num * element.nodes[local_element_node_column].num + i % element_node_dofs_num)
-                    structure_stiffness[p, q] = structure_stiffness[p, q] + element_global_stiffness[j, i]
+            structure_stiffness = self._assemble_elements(element, element_global_stiffness, structure_stiffness)
         return structure_stiffness
 
     def get_reduced_stiffness(self):
@@ -109,6 +101,28 @@ class Structure:
             )
             deleted_counter += 1
         return reduced_stiffness
+
+    def get_mass(self):
+        # mass per length is applied in global direction so there is no need to transform.
+        empty_mass = np.zeros((self.general.total_dofs_num, self.general.total_dofs_num))
+        structure_mass = np.matrix(empty_mass)
+        for element in self.elements.list:
+            if element.m:
+                structure_mass = self._assemble_elements(element, element.m, structure_mass)
+        return structure_mass
+
+    def _assemble_elements(self, element, element_prop, structure_prop):
+        element_nodes_num = len(element.nodes)
+        element_dofs_num = element.k.shape[0]
+        element_node_dofs_num = element_dofs_num / element_nodes_num
+        for i in range(element_dofs_num):
+            for j in range(element_dofs_num):
+                local_element_node_row = int(j // element_node_dofs_num)
+                p = int(element_node_dofs_num * element.nodes[local_element_node_row].num + j % element_node_dofs_num)
+                local_element_node_column = int(i // element_node_dofs_num)
+                q = int(element_node_dofs_num * element.nodes[local_element_node_column].num + i % element_node_dofs_num)
+                structure_prop[p, q] = structure_prop[p, q] + element_prop[j, i]
+        return structure_prop
 
     def _assemble_joint_load(self):
         f_total = np.zeros((self.general.total_dofs_num, 1))
