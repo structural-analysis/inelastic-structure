@@ -53,6 +53,7 @@ class Structure:
         self.limits = input["limits"]
         self.k = self.get_stiffness()
         self.m = self.get_mass()
+        self.zero_mass_dofs = self.get_zero_mass_dofs()
         self.reduced_k = self.get_reduced_stiffness()
         self.f = self.get_load_vector()
         self.yield_points_indices = self.get_yield_points_indices()
@@ -107,9 +108,12 @@ class Structure:
         empty_mass = np.zeros((self.general.total_dofs_num, self.general.total_dofs_num))
         structure_mass = np.matrix(empty_mass)
         for element in self.elements.list:
-            if element.m:
+            if element.m is not None:
                 structure_mass = self._assemble_elements(element, element.m, structure_mass)
         return structure_mass
+
+    def get_zero_mass_dofs(self):
+        return np.where(~self.m.any(axis=1))[0]
 
     def _assemble_elements(self, element, element_prop, structure_prop):
         element_nodes_num = len(element.nodes)
