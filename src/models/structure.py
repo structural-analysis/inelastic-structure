@@ -94,11 +94,11 @@ class Structure:
         for i in range(len(self.boundaries)):
             # delete column
             reduced_stiffness = np.delete(
-                reduced_stiffness, 3 * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 1
+                reduced_stiffness, self.general.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 1
             )
             # delete row
             reduced_stiffness = np.delete(
-                reduced_stiffness, 3 * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 0
+                reduced_stiffness, self.general.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 0
             )
             deleted_counter += 1
         return reduced_stiffness
@@ -385,3 +385,31 @@ class Structure:
                 )
                 index_counter += yield_point_pieces
         return yield_points_indices
+
+    def condense_boundary(self):
+        print(f"{self.boundaries=}")
+        mass_bounds = self.boundaries.copy()
+        zero_mass_bounds = self.boundaries.copy()
+        node_dofs_num = self.general.node_dofs_num
+        mass_i = 0
+        zero_i = 0
+        for bc in range(mass_bounds.shape[0]):
+            if int(node_dofs_num * mass_bounds[bc - mass_i, 0] + mass_bounds[bc - mass_i, 1]) in self.zero_mass_dofs:
+                mass_bounds = np.delete(mass_bounds, bc - mass_i, 0)
+                mass_i += 1
+            else:
+                mass_bounds[bc - mass_i, 1] = mass_bounds[bc - mass_i, 1] - (node_dofs_num * mass_bounds[bc - mass_i, 0] + mass_bounds[bc - mass_i, 1]) // node_dofs_num
+            if int(node_dofs_num * zero_mass_bounds[bc - zero_i, 0] + zero_mass_bounds[bc - zero_i, 1]) in self.zero_mass_dofs:
+                # TODO: write  2 * in general
+                print(f"{zero_mass_bounds[bc - zero_i, 1]=}")
+                print(f"{node_dofs_num=}")
+                print(f"{zero_mass_bounds[bc - zero_i, 0]=}")
+                print(f"{zero_mass_bounds[bc - zero_i, 1]=}")
+                print(f"{(node_dofs_num * zero_mass_bounds[bc - zero_i, 0] + zero_mass_bounds[bc - zero_i, 1]) // node_dofs_num =}")
+                zero_mass_bounds[bc - zero_i, 1] = zero_mass_bounds[bc - zero_i, 1] - 2 * ((node_dofs_num * zero_mass_bounds[bc - zero_i, 0] + zero_mass_bounds[bc - zero_i, 1]) // node_dofs_num + 1)
+                print(f"{zero_mass_bounds[bc - zero_i, 1]=}")
+            else:
+                zero_mass_bounds = np.delete(zero_mass_bounds, bc - zero_i, 0)
+                zero_i += 1
+            print("-----------------")
+        return mass_bounds, zero_mass_bounds
