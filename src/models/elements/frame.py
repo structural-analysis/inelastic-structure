@@ -92,11 +92,11 @@ class FrameElement2D:
         mass = self.mass.magnitude
         m = np.matrix(
             [
-                [mass * l / 2, mass * l / 2, 0, 0, 0, 0],
-                [mass * l / 2, mass * l / 2, 0, 0, 0, 0],
+                [mass * l / 2, 0, 0, 0, 0, 0],
+                [0, mass * l / 2, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, mass * l / 2, mass * l / 2, 0],
-                [0, 0, 0, mass * l / 2, mass * l / 2, 0],
+                [0, 0, 0, mass * l / 2, 0, 0],
+                [0, 0, 0, 0, mass * l / 2, 0],
                 [0, 0, 0, 0, 0, 0],
             ]
         )
