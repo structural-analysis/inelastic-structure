@@ -12,11 +12,16 @@ class YieldSpecs:
         self.pieces_num = self.points_num * section.yield_specs.pieces_num
 
 
+class Mass:
+    def __init__(self, magnitude):
+        self.magnitude = magnitude
+
+
 class FrameElement2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, mass: Mass = None):
         self.nodes = nodes
         self.ends_fixity = ends_fixity
         self.section = section
@@ -25,6 +30,8 @@ class FrameElement2D:
         self.start = nodes[0]
         self.end = nodes[1]
         self.l = self._length()
+        self.mass = mass if mass else None
+        self.m = self._mass() if mass else None
         self.k = self._stiffness()
         self.t = self._transform_matrix()
         self.udefs = self._udefs()
@@ -79,6 +86,21 @@ class FrameElement2D:
                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
         return k
+
+    def _mass(self):
+        l = self.l
+        mass = self.mass.magnitude
+        m = np.matrix(
+            [
+                [mass * l / 2, 0, 0, 0, 0, 0],
+                [0, mass * l / 2, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, mass * l / 2, 0, 0],
+                [0, 0, 0, 0, mass * l / 2, 0],
+                [0, 0, 0, 0, 0, 0],
+            ]
+        )
+        return m
 
     def _udefs(self):
         k = self.k

@@ -3,15 +3,16 @@ import yaml
 import numpy as np
 from src.models.points import Node
 from src.models.sections.frame import FrameSection
-from src.models.elements.frame import FrameElement2D
+from src.models.elements.frame import FrameElement2D, Mass
 from src.models.structure import Structure
 
 examples_dir = "input/examples/"
 global_cords_dir = "global_cords.csv"
 boundaries_dir = "boundaries.csv"
-joint_loads_dir = "loads/joint_loads.csv"
+joint_loads_dir = "loads/static/joint_loads.csv"
 sections_dir = "sections"
 frames_dir = "members/frames.csv"
+masses_dir = "members/masses.csv"
 general_dir = "general.yaml"
 load_limit_dir = "limits/load.csv"
 disp_limits_dir = "limits/disp.csv"
@@ -40,10 +41,25 @@ def create_sections(example_name):
     return sections
 
 
+def create_masses(example_name):
+    # mass per length is applied in global direction so there is no need to transform.
+    masses = {}
+    masses_path = os.path.join(examples_dir, example_name, masses_dir)
+    masses_array = np.loadtxt(fname=masses_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    for i in range(masses_array.shape[0]):
+        masses[int(masses_array[i][0])] = masses_array[i][1]
+    return masses
+
+
 def create_frames(example_name):
+    general_info_path = os.path.join(examples_dir, example_name, general_dir)
+    with open(general_info_path, "r") as general_file:
+        general_info = yaml.safe_load(general_file)
+
     frames_path = os.path.join(examples_dir, example_name, frames_dir)
     nodes = create_nodes(example_name)
     sections = create_sections(example_name)
+    masses = create_masses(example_name) if general_info.get("dynamic_analysis") else {}
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     frames = []
     for i in range(frames_array.shape[0]):
@@ -53,6 +69,7 @@ def create_frames(example_name):
                 nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
                 ends_fixity=frames_array[i, 3],
                 section=section,
+                mass=Mass(magnitude=masses.get(i)) if masses.get(i) else None
             )
         )
     return frames
