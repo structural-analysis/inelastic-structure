@@ -4,9 +4,16 @@ from ..points import Node
 from ..sections.plate import PlateSection
 
 
-class RectangularThinPlateElement:
+class YieldSpecs:
+    def __init__(self, section: PlateSection):
+        self.points_num = 4
+        self.components_num = self.points_num * section.yield_specs.components_num
+        self.pieces_num = self.points_num * section.yield_specs.pieces_num
+
+
+class ThinPlateMember:
     # k is calculated based on four integration points
-    def __init__(self, nodes: tuple[Node, Node, Node, Node], section: PlateSection):
+    def __init__(self, section: PlateSection, nodes: tuple, edges_fixity, mesh):
         self.t = section.t
         self.nodes = nodes
         self.lx = nodes[1].x - nodes[0].x

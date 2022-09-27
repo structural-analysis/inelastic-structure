@@ -2,15 +2,6 @@ from scipy.linalg import cho_factor, cho_solve
 import numpy as np
 
 
-class General:
-    def __init__(self, input_general):
-        self.nodes_num = input_general["nodes_num"]
-        self.dim = input_general["structure_dim"]
-        self.include_softening = input_general["include_softening"]
-        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
-        self.total_dofs_num = self.node_dofs_num * self.nodes_num
-
-
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
         self.points_num = yield_specs_dict["points_num"]
@@ -45,8 +36,12 @@ class Elements:
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
-        self.general = General(input["general"])
-        self.elements = Elements(input["elements_list"])
+        self.nodes_num = input["nodes_num"]
+        self.dim = input["structure_dim"]
+        self.include_softening = input["include_softening"]
+        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
+        self.total_dofs_num = self.node_dofs_num * self.nodes_num
+        self.elements = Elements(input["members"])
         self.yield_specs = self.elements.yield_specs
         self.boundaries = input["boundaries"]
         self.boundaries_dof = self._get_boundaries_dof()
@@ -83,7 +78,7 @@ class Structure:
         return element_global_stiffness
 
     def get_stiffness(self):
-        empty_stiffness = np.zeros((self.general.total_dofs_num, self.general.total_dofs_num))
+        empty_stiffness = np.zeros((self.total_dofs_num, self.total_dofs_num))
         structure_stiffness = np.matrix(empty_stiffness)
         for element in self.elements.list:
             element_global_stiffness = self._transform_loc_2d_matrix_to_glob(element.t, element.k)
@@ -114,7 +109,7 @@ class Structure:
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
-        empty_mass = np.zeros((self.general.total_dofs_num, self.general.total_dofs_num))
+        empty_mass = np.zeros((self.total_dofs_num, self.total_dofs_num))
         structure_mass = np.matrix(empty_mass)
         for element in self.elements.list:
             if element.m is not None:
@@ -138,14 +133,14 @@ class Structure:
         return structure_prop
 
     def _assemble_joint_load(self):
-        f_total = np.zeros((self.general.total_dofs_num, 1))
+        f_total = np.zeros((self.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         for joint_load in self.loads["joint_loads"]:
-            f_total[self.general.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] = f_total[self.general.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
+            f_total[self.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] = f_total[self.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
         return f_total
 
     def get_load_vector(self):
-        f_total = np.zeros((self.general.total_dofs_num, 1))
+        f_total = np.zeros((self.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
             if load == "joint_loads":
@@ -185,10 +180,10 @@ class Structure:
         boundaries_num = len(self.boundaries)
         reduced_forces = self.apply_load_boundry_conditions(force)
         reduced_disp = cho_solve(cho_factor(self.reduced_k), reduced_forces)
-        empty_nodal_disp = np.zeros((self.general.total_dofs_num, 1))
+        empty_nodal_disp = np.zeros((self.total_dofs_num, 1))
         nodal_disp = np.matrix(empty_nodal_disp)
-        for i in range(self.general.total_dofs_num):
-            if (j != boundaries_num and i == self.general.node_dofs_num * self.boundaries[j, 0] + self.boundaries[j, 1]):
+        for i in range(self.total_dofs_num):
+            if (j != boundaries_num and i == self.node_dofs_num * self.boundaries[j, 0] + self.boundaries[j, 1]):
                 j += 1
             else:
                 nodal_disp[i, 0] = reduced_disp[o, 0]
@@ -198,7 +193,7 @@ class Structure:
     def get_internal_forces(self):
         elements_disps = self.elastic_elements_disps
 
-        fixed_force = np.zeros((self.general.node_dofs_num * 2, 1))
+        fixed_force = np.zeros((self.node_dofs_num * 2, 1))
         fixed_force = np.matrix(fixed_force)
 
         # calculate p0
@@ -243,12 +238,12 @@ class Structure:
                 for yield_point_udef in element.udefs:
                     udef_components_num = yield_point_udef.shape[1]
                     for i_component in range(udef_components_num):
-                        fv_size = self.general.total_dofs_num
+                        fv_size = self.total_dofs_num
                         fv = np.zeros((fv_size, 1))
                         fv = np.matrix(fv)
                         component_udef_global = element.t.T * yield_point_udef[:, i_component]
-                        start_dof = self.general.node_dofs_num * element.nodes[0].num
-                        end_dof = self.general.node_dofs_num * element.nodes[1].num
+                        start_dof = self.node_dofs_num * element.nodes[0].num
+                        end_dof = self.node_dofs_num * element.nodes[1].num
 
                         fv[start_dof] = component_udef_global[0]
                         fv[start_dof + 1] = component_udef_global[1]
@@ -267,7 +262,7 @@ class Structure:
                             if i_element == i_affected_element:
                                 fixed_force = -yield_point_udef[:, i_component]
                             else:
-                                fixed_force = np.zeros((self.general.node_dofs_num * 2, 1))
+                                fixed_force = np.zeros((self.node_dofs_num * 2, 1))
                                 fixed_force = np.matrix(fixed_force)
                             # FIXME: affected_elem_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
                             affected_element_force = self.elements.list[i_affected_element].get_nodal_force(affected_elem_disp[0, 0], fixed_force)
@@ -294,7 +289,7 @@ class Structure:
         return results
 
     def get_global_dof(self, node_num, dof):
-        global_dof = int(self.general.node_dofs_num * node_num + dof)
+        global_dof = int(self.node_dofs_num * node_num + dof)
         return global_dof
 
     def get_nodal_disp_limits(self):
@@ -399,7 +394,7 @@ class Structure:
         boundaries_size = self.boundaries.shape[0]
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
-            boundaries_dof[i] = int(self.general.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1])
+            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1])
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):
@@ -416,7 +411,7 @@ class Structure:
         zero_mass_bound_i = 0
 
         if self.zero_mass_dofs.any():
-            for dof in range(self.general.total_dofs_num):
+            for dof in range(self.total_dofs_num):
                 if dof == zero_mass_dofs[zero_mass_dof_i]:
                     if bound_i < self.boundaries_dof.shape[0]:
                         if dof == self.boundaries_dof[bound_i]:
@@ -462,7 +457,7 @@ class Structure:
         # for non-zero mass rows and columns
         zero_i = 0
         zero_mass_dofs_i = 0
-        for dof in range(self.general.total_dofs_num):
+        for dof in range(self.total_dofs_num):
             if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 mtt = np.delete(mtt, dof - zero_i, 1)
                 mtt = np.delete(mtt, dof - zero_i, 0)

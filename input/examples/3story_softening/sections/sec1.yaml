@@ -15,7 +15,7 @@ input:
     abar0: 0.15
     ap: 4.2e+6
     mp: 5.488e+5
-  softening:
-    alpha: 0.7
-    ep1: 0
-    ep2: 0.8119
+    softening:
+      alpha: 0.7
+      ep1: 0
+      ep2: 0.8119

@@ -15,4 +15,4 @@ input:
     abar0: 0.15
     ap: 1.365e+6
     mp: 5.775e+4
-  softening: null
+    softening: null

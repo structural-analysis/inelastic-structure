@@ -1,0 +1,9 @@
+thinplate:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+  geometry:
+    t: 0.05
+  nonlinear:
+    softening: null
