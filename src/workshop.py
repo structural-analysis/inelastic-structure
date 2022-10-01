@@ -6,7 +6,7 @@ from src.models.points import Node
 from src.models.sections.frame import FrameSection
 from src.models.sections.plate import PlateSection
 from src.models.members.frame import FrameElement2D, Mass
-from src.models.members.plate import ThinPlateMember
+from src.models.members.plate import PlateMember
 from src.models.structure import Structure
 
 examples_dir = "input/examples/"
@@ -102,11 +102,15 @@ def create_plate_members(example_name, nodes):
     for i in range(plates_array.shape[0]):
         plate_section = plate_sections[plates_array[i, 0]]
         plate_members.append(
-            ThinPlateMember(
+            PlateMember(
                 section=plate_section,
-                nodes=(nodes[int(plates_array[i, 1])], nodes[int(plates_array[i, 2])]),
-                edges_fixity=plates_array[i, 3],
-                mesh=plates_array[i, 4],
+                nodes=(
+                    nodes[int(plates_array[i, 1][0])],
+                    nodes[int(plates_array[i, 1][1])],
+                    nodes[int(plates_array[i, 1][2])],
+                    nodes[int(plates_array[i, 1][3])],
+                ),
+                mesh_num=(plates_array[i, 2], plates_array[i, 3]),
             )
         )
     return plate_members

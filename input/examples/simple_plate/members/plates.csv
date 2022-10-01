@@ -1,2 +1,2 @@
-section,nodes,edges_fixity,mesh
-thinplate,0123,cccc,coarse
+section,nodes,meshx,meshy
+thinplate,0123,2,3

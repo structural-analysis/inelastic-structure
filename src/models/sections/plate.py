@@ -10,49 +10,33 @@ class Material:
 
 class Geometry:
     def __init__(self, input_geometry):
-        self.a = input_geometry["a"]
-        self.ix = input_geometry["ix"]
-        self.iy = input_geometry["iy"]
+        self.t = input_geometry["t"]
 
 
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
-        self.is_direct_capacity = input_nonlinear["is_direct_capacity"]
-        self.has_axial_yield = input_nonlinear["has_axial_yield"]
-        self.zp = float(input_nonlinear["zp"])
-        self.abar0 = float(input_nonlinear["abar0"])
-        self.mp = float(input_nonlinear["mp"]) if self.is_direct_capacity else self.zp * material.sy
-        self.ap = float(input_nonlinear["ap"]) if self.is_direct_capacity else geometry.a * material.sy
+        self.mp = 0.25 * geometry.t ** 2 * material.sy
+        self.yield_surface = input_nonlinear["yield_surface"]
 
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.phi = self.create_phi(nonlinear)
-        self.components_num = 2 if nonlinear.has_axial_yield else 1
+        self.components_num = 3
         self.pieces_num = self.phi.shape[1]
 
     def create_phi(self, nonlinear):
-        if nonlinear.has_axial_yield:
-            phi = np.matrix([
-                [
-                    1 / nonlinear.ap,
-                    0,
-                    -1 / nonlinear.ap,
-                    -1 / nonlinear.ap,
-                    0,
-                    1 / nonlinear.ap,
-                ],
-                [
-                    (1 - nonlinear.abar0) / nonlinear.mp,
-                    1 / nonlinear.mp,
-                    (1 - nonlinear.abar0) / nonlinear.mp,
-                    -(1 - nonlinear.abar0) / nonlinear.mp,
-                    -1 / nonlinear.mp,
-                    -(1 - nonlinear.abar0) / nonlinear.mp,
-                ]
-            ])
-        else:
-            phi = np.matrix([-1 / nonlinear.mp, 1 / nonlinear.mp])
+        if nonlinear.yield_surface == "simple":
+            phi = np.array([
+                [1.2143, -0.2143, 2],
+                [-0.2143, 1.2143, 2],
+                [-1.2143, 0.2143, 2],
+                [0.2143, -1.2143, 2],
+                [1.2143, -0.2143, -2],
+                [-0.2143, 1.2143, -2],
+                [-1.2143, 0.2143, -2],
+                [0.2143, -1.2143, -2],
+            ]).T / nonlinear.mp
         return phi
 
 
@@ -91,18 +75,8 @@ class PlateSection:
         self.nonlinear = Nonlinear(self.material, self.geometry, input["nonlinear"])
         self.yield_specs = YieldSpecs(self.nonlinear)
         self.softening = Softening(self.yield_specs, input["softening"])
-
-
-# class PlateSection:
-#     # nu: poisson ratio
-#     def __init__(self):
-#         e = material.e
-#         nu = material.nu
-#         sy = material.sy
-#         d = np.matrix([[1, nu, 0],
-#                       [nu, 1, 0],
-#                       [0, 0, (1 - nu) / 2]])
-#         self.t = t
-#         self.mp = 0.25 * t ** 2 * sy
-#         self.be = (e / (1 - nu ** 2)) * d
-#         self.de = (e * t ** 3) / (12 * (1 - nu ** 2)) * d
+        self.d = np.matrix([[1, self.material.nu, 0],
+                            [self.material.nu, 1, 0],
+                            [0, 0, (1 - self.material.nu) / 2]])
+        self.be = (self.material.e / (1 - self.material.nu ** 2)) * self.d
+        self.de = (self.material.e * self.geomatry.t ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d
