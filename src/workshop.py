@@ -117,12 +117,14 @@ def create_plate_members(example_name, nodes):
 
 
 def create_structure(example_name):
-    boundaries_path = os.path.join(examples_dir, example_name, boundaries_dir)
+    nodal_boundaries_path = os.path.join(examples_dir, example_name, nodal_boundaries_file)
+    linear_boundaries_path = os.path.join(examples_dir, example_name, linear_boundaries_file)
     joint_load_path = os.path.join(examples_dir, example_name, static_joint_loads_file)
     load_limit_path = os.path.join(examples_dir, example_name, load_limit_file)
     disp_limits_path = os.path.join(examples_dir, example_name, disp_limits_file)
 
-    boundaries = np.loadtxt(fname=boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+    nodal_boundaries = np.loadtxt(fname=nodal_boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+    linear_boundaries = np.loadtxt(fname=linear_boundaries_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=int)
     joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
     load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
     disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
@@ -151,7 +153,8 @@ def create_structure(example_name):
         "dim": general_properties["structure_dim"],
         "include_softening": general_properties["include_softening"],
         "members": members,
-        "boundaries": boundaries,
+        "nodal_boundaries": nodal_boundaries,
+        "linear_boundaries": linear_boundaries,
         "loads": loads,
         "limits": limits,
     }

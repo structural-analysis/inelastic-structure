@@ -144,17 +144,17 @@ class PlateMember:
         km = np.zeros((3 * self.member_nodes_num, 3 * self.member_nodes_num))
         klix = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
         klix = klix.astype(int)
-        for k in range(elno):
-            g1 = elnodes[k, 0]
-            g2 = elnodes[k, 1]
-            g3 = elnodes[k, 2]
-            g4 = elnodes[k, 3]
+        for k in range(self.elements_num):
+            g1 = self.member_nodes[k, 0]
+            g2 = self.member_nodes[k, 1]
+            g3 = self.member_nodes[k, 2]
+            g4 = self.member_nodes[k, 3]
 
             kgix = np.array([3 * g1 - 3, 3 * g1 - 2, 3 * g1 - 1,
-                            3 * g2 - 3, 3 * g2 - 2, 3 * g2 - 1,
-                            3 * g3 - 3, 3 * g3 - 2, 3 * g3 - 1,
-                            3 * g4 - 3, 3 * g4 - 2, 3 * g4 - 1
-                            ])
+                             3 * g2 - 3, 3 * g2 - 2, 3 * g2 - 1,
+                             3 * g3 - 3, 3 * g3 - 2, 3 * g3 - 1,
+                             3 * g4 - 3, 3 * g4 - 2, 3 * g4 - 1,
+                             ])
 
             kgix = kgix.astype(int)
             for i in range(12):

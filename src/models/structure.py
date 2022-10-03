@@ -43,8 +43,10 @@ class Structure:
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
         self.elements = Elements(input["members"])
         self.yield_specs = self.elements.yield_specs
-        self.boundaries = input["boundaries"]
-        self.boundaries_dof = self._get_boundaries_dof()
+        self.nodal_boundaries = input["nodal_boundaries"]
+        self.linear_boundaries = input["linear_boundaries"]
+        self.boundaries = self.populate_boundaries()
+        self.boundaries_dof = self.get_boundaries_dof()
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
@@ -147,7 +149,7 @@ class Structure:
                 f_total = f_total + self._assemble_joint_load()
         return f_total
 
-    def apply_load_boundry_conditions(self, force):
+    def apply_load_boundary_conditions(self, force):
         reduced_f = force
         deleted_counter = 0
         for i in range(len(self.boundaries)):
@@ -178,7 +180,7 @@ class Structure:
         j = 0
         o = 0
         boundaries_num = len(self.boundaries)
-        reduced_forces = self.apply_load_boundry_conditions(force)
+        reduced_forces = self.apply_load_boundary_conditions(force)
         reduced_disp = cho_solve(cho_factor(self.reduced_k), reduced_forces)
         empty_nodal_disp = np.zeros((self.total_dofs_num, 1))
         nodal_disp = np.matrix(empty_nodal_disp)
@@ -390,7 +392,10 @@ class Structure:
                 index_counter += yield_point_pieces
         return yield_points_indices
 
-    def _get_boundaries_dof(self):
+    def populate_boundaries(self):
+        return self.nodal_boundaries
+
+    def get_boundaries_dof(self):
         boundaries_size = self.boundaries.shape[0]
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
