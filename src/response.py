@@ -15,7 +15,7 @@ def calculate_responses(structure, result, example_name):
     load_levels = np.zeros([increments_num, 1])
 
     nodal_disps_sensitivity = structure.nodal_disps_sensitivity
-    nodal_disps = np.zeros([increments_num, structure.general.total_dofs_num])
+    nodal_disps = np.zeros([increments_num, structure.total_dofs_num])
 
     elements_forces_sensitivity = structure.elements_forces_sensitivity
     elements_forces = np.zeros([increments_num, structure.elements.num], dtype=object)

@@ -7,4 +7,4 @@ thinplate:
     t: 0.05
   nonlinear:
     yield_surface: simple # simple or von-mises
-    softening: null
+  softening: null

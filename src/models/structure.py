@@ -37,7 +37,7 @@ class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
         self.nodes_num = input["nodes_num"]
-        self.dim = input["structure_dim"]
+        self.dim = input["dim"]
         self.include_softening = input["include_softening"]
         self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dofs_num * self.nodes_num

@@ -1,5 +1,4 @@
-name: rect
-input:
+rect:
   material:
     e: 2.0e+11
     sy: 240.0e+6
@@ -15,4 +14,4 @@ input:
     abar0: 0.15
     ap: 0
     mp: 0
-    softening: null
+  softening: null
