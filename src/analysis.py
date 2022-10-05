@@ -38,7 +38,7 @@ class Analysis:
             ...
 
     def _get_type(self):
-        if self.general_info.get("dynamic_analysis"):
+        if self.general_info.get("dynamic_analysis") and self.general_info["dynamic_analysis"]["enabled"]:
             type = "dynamic"
         else:
             type = "static"
