@@ -37,7 +37,7 @@ class Loads:
         self.distributed: List[Distributed] = input.get("distributed")
         self.concentrated: List[Concentrated] = input.get("concentrated")
 
-    def _assemble_joint_load(self, structure, loads, time_step=None):
+    def assemble_joint_load(self, structure, loads, time_step=None):
         # f_total = np.zeros((9, 1))
         f_total = np.zeros((structure.total_dofs_num, 1))
         f_total = np.matrix(f_total)
@@ -48,7 +48,7 @@ class Loads:
             f_total[node_dofs_num * load.node + load.dof] = f_total[node_dofs_num * load.node + load.dof] + load_magnitude
         return f_total
 
-    def get_load_vector(self, structure, loads, time_step=None):
+    def get_total_load(self, structure, loads, time_step=None):
         f_total = np.zeros((structure.total_dofs_num, 1))
         # f_total = np.zeros((9, 1))
         f_total = np.matrix(f_total)
@@ -56,9 +56,9 @@ class Loads:
         for load in loads_dict:
             if loads_dict[load]:
                 if load == "joint":
-                    f_total = f_total + self._assemble_joint_load(structure, loads_dict[load])
+                    f_total = f_total + self.assemble_joint_load(structure, loads_dict[load])
                 elif load == "dynamic":
-                    f_total = f_total + self._assemble_joint_load(structure, loads_dict[load], time_step)
+                    f_total = f_total + self.assemble_joint_load(structure, loads_dict[load], time_step)
         return f_total
 
     def apply_boundry_conditions(self, structure: Structure, force):

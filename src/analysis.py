@@ -21,7 +21,7 @@ class Analysis:
         self.type = self._get_type()
 
         if self.type == "static":
-            self.total_load = self.loads.get_load_vector(self.structure, self.loads)
+            self.total_load = self.loads.get_total_load(self.structure, self.loads)
             self.elastic_nodal_disp = self.get_nodal_disp(self.total_load)
             self.elastic_members_disps = self.get_members_disps(self.elastic_nodal_disp)
             internal_forces = self.get_internal_forces()
