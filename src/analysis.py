@@ -48,7 +48,7 @@ class Analysis:
         j = 0
         o = 0
         structure = self.structure
-        reduced_total_load = self.loads.apply_load_boundry_conditions(structure, total_load)
+        reduced_total_load = self.loads.apply_boundry_conditions(structure, total_load)
         reduced_disp = cho_solve(structure.kc, reduced_total_load)
         empty_nodal_disp = np.zeros((structure.total_dofs_num, 1))
         nodal_disp = np.matrix(empty_nodal_disp)

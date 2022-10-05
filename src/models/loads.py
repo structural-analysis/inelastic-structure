@@ -61,7 +61,7 @@ class Loads:
                     f_total = f_total + self._assemble_joint_load(structure, loads_dict[load], time_step)
         return f_total
 
-    def apply_load_boundry_conditions(self, structure: Structure, force):
+    def apply_boundry_conditions(self, structure: Structure, force):
         reduced_f = force
         deleted_counter = 0
         for i in range(len(structure.boundaries_dof)):
