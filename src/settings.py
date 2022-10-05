@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "simple_beam"
+    example_name: str = "simple_plate"
     computational_zero = 1e-10
 
 

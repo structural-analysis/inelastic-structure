@@ -1,4 +1,2 @@
-nodes_num: 5
 structure_dim: 2d
-load_limit: 1
 include_softening: false

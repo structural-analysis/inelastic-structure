@@ -1,6 +1,6 @@
 # Inelastic Structure
 all units are SI (N, m, s)
-each element object must have these variables (e.g.):
+each member object must have these variables (e.g.):
 nodes
 total_dofs_num
 

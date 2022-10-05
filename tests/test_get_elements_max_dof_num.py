@@ -1,36 +1,36 @@
-from src.functions import get_elements_max_dof_num
+from src.functions import get_members_max_dof_num
 
 
-class Element1():
+class Member1():
     def __init__(self):
         self.total_dofs_num = 3
 
 
-class Element2():
+class Member2():
     def __init__(self):
         self.total_dofs_num = 6
 
 
-class Element3():
+class Member3():
     def __init__(self):
         self.total_dofs_num = 12
 
 
-class Element4():
+class Member4():
     def __init__(self):
         self.total_dofs_num = 2
 
 
-class Element5():
+class Member5():
     def __init__(self):
         self.total_dofs_num = 9
 
 
-element1 = Element1()
-element2 = Element2()
-element3 = Element3()
-element4 = Element4()
-element5 = Element5()
+member1 = Member1()
+member2 = Member2()
+member3 = Member3()
+member4 = Member4()
+member5 = Member5()
 
-elements = [element1, element2, element3, element4, element5]
-assert(get_elements_max_dof_num(elements)) == 12
+members = [member1, member2, member3, member4, member5]
+assert(get_members_max_dof_num(members)) == 12

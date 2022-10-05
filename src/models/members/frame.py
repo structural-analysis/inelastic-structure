@@ -17,7 +17,7 @@ class Mass:
         self.magnitude = magnitude
 
 
-class FrameElement2D:
+class FrameMember2D:
     # mp: bending capacity
     # udef: unit distorsions equivalent forces
     # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge

@@ -10,23 +10,23 @@ examples_dir = "input/examples/"
 example_name = settings.example_name
 
 
-def generate_frame_elements(frames_array, nodes_array):
+def generate_frame_members(frames_array, nodes_array):
     fig = plt.figure(figsize=plt.figaspect(0.5))
     ax = add_diagram_to_figure(fig, (1, 1), (0, 0))
-    for frame_label, frame_element in enumerate(frames_array):
-        beginning_node = int(frame_element[1])
-        end_node = int(frame_element[2])
+    for frame_label, frame_member in enumerate(frames_array):
+        beginning_node = int(frame_member[1])
+        end_node = int(frame_member[2])
         beginning_x = int(nodes_array[beginning_node][0])
         beginning_y = int(nodes_array[beginning_node][1])
         end_x = int(nodes_array[end_node][0])
         end_y = int(nodes_array[end_node][1])
         x_list = [beginning_x, end_x]
         y_list = [beginning_y, end_y]
-        element_coords = {
+        member_coords = {
             "x": x_list,
             "y": y_list,
         }
-        draw_lines(ax, element_coords)
+        draw_lines(ax, member_coords)
 
 
 def visualize_2d_frame(example_name):
@@ -40,7 +40,7 @@ def visualize_2d_frame(example_name):
         x = nodes_array[i][0]
         y = nodes_array[i][1]
         nodes.append([x, y])
-    generate_frame_elements(frames_array, nodes_array)
+    generate_frame_members(frames_array, nodes_array)
     plt.show()
 
 

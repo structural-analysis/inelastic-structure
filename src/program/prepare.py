@@ -19,7 +19,7 @@ class RawData:
         self.disp_limits_num = self.disp_limits.shape[0]
         self.limits_num = 1 + self.disp_limits_num * 2
         self.plastic_vars_num = structure.yield_specs.pieces_num
-        self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.general.include_softening else 0
+        self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.include_softening else 0
         self.yield_points_indices = structure.yield_points_indices
 
         self.primary_vars_num = self.plastic_vars_num + self.softening_vars_num + 1

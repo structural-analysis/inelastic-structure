@@ -8,8 +8,8 @@ class Concentrated:
 
 
 class Distributed:
-    def __init__(self, element, magnitude):
-        self.element = element
+    def __init__(self, member, magnitude):
+        self.member = member
         self.magnitude = magnitude
 
 
