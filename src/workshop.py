@@ -26,6 +26,7 @@ disp_limits_file = "limits/disp.csv"
 dynamic_loads_dir = "loads/dynamic/"
 joint_loads_file = "loads/static/joint_loads.csv"
 
+
 def get_general_properties(example_name):
     general_file_path = os.path.join(examples_dir, example_name, general_file)
     with open(general_file_path, "r") as file_path:

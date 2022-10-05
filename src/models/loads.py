@@ -1,6 +1,8 @@
 import numpy as np
 from typing import List
 
+from src.models.structure import Structure
+
 
 class Concentrated:
     def __init__(self):
@@ -8,8 +10,8 @@ class Concentrated:
 
 
 class Distributed:
-    def __init__(self, member, magnitude):
-        self.member = member
+    def __init__(self, element, magnitude):
+        self.element = element
         self.magnitude = magnitude
 
 
@@ -37,17 +39,17 @@ class Loads:
 
     def _assemble_joint_load(self, structure, loads, time_step=None):
         # f_total = np.zeros((9, 1))
-        f_total = np.zeros((structure.general.total_dofs_num, 1))
+        f_total = np.zeros((structure.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         # node_dofs_num = 3
-        node_dofs_num = structure.general.node_dofs_num
+        node_dofs_num = structure.node_dofs_num
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
             f_total[node_dofs_num * load.node + load.dof] = f_total[node_dofs_num * load.node + load.dof] + load_magnitude
         return f_total
 
     def get_load_vector(self, structure, loads, time_step=None):
-        f_total = np.zeros((structure.general.total_dofs_num, 1))
+        f_total = np.zeros((structure.total_dofs_num, 1))
         # f_total = np.zeros((9, 1))
         f_total = np.matrix(f_total)
         loads_dict = vars(loads)
@@ -59,12 +61,12 @@ class Loads:
                     f_total = f_total + self._assemble_joint_load(structure, loads_dict[load], time_step)
         return f_total
 
-    def apply_load_boundry_conditions(self, structure, force):
+    def apply_load_boundry_conditions(self, structure: Structure, force):
         reduced_f = force
         deleted_counter = 0
         for i in range(len(structure.boundaries_dof)):
             reduced_f = np.delete(
-                reduced_f, structure.boundaries_dof[i] + structure.boundaries_dof[i] - deleted_counter, 0
+                reduced_f, structure.boundaries_dof[i] - deleted_counter, 0
             )
             deleted_counter += 1
         return reduced_f
