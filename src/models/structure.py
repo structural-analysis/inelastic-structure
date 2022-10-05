@@ -1,5 +1,5 @@
-from scipy.linalg import cho_factor, cho_solve
 import numpy as np
+from scipy.linalg import cho_factor, cho_solve, eigh
 
 
 class General:
@@ -9,6 +9,7 @@ class General:
         self.include_softening = input_general["include_softening"]
         self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
+        self.damping = input_general["dynamic_analysis"]["damping"] if input_general.get("dynamic_analysis") else 0
 
 
 class YieldSpecs:
@@ -56,7 +57,10 @@ class Structure:
         self.m = self.get_mass()
         self.zero_mass_dofs = self.get_zero_mass_dofs()
         self.reduced_k = self.apply_boundary_condition(self.boundaries_dof, self.k)
+        self.kc = cho_factor(self.reduced_k)
         self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
+        # self.condensed_k, self.condensed_m, self.ku0, self.reduced_k00_inv, self.reduced_k00 = self.apply_static_condensation()
+        # self.wns, self.wds, self.modes = self.compute_modes_props()
         self.f = self.get_load_vector()
         self.yield_points_indices = self.get_yield_points_indices()
 
@@ -137,27 +141,31 @@ class Structure:
                 structure_prop[p, q] = structure_prop[p, q] + element_prop[j, i]
         return structure_prop
 
-    def _assemble_joint_load(self):
+    def _assemble_joint_load(self, loads, time_step=None):
         f_total = np.zeros((self.general.total_dofs_num, 1))
         f_total = np.matrix(f_total)
-        for joint_load in self.loads["joint_loads"]:
-            f_total[self.general.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] = f_total[self.general.node_dofs_num * int(joint_load[0]) + int(joint_load[1])] + joint_load[2]
+        for load in loads:
+            load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
+            f_total[self.general.node_dofs_num * load.node + load.dof] = f_total[self.general.node_dofs_num * load.node + load.dof] + load_magnitude
         return f_total
 
-    def get_load_vector(self):
+    def get_load_vector(self, time_step=None):
         f_total = np.zeros((self.general.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
-            if load == "joint_loads":
-                f_total = f_total + self._assemble_joint_load()
+            if self.loads[load]:
+                if load == "joint":
+                    f_total = f_total + self._assemble_joint_load(self.loads[load])
+                elif load == "dynamic":
+                    f_total = f_total + self._assemble_joint_load(self.loads[load], time_step)
         return f_total
 
     def apply_load_boundry_conditions(self, force):
         reduced_f = force
         deleted_counter = 0
-        for i in range(len(self.boundaries)):
+        for i in range(len(self.boundaries_dof)):
             reduced_f = np.delete(
-                reduced_f, 3 * self.boundaries[i, 0] + self.boundaries[i, 1] - deleted_counter, 0
+                reduced_f, self.boundaries_dof[i] - deleted_counter, 0
             )
             deleted_counter += 1
         return reduced_f
@@ -166,7 +174,7 @@ class Structure:
         empty_elements_disps = np.zeros((self.elements.num, 1), dtype=object)
         elements_disps = np.matrix(empty_elements_disps)
         for i_element, element in enumerate(self.elements.list):
-            element_dofs_num = element.k.shape[0]
+            element_dofs_num = element.total_dofs_num
             element_nodes_num = len(element.nodes)
             element_node_dofs_num = int(element_dofs_num / element_nodes_num)
             v = np.zeros((element_dofs_num, 1))
@@ -179,16 +187,15 @@ class Structure:
             elements_disps[i_element, 0] = u
         return elements_disps
 
-    def get_nodal_disp(self, force):
+    def get_nodal_disp(self, load):
         j = 0
         o = 0
-        boundaries_num = len(self.boundaries)
-        reduced_forces = self.apply_load_boundry_conditions(force)
-        reduced_disp = cho_solve(cho_factor(self.reduced_k), reduced_forces)
+        reduced_forces = self.apply_load_boundry_conditions(load)
+        reduced_disp = cho_solve(self.kc, reduced_forces)
         empty_nodal_disp = np.zeros((self.general.total_dofs_num, 1))
         nodal_disp = np.matrix(empty_nodal_disp)
         for i in range(self.general.total_dofs_num):
-            if (j != boundaries_num and i == self.general.node_dofs_num * self.boundaries[j, 0] + self.boundaries[j, 1]):
+            if (j != self.boundaries_dof.shape[0] and i == self.boundaries_dof[j]):
                 j += 1
             else:
                 nodal_disp[i, 0] = reduced_disp[o, 0]
@@ -444,13 +451,13 @@ class Structure:
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
         reduced_ktt = self.apply_boundary_condition(mass_bounds, ktt)
-        reduced_mtt = self.apply_boundary_condition(mass_bounds, mtt)
+        condensed_m = self.apply_boundary_condition(mass_bounds, mtt)
         reduced_k00 = self.apply_boundary_condition(zero_mass_bounds, k00)
         reduced_k0t = self.apply_boundary_condition(self.boundaries_dof, k0t)
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
-        khat = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)
-        return khat, reduced_mtt, ku0, reduced_k00_inv, reduced_k00
+        condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)
+        return condensed_k, condensed_m, ku0, reduced_k00_inv, reduced_k00
 
     def get_zero_and_nonzero_mass_props(self):
         mtt = self.m.copy()
@@ -477,3 +484,67 @@ class Structure:
                 k0t = np.delete(k0t, dof - mass_i, 0)
                 mass_i += 1
         return mtt, ktt, k00, k0t
+
+    # def compute_modes_props(self):
+    #     damping = self.general.damping
+    #     eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False)
+    #     wn = np.sqrt(eigvals)
+    #     wd = np.sqrt(1 - damping ** 2) * wn
+    #     return wn, wd, modes
+
+    # def compute_modal_props(self):
+    #     m_modal = np.dot(np.transpose(self.modes), np.dot(self.condensed_m, self.modes))
+    #     k_modal = np.dot(np.transpose(self.modes), np.dot(self.condensed_k, self.modes))
+    #     return m_modal, k_modal
+
+    # def compute_i_duhamel(self, t1, t2, wn, wd):
+    #     damping = self.general.damping
+    #     wd = np.sqrt(1 - damping ** 2) * wn
+    #     i11 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
+    #     i12 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
+    #     i1 = i11 - i12
+    #     i21 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t2) - wd * np.cos(wd * t2))
+    #     i22 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t1) - wd * np.cos(wd * t1))
+    #     i2 = i21 - i22
+    #     i3 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i21 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i11 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i22 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i12)
+    #     i4 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i11 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i21 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i12 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i22)
+    #     return i1, i2, i3, i4
+
+    # def compute_abx_duhamel(self, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
+    #     damping = self.general.damping
+    #     deltat = t2 - t1
+    #     deltap = p2 - p1
+    #     wd = np.sqrt(1 - damping ** 2) * wn
+    #     a2 = a1 + (p1 - t1 * deltap / deltat) * i1 + (deltap / deltat) * i4
+    #     b2 = b1 + (p1 - t1 * deltap / deltat) * i2 + (deltap / deltat) * i3
+    #     un = (np.exp(-1 * damping * wn * t2) / (mn * wd)) * (a2 * np.sin(wd * t2) - b2 * np.cos(wd * t2))
+    #     return a2, b2, un
+
+    # def displacement_unrestrained(U, JTR):
+    #     i_restraint = 0
+    #     i_free = 0
+    #     size_of_U_nonrestraint = U.shape[0]+JTR.shape[0]
+    #     U_nonrestraint = np.zeros((size_of_U_nonrestraint, 1))
+    #     for i in range(size_of_U_nonrestraint):
+    #         if i == 3*JTR[i_restraint, 0]+JTR[i_restraint, 1]:
+    #             U_nonrestraint[i, 0] = 0
+    #             i_restraint += 1
+    #         else:
+    #             U_nonrestraint[i, 0] = U[i_free, 0]
+    #             i_free += 1
+    #     return U_nonrestraint
+
+    # def non_condensed_displacement(Ut, U0):
+
+    #     size_of_U = Ut.shape[0]+U0.shape[0]
+    #     U = np.zeros((size_of_U, 1))
+    #     i_U0 = 0
+    #     i_Ut = 0
+    #     for i in range(size_of_U):
+    #         if i % 3 == 2:
+    #             U[i, 0] = U0[i_U0, 0]
+    #             i_U0 += 1
+    #         else:
+    #             U[i, 0] = Ut[i_Ut, 0]
+    #             i_Ut += 1
+    #     return U
