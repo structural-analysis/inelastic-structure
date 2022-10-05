@@ -37,8 +37,10 @@ class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
         self.nodes_num = input["nodes_num"]
-        self.dim = input["dim"]
-        self.include_softening = input["include_softening"]
+        self.general_properties = input["general_properties"]
+        self.analysis_type = self._get_analysis_type()
+        self.dim = self.general_properties["structure_dim"]
+        self.include_softening = self.general_properties["include_softening"]
         self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
         self.members = Members(input["members"])
@@ -50,13 +52,9 @@ class Structure:
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
-        self.m = self.get_mass()
-        self.zero_mass_dofs = self.get_zero_mass_dofs()
+
         self.reduced_k = self.apply_boundary_condition(self.boundaries_dof, self.k)
         self.kc = cho_factor(self.reduced_k)
-        self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
-        # self.condensed_k, self.condensed_m, self.ku0, self.reduced_k00_inv, self.reduced_k00 = self.apply_static_condensation()
-        # self.wns, self.wds, self.modes = self.compute_modes_props()
         self.yield_points_indices = self.get_yield_points_indices()
 
         self.phi = self.create_phi()
@@ -64,6 +62,20 @@ class Structure:
         self.h = self.create_h()
         self.w = self.create_w()
         self.cs = self.create_cs()
+
+        if self.analysis_type == "dynamic":
+            self.m = self.get_mass()
+            self.zero_mass_dofs = self.get_zero_mass_dofs()
+            self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
+            # self.condensed_k, self.condensed_m, self.ku0, self.reduced_k00_inv, self.reduced_k00 = self.apply_static_condensation()
+            # self.wns, self.wds, self.modes = self.compute_modes_props()
+
+    def _get_analysis_type(self):
+        if self.general_properties.get("dynamic_analysis") and self.general_properties["dynamic_analysis"]["enabled"]:
+            type = "dynamic"
+        else:
+            type = "static"
+        return type
 
     def _transform_loc_2d_matrix_to_glob(self, member_transform, member_stiffness):
         member_global_stiffness = np.dot(np.dot(np.transpose(member_transform), member_stiffness), member_transform)
