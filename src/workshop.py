@@ -142,7 +142,7 @@ def create_plate_members(example_name, nodes):
             plate_members.append(
                 PlateMember(
                     section=plate_section,
-                    nodes=(
+                    initial_nodes=(
                         nodes[int(plates_array[i, 1][0])],
                         nodes[int(plates_array[i, 1][1])],
                         nodes[int(plates_array[i, 1][2])],

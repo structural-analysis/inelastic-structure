@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.linalg import cho_factor, cho_solve, eigh
+from scipy.linalg import cho_factor, cho_solve
 
 
 class YieldSpecs:
@@ -36,12 +36,13 @@ class Members:
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
-        self.nodes_num = input["nodes_num"]
+        self.initial_nodes_num = input["nodes_num"]
+        self.members = Members(members_list=input["members"])
         self.dim = input["dim"]
-        self.include_softening = input["include_softening"]
-        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
+        self.nodes_num = self.get_nodes_num()
+        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
-        self.members = Members(input["members"])
+        self.include_softening = input["include_softening"]
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
@@ -77,6 +78,13 @@ class Structure:
         self.h = self.create_h()
         self.w = self.create_w()
         self.cs = self.create_cs()
+
+    def get_nodes_num(self):
+        nodes_num = self.initial_nodes_num
+        for member in self.members.list:
+            if member.__class__.__name__ == "PlateMember":
+                nodes_num = member.nodes_num
+        return nodes_num
 
     def _transform_loc_2d_matrix_to_glob(self, member_transform, member_stiffness):
         member_global_stiffness = np.dot(np.dot(np.transpose(member_transform), member_stiffness), member_transform)
@@ -409,6 +417,7 @@ class Structure:
         return yield_points_indices
 
     def populate_boundaries(self):
+        print(self.linear_boundaries)
         return self.nodal_boundaries
 
     def get_boundaries_dof(self):

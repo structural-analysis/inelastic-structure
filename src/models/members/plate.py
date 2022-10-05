@@ -5,66 +5,84 @@ from ..sections.plate import PlateSection
 
 
 class YieldSpecs:
-    def __init__(self, section: PlateSection):
-        self.points_num = 4
+    def __init__(self, section: PlateSection, member_points_num: int):
+        self.points_num = member_points_num
         self.components_num = self.points_num * section.yield_specs.components_num
         self.pieces_num = self.points_num * section.yield_specs.pieces_num
 
 
 class PlateMember:
     # k is calculated based on four integration points
-    def __init__(self, section: PlateSection, nodes: tuple[Node, Node, Node, Node], mesh_num: tuple[int, int]):
+    def __init__(self, section: PlateSection, initial_nodes: tuple[Node, Node, Node, Node], mesh_num: tuple[int, int]):
         self.section = section
-        self.t = section.geometry.t
-        self.nodes = nodes
-        self.member_size_x = nodes[1].x - nodes[0].x
-        self.member_size_y = nodes[2].y - nodes[1].y
+        self.thickness = section.geometry.thickness
+        self.initial_nodes = initial_nodes
+        self.size_x = self.initial_nodes[1].x - self.initial_nodes[0].x
+        self.size_y = self.initial_nodes[2].y - self.initial_nodes[1].y
         self.elements_num_x = mesh_num[0]
         self.elements_num_y = mesh_num[1]
         self.elements_num = self.elements_num_x * self.elements_num_y
-        self.element_size_x = self.member_size_x / self.elements_num_x
-        self.element_size_y = self.member_size_y / self.elements_num_y
+        self.element_size_x = self.size_x / self.elements_num_x
+        self.element_size_y = self.size_y / self.elements_num_y
         self.ke = self.get_element_stiffness()
+        self.te = self.get_element_transform()
 
-        self.member_nodes_num_x = self.elements_num_x + 1
-        self.member_nodes_num_y = self.elements_num_y + 1
-        self.member_nodes_num = self.member_nodes_num_x * self.member_nodes_num_y
-        self.member_nodes = self.get_member_nodes()
+        self.nodes_num_x = self.elements_num_x + 1
+        self.nodes_num_y = self.elements_num_y + 1
+        self.nodes_num = self.nodes_num_x * self.nodes_num_y
+        self.nodes = self.get_nodes()
+        self.elements_nodes = self.get_elements_nodes()
 
         self.element_gauss_points_num = 4
-        self.member_gauss_points_num = self.element_gauss_points_num * self.elements_num
+        self.gauss_points_num = self.element_gauss_points_num * self.elements_num
+        self.yield_specs = YieldSpecs(section=self.section, member_points_num=self.gauss_points_num)
 
-        self.km = self.get_member_stiffness()
+        self.k = self.get_stiffness()
+        self.t = self.get_transform()
+        self.m = None
 
-    def get_member_nodes(self):
-        s = 0
-        empty_member_nodes = np.zeros((self.elements_num, 4))
-        member_nodes = np.matrix(empty_member_nodes)
-        for i in range(self.elements_num):
-            n1 = i + 1 + s
-            n2 = n1 + 1
-            n3 = n2 + self.member_nodes_num_x
-            n4 = n3 - 1
-            member_nodes[i, 0] = n1
-            member_nodes[i, 1] = n2
-            member_nodes[i, 2] = n3
-            member_nodes[i, 3] = n4
-            if (i + 1) % self.elements_num_x == 0:
-                s += 1
-        return member_nodes
-
-    def get_member_nodes_coordinates(self):
+    def get_nodes(self):
+        nodes = []
         x = 0
         y = 0
-        member_nodes_coordinates = np.zeros((self.self.member_nodes_num, 2))
-        for i in range(self.self.member_nodes_num):
-            member_nodes_coordinates[i, 0] = x
-            member_nodes_coordinates[i, 1] = y
+        for i in range(self.nodes_num):
+            nodes.append(Node(num=i, x=x, y=y, z=0))
             x = x + self.element_size_x
-            if (i + 1) % self.member_nodes_num_x == 0:
+            if (i + 1) % self.nodes_num_x == 0:
                 x = 0
                 y = y + self.element_size_y
-        return member_nodes_coordinates
+        return nodes
+
+    def get_elements_nodes(self):
+        s = 0
+        empty_elements_nodes = np.zeros((self.elements_num, 4))
+        elements_nodes = np.matrix(empty_elements_nodes).astype(Node)
+        for i in range(self.elements_num):
+            botton_left_node_num = i + s
+            bottom_right_node_num = botton_left_node_num + 1
+            top_right_node_num = bottom_right_node_num + self.nodes_num_x
+            top_left_node_num = top_right_node_num - 1
+            elements_nodes[i, 0] = self.nodes[botton_left_node_num]
+            elements_nodes[i, 1] = self.nodes[bottom_right_node_num]
+            elements_nodes[i, 2] = self.nodes[top_right_node_num]
+            elements_nodes[i, 3] = self.nodes[top_left_node_num]
+
+            if (i + 1) % self.elements_num_x == 0:
+                s += 1
+        return elements_nodes
+
+    # def get_nodes_coordinates(self):
+    #     x = 0
+    #     y = 0
+    #     nodes_coordinates = np.zeros((self.self.nodes_num, 2))
+    #     for i in range(self.self.nodes_num):
+    #         nodes_coordinates[i, 0] = x
+    #         nodes_coordinates[i, 1] = y
+    #         x = x + self.element_size_x
+    #         if (i + 1) % self.nodes_num_x == 0:
+    #             x = 0
+    #             y = y + self.element_size_y
+    #     return nodes_coordinates
 
     def get_element_shape_functions(self, r, s):
         ax = (self.element_size_x / 2)
@@ -140,15 +158,18 @@ class PlateMember:
         ke = kin * ax * ay
         return ke
 
-    def get_member_stiffness(self):
-        km = np.zeros((3 * self.member_nodes_num, 3 * self.member_nodes_num))
+    def get_element_transform(self):
+        return np.matrix(np.eye(12))
+
+    def get_stiffness(self):
+        k = np.zeros((3 * self.nodes_num, 3 * self.nodes_num))
         klix = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
         klix = klix.astype(int)
-        for k in range(self.elements_num):
-            g1 = self.member_nodes[k, 0]
-            g2 = self.member_nodes[k, 1]
-            g3 = self.member_nodes[k, 2]
-            g4 = self.member_nodes[k, 3]
+        for i in range(self.elements_num):
+            g1 = self.elements_nodes[i, 0].num
+            g2 = self.elements_nodes[i, 1].num
+            g3 = self.elements_nodes[i, 2].num
+            g4 = self.elements_nodes[i, 3].num
 
             kgix = np.array([3 * g1 - 3, 3 * g1 - 2, 3 * g1 - 1,
                              3 * g2 - 3, 3 * g2 - 2, 3 * g2 - 1,
@@ -159,5 +180,8 @@ class PlateMember:
             kgix = kgix.astype(int)
             for i in range(12):
                 for j in range(12):
-                    km[kgix[i], kgix[j]] = km[kgix[i], kgix[j]] + self.ke[klix[i], klix[j]]
-        return km
+                    k[kgix[i], kgix[j]] = k[kgix[i], kgix[j]] + self.ke[klix[i], klix[j]]
+        return k
+
+    def get_transform(self):
+        return np.matrix(np.eye(3 * self.nodes_num))
