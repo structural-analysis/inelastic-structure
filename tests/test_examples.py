@@ -5,7 +5,7 @@ example_names = [
     "3story_perfect",
     "3story_softening",
     "simple_beam",
-    "simple_beam_dynamic",
+    # "simple_beam_dynamic",
     "skew_beams",
     # "triangle_truss",
     "tripod_corner",

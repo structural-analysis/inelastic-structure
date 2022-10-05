@@ -112,6 +112,16 @@ class Structure:
 
         return reduced_structure_prop
 
+    def apply_load_boundry_conditions(self, force):
+        reduced_f = force
+        deleted_counter = 0
+        for i in range(len(self.boundaries_dof)):
+            reduced_f = np.delete(
+                reduced_f, self.boundaries_dof[i] - deleted_counter, 0
+            )
+            deleted_counter += 1
+        return reduced_f
+
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
         empty_mass = np.zeros((self.total_dofs_num, self.total_dofs_num))
@@ -138,15 +148,15 @@ class Structure:
         return structure_prop
 
     def _assemble_joint_load(self, loads, time_step=None):
-        f_total = np.zeros((self.general.total_dofs_num, 1))
+        f_total = np.zeros((self.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
-            f_total[self.general.node_dofs_num * load.node + load.dof] = f_total[self.general.node_dofs_num * load.node + load.dof] + load_magnitude
+            f_total[self.node_dofs_num * load.node + load.dof] = f_total[self.node_dofs_num * load.node + load.dof] + load_magnitude
         return f_total
 
     def get_load_vector(self, time_step=None):
-        f_total = np.zeros((self.general.total_dofs_num, 1))
+        f_total = np.zeros((self.total_dofs_num, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
             if self.loads[load]:
@@ -188,9 +198,9 @@ class Structure:
         o = 0
         reduced_forces = self.apply_load_boundry_conditions(load)
         reduced_disp = cho_solve(self.kc, reduced_forces)
-        empty_nodal_disp = np.zeros((self.general.total_dofs_num, 1))
+        empty_nodal_disp = np.zeros((self.total_dofs_num, 1))
         nodal_disp = np.matrix(empty_nodal_disp)
-        for i in range(self.general.total_dofs_num):
+        for i in range(self.total_dofs_num):
             if (j != self.boundaries_dof.shape[0] and i == self.boundaries_dof[j]):
                 j += 1
             else:
@@ -485,7 +495,7 @@ class Structure:
         return mtt, ktt, k00, k0t
 
     # def compute_modes_props(self):
-    #     damping = self.general.damping
+    #     damping = self.damping
     #     eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False)
     #     wn = np.sqrt(eigvals)
     #     wd = np.sqrt(1 - damping ** 2) * wn
@@ -497,7 +507,7 @@ class Structure:
     #     return m_modal, k_modal
 
     # def compute_i_duhamel(self, t1, t2, wn, wd):
-    #     damping = self.general.damping
+    #     damping = self.damping
     #     wd = np.sqrt(1 - damping ** 2) * wn
     #     i11 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
     #     i12 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
@@ -510,7 +520,7 @@ class Structure:
     #     return i1, i2, i3, i4
 
     # def compute_abx_duhamel(self, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
-    #     damping = self.general.damping
+    #     damping = self.damping
     #     deltat = t2 - t1
     #     deltap = p2 - p1
     #     wd = np.sqrt(1 - damping ** 2) * wn
