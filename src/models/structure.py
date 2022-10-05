@@ -57,7 +57,6 @@ class Structure:
         self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
         # self.condensed_k, self.condensed_m, self.ku0, self.reduced_k00_inv, self.reduced_k00 = self.apply_static_condensation()
         # self.wns, self.wds, self.modes = self.compute_modes_props()
-        self.f = self.get_load_vector()
         self.yield_points_indices = self.get_yield_points_indices()
 
         self.phi = self.create_phi()
