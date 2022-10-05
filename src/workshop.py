@@ -6,7 +6,7 @@ import numpy as np
 from src.models.points import Node
 from src.models.sections.frame import FrameSection
 from src.models.sections.plate import PlateSection
-from src.models.members.frame import FrameElement2D, Mass
+from src.models.members.frame import FrameMember2D, Mass
 from src.models.members.plate import PlateMember
 from src.models.structure import Structure
 
@@ -114,7 +114,7 @@ def create_frame_members(example_name, nodes, general_properties):
         for i in range(frames_array.shape[0]):
             frame_section = frame_sections[frames_array[i, 0]]
             frame_members.append(
-                FrameElement2D(
+                FrameMember2D(
                     nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
                     ends_fixity=frames_array[i, 3],
                     section=frame_section,
@@ -147,7 +147,7 @@ def create_plate_members(example_name, nodes):
                         nodes[int(plates_array[i, 1][2])],
                         nodes[int(plates_array[i, 1][3])],
                     ),
-                    mesh_num=(plates_array[i, 2], plates_array[i, 3]),
+                    mesh_num=(int(plates_array[i, 2]), int(plates_array[i, 3])),
                 )
             )
     return plate_members

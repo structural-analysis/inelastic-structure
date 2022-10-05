@@ -79,4 +79,4 @@ class PlateSection:
                             [self.material.nu, 1, 0],
                             [0, 0, (1 - self.material.nu) / 2]])
         self.be = (self.material.e / (1 - self.material.nu ** 2)) * self.d
-        self.de = (self.material.e * self.geomatry.t ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d
+        self.de = (self.material.e * self.geometry.t ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d

@@ -159,5 +159,5 @@ class PlateMember:
             kgix = kgix.astype(int)
             for i in range(12):
                 for j in range(12):
-                    km[kgix[i], kgix[j]] = km[kgix[i], kgix[j]] + kl[klix[i], klix[j]]
+                    km[kgix[i], kgix[j]] = km[kgix[i], kgix[j]] + self.ke[klix[i], klix[j]]
         return km
