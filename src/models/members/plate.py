@@ -30,6 +30,7 @@ class PlateMember:
         self.nodes_num_x = self.elements_num_x + 1
         self.nodes_num_y = self.elements_num_y + 1
         self.nodes_num = self.nodes_num_x * self.nodes_num_y
+        self.total_dofs_num = self.nodes_num * 3
         self.nodes = self.get_nodes()
         self.elements_nodes = self.get_elements_nodes()
 

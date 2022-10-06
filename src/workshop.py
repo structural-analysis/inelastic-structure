@@ -4,6 +4,7 @@ import logging
 import numpy as np
 
 from src.models.points import Node
+from src.models.boundaries import NodalBoundary, LinearBoundary
 from src.models.sections.frame import FrameSection
 from src.models.sections.plate import PlateSection
 from src.models.members.frame import FrameMember2D, Mass
@@ -26,6 +27,7 @@ disp_limits_file = "limits/disp.csv"
 dynamic_loads_dir = "loads/dynamic/"
 joint_loads_file = "loads/static/joint_loads.csv"
 
+
 def get_general_properties(example_name):
     general_file_path = os.path.join(examples_dir, example_name, general_file)
     with open(general_file_path, "r") as file_path:
@@ -33,13 +35,13 @@ def get_general_properties(example_name):
     return general_properties
 
 
-def create_nodes(example_name, structure_dim):
-    nodes = []
+def create_initial_nodes(example_name, structure_dim):
+    initial_nodes = []
     global_cords_path = os.path.join(examples_dir, example_name, global_cords_file)
     if structure_dim.lower() == "2d":
         nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
         for i in range(nodes_array.shape[0]):
-            nodes.append(Node(
+            initial_nodes.append(Node(
                 num=i,
                 x=nodes_array[i][0],
                 y=nodes_array[i][1],
@@ -48,13 +50,44 @@ def create_nodes(example_name, structure_dim):
     elif structure_dim.lower() == "3d":
         nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1)
         for i in range(nodes_array.shape[0]):
-            nodes.append(Node(
+            initial_nodes.append(Node(
                 num=i,
                 x=nodes_array[i][0],
                 y=nodes_array[i][1],
                 z=nodes_array[i][2],
             ))
-    return nodes
+    return initial_nodes
+
+
+def create_nodal_boundaries(example_name, initial_nodes):
+    nodal_boundaries = []
+    nodal_boundaries_path = os.path.join(examples_dir, example_name, nodal_boundaries_file)
+    try:
+        nodal_boundaries_array = np.loadtxt(fname=nodal_boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+        for i in range(nodal_boundaries_array.shape[0]):
+            nodal_boundaries.append(NodalBoundary(
+                node=initial_nodes[nodal_boundaries_array[i][0]],
+                dof=nodal_boundaries_array[i][1],
+            ))
+    except FileNotFoundError:
+        pass
+    return nodal_boundaries
+
+
+def create_linear_boundaries(example_name, initial_nodes):
+    linear_boundaries = []
+    linear_boundaries_path = os.path.join(examples_dir, example_name, linear_boundaries_file)
+    try:
+        linear_boundaries_array = np.loadtxt(fname=linear_boundaries_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=int)
+        for i in range(linear_boundaries_array.shape[0]):
+            linear_boundaries.append(LinearBoundary(
+                start_node=initial_nodes[linear_boundaries_array[i][0]],
+                end_node=initial_nodes[linear_boundaries_array[i][1]],
+                dof=linear_boundaries_array[i][2],
+            ))
+    except FileNotFoundError:
+        pass
+    return linear_boundaries
 
 
 def create_frame_sections(example_name):
@@ -202,20 +235,9 @@ def create_dynamic_loads(example_name):
 
 
 def get_structure_input(example_name):
-    nodal_boundaries_path = os.path.join(examples_dir, example_name, nodal_boundaries_file)
-    linear_boundaries_path = os.path.join(examples_dir, example_name, linear_boundaries_file)
-    joint_load_path = os.path.join(examples_dir, example_name, static_joint_loads_file)
+    # joint_load_path = os.path.join(examples_dir, example_name, static_joint_loads_file)
     load_limit_path = os.path.join(examples_dir, example_name, load_limit_file)
     disp_limits_path = os.path.join(examples_dir, example_name, disp_limits_file)
-
-    try:
-        nodal_boundaries = np.loadtxt(fname=nodal_boundaries_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=int)
-    except FileNotFoundError:
-        nodal_boundaries = None
-    try:
-        linear_boundaries = np.loadtxt(fname=linear_boundaries_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=int)
-    except FileNotFoundError:
-        linear_boundaries = None
 
     disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
     load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
@@ -225,17 +247,18 @@ def get_structure_input(example_name):
     dynamic_loads = create_dynamic_loads(example_name)
 
     general_properties = get_general_properties(example_name)
-    nodes = create_nodes(example_name, structure_dim=general_properties["structure_dim"])
-
+    initial_nodes = create_initial_nodes(example_name, structure_dim=general_properties["structure_dim"])
+    nodal_boundaries = create_nodal_boundaries(example_name, initial_nodes=initial_nodes)
+    linear_boundaries = create_linear_boundaries(example_name, initial_nodes=initial_nodes)
     frame_members = create_frame_members(
         example_name=example_name,
         general_properties=general_properties,
-        nodes=nodes,
+        nodes=initial_nodes,
     )
 
     plate_members = create_plate_members(
         example_name=example_name,
-        nodes=nodes,
+        nodes=initial_nodes,
     )
 
     limits = {
@@ -251,7 +274,7 @@ def get_structure_input(example_name):
     }
 
     input = {
-        "nodes_num": len(nodes),
+        "initial_nodes": initial_nodes,
         "dim": general_properties["structure_dim"],
         "include_softening": general_properties["include_softening"],
         "members": frame_members + plate_members,

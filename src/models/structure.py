@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 
+from src.models.points import Node
+from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
+
 
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
@@ -36,17 +39,19 @@ class Members:
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
-        self.initial_nodes_num = input["nodes_num"]
+        self.initial_nodes = input["initial_nodes"]
+        self.initial_nodes_num = len(self.initial_nodes)
         self.members = Members(members_list=input["members"])
         self.dim = input["dim"]
-        self.nodes_num = self.get_nodes_num()
+        self.nodes = self.get_nodes()
+        self.nodes_num = len(self.nodes)
         self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
         self.include_softening = input["include_softening"]
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
-        self.boundaries = self.populate_boundaries()
+        self.boundaries = self.aggregate_boundaries()
         self.boundaries_dof = self.get_boundaries_dof()
         self.loads = input["loads"]
         self.limits = input["limits"]
@@ -79,12 +84,12 @@ class Structure:
         self.w = self.create_w()
         self.cs = self.create_cs()
 
-    def get_nodes_num(self):
-        nodes_num = self.initial_nodes_num
+    def get_nodes(self):
+        nodes = self.initial_nodes
         for member in self.members.list:
             if member.__class__.__name__ == "PlateMember":
-                nodes_num = member.nodes_num
-        return nodes_num
+                nodes = member.nodes
+        return nodes
 
     def _transform_loc_2d_matrix_to_glob(self, member_transform, member_stiffness):
         member_global_stiffness = np.dot(np.dot(np.transpose(member_transform), member_stiffness), member_transform)
@@ -416,15 +421,54 @@ class Structure:
                 index_counter += yield_point_pieces
         return yield_points_indices
 
-    def populate_boundaries(self):
-        print(self.linear_boundaries)
-        return self.nodal_boundaries
+    def aggregate_boundaries(self):
+        boundaries = self.nodal_boundaries
+        for member in self.members.list:
+            if member.__class__.__name__ == "PlateMember":
+                boundaries = self.get_nodal_boundaries_from_linear()
+        return list(set(boundaries))
+
+    def get_nodal_boundaries_from_linear(self):
+        new_nodal_boundaries = []
+        for linear_boundary in self.linear_boundaries:
+            dof_restrainer = self.get_dof_restrainer_from_linear_boundary(linear_boundary.start_node, linear_boundary.end_node, linear_boundary.dof)
+            restrain_dimension_name = dof_restrainer.dimension_name
+            restrain_dimension_value = dof_restrainer.dimension_value
+            restrain_dof = dof_restrainer.dof
+            if restrain_dimension_name == "x":
+                for node in self.nodes:
+                    if node.x == restrain_dimension_value:
+                        new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
+            elif restrain_dimension_name == "y":
+                for node in self.nodes:
+                    if node.y == restrain_dimension_value:
+                        new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
+        return new_nodal_boundaries
+
+    def get_dof_restrainer_from_linear_boundary(self, start_node: Node, end_node: Node, dof):
+        x_diff = end_node.x - start_node.x
+        y_diff = end_node.y - start_node.y
+
+        if end_node.z != 0 or start_node.z != 0:
+            raise Exception("z dimension not supported yet")
+        elif x_diff != 0 and y_diff != 0:
+            raise Exception("linear boundaries must be straight lines")
+        elif x_diff == 0 and y_diff == 0:
+            raise Exception("linear boundary start and end nodes overlap")
+        elif x_diff == 0 and y_diff != 0:
+            restrain_dim = "x"
+            restrain_value = end_node.x
+        elif x_diff != 0 and y_diff == 0:
+            restrain_dim = "y"
+            restrain_value = end_node.y
+        dof_restrainer = NodeDOFRestrainer(dimension_name=restrain_dim, dimension_value=restrain_value, dof=dof)
+        return dof_restrainer
 
     def get_boundaries_dof(self):
-        boundaries_size = self.boundaries.shape[0]
+        boundaries_size = len(self.boundaries)
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
-            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1])
+            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i].node.num + self.boundaries[i].dof)
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):
