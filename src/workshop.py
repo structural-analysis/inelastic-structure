@@ -274,9 +274,8 @@ def get_structure_input(example_name):
     }
 
     input = {
+        "general_properties": general_properties,
         "initial_nodes": initial_nodes,
-        "dim": general_properties["structure_dim"],
-        "include_softening": general_properties["include_softening"],
         "members": frame_members + plate_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,

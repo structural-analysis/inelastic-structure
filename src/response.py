@@ -1,12 +1,13 @@
 import os
 import numpy as np
+from src.analysis import Analysis
 from src.models.functions import get_members_max_dofs_num
-
 
 outputs_dir = "output/examples/"
 
 
-def calculate_responses(structure, result, example_name):
+def calculate_responses(analysis: Analysis, result, example_name):
+    structure = analysis.structure
     pms_history = result["pms_history"]
     load_level_history = result["load_level_history"]
     increments_num = len(load_level_history)
@@ -14,14 +15,14 @@ def calculate_responses(structure, result, example_name):
     max_member_dofs_num = get_members_max_dofs_num(structure.members.list)
     load_levels = np.zeros([increments_num, 1])
 
-    nodal_disps_sensitivity = structure.nodal_disps_sensitivity
+    nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
     nodal_disps = np.zeros([increments_num, structure.total_dofs_num])
 
-    members_forces_sensitivity = structure.members_forces_sensitivity
+    members_forces_sensitivity = analysis.members_forces_sensitivity
     members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
 
     # members displacements
-    members_disps_sensitivity = structure.members_disps_sensitivity
+    members_disps_sensitivity = analysis.members_disps_sensitivity
     members_disps = np.zeros([increments_num, structure.members.num], dtype=object)
 
     for i in range(increments_num):
@@ -32,20 +33,20 @@ def calculate_responses(structure, result, example_name):
         load_levels[i, 0] = load_level
 
         # structure nodal displacements
-        scaled_elastic_nodal_disp = np.matrix(np.dot(load_level, structure.elastic_nodal_disp))
+        scaled_elastic_nodal_disp = np.matrix(np.dot(load_level, analysis.elastic_nodal_disp))
         plastic_nodal_disp = nodal_disps_sensitivity * phi_x
         elastoplastic_nodal_disp = scaled_elastic_nodal_disp + plastic_nodal_disp[0, 0]
         nodal_disps[i, :] = np.asarray(elastoplastic_nodal_disp).reshape(-1)
 
         # members forces
-        scaled_elastic_members_forces = np.matrix(np.dot(load_level, structure.elastic_members_forces))
+        scaled_elastic_members_forces = np.matrix(np.dot(load_level, analysis.elastic_members_forces))
         plastic_members_forces = members_forces_sensitivity * phi_x
         elastoplastic_members_forces = scaled_elastic_members_forces + plastic_members_forces
         for j in range(structure.members.num):
             members_forces[i, j] = elastoplastic_members_forces[j, 0]
 
         # members disps
-        scaled_elastic_members_disps = np.matrix(np.dot(load_level, structure.elastic_members_disps))
+        scaled_elastic_members_disps = np.matrix(np.dot(load_level, analysis.elastic_members_disps))
         plastic_members_disps = members_disps_sensitivity * phi_x
         elastoplastic_members_disps = scaled_elastic_members_disps + plastic_members_disps
         for j in range(structure.members.num):

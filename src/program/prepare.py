@@ -1,20 +1,22 @@
 import numpy as np
-
+from src.analysis import Analysis
 
 class RawData:
-    def __init__(self, structure):
+    def __init__(self, analysis: Analysis):
+        structure = analysis.structure
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
         self.phi = structure.phi
-        self.p0 = structure.p0
-        self.pv = structure.pv
-        self.d0 = structure.d0
-        self.dv = structure.dv
 
         self.q = structure.q
         self.h = structure.h
         self.w = structure.w
         self.cs = structure.cs
+
+        self.p0 = analysis.p0
+        self.pv = analysis.pv
+        self.d0 = analysis.d0
+        self.dv = analysis.dv
 
         self.disp_limits_num = self.disp_limits.shape[0]
         self.limits_num = 1 + self.disp_limits_num * 2
