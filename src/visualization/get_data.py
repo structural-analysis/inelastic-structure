@@ -120,7 +120,7 @@ def get_yield_points(selected_increments_num, selected_yield_points_num):
             "z": increment_yield_points[2, :],
             "label": [i for i in range(members_num)],
         }
-    print(f"{yield_points=}")
+
     increments_yield_points.append(yield_points)
     # x_points = [0.15, 0.3, 0.45, 0.6, 1]
     # y_points = [0.2, 0.3, 0.7, 1.0, 0.5]

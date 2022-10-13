@@ -1,8 +1,10 @@
 import numpy as np
+from math import isclose
 from scipy.linalg import cho_factor
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
+from src.settings import settings
 
 
 class YieldSpecs:
@@ -280,11 +282,11 @@ class Structure:
             restrain_dof = dof_restrainer.dof
             if restrain_dimension_name == "x":
                 for node in self.nodes:
-                    if node.x == restrain_dimension_value:
+                    if isclose(node.x, restrain_dimension_value, abs_tol=settings.isclose_tolerance):
                         new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
             elif restrain_dimension_name == "y":
                 for node in self.nodes:
-                    if node.y == restrain_dimension_value:
+                    if isclose(node.y, restrain_dimension_value, abs_tol=settings.isclose_tolerance):
                         new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
         return new_nodal_boundaries
 

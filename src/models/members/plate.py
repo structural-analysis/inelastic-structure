@@ -172,10 +172,10 @@ class PlateMember:
             g3 = self.elements_nodes[i, 2].num
             g4 = self.elements_nodes[i, 3].num
 
-            kgix = np.array([3 * g1 - 3, 3 * g1 - 2, 3 * g1 - 1,
-                             3 * g2 - 3, 3 * g2 - 2, 3 * g2 - 1,
-                             3 * g3 - 3, 3 * g3 - 2, 3 * g3 - 1,
-                             3 * g4 - 3, 3 * g4 - 2, 3 * g4 - 1,
+            kgix = np.array([3 * g1, 3 * g1 + 1, 3 * g1 + 2,
+                             3 * g2, 3 * g2 + 1, 3 * g2 + 2,
+                             3 * g3, 3 * g3 + 1, 3 * g3 + 2,
+                             3 * g4, 3 * g4 + 1, 3 * g4 + 2
                              ])
 
             kgix = kgix.astype(int)
