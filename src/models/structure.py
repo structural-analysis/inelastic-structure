@@ -150,7 +150,7 @@ class Structure:
     def _assemble_members(self, member, member_prop, structure_prop):
         member_nodes_num = len(member.nodes)
         member_dofs_num = member.k.shape[0]
-        member_node_dofs_num = member_dofs_num / member_nodes_num
+        member_node_dofs_num = int(member_dofs_num / member_nodes_num)
         for i in range(member_dofs_num):
             for j in range(member_dofs_num):
                 local_member_node_row = int(j // member_node_dofs_num)

@@ -5,18 +5,21 @@ from ..sections.plate import PlateSection
 
 
 class PlateElement:
-    def __init__(self, num, section, size_x, size_y, nodes = tuple[Node, Node, Node, Node]):
+    def __init__(self, num, section, size_x, size_y, nodes: tuple[Node, Node, Node, Node]):
         self.num = num
         self.section = section
         self.size_x = size_x
         self.size_y = size_y
         self.nodes = nodes
         self.nodes_num = len(self.nodes)
+        self.total_dofs_num = 3 * self.nodes_num
         self.gauss_points = self.get_gauss_points()
+
         self.k = self.get_stiffness()
         self.t = self.get_transform()
+        self.m = None
 
-    def get_gauss_points():
+    def get_gauss_points(self):
         gauss_points = [
             PlateGaussPoint(r=-0.57735, s=-0.57735),
             PlateGaussPoint(r=+0.57735, s=-0.57735),
@@ -92,14 +95,14 @@ class PlateElement:
     def get_stiffness(self):
         ax = (self.size_x / 2)
         ay = (self.size_y / 2)
-        kin = np.matrix(np.zeros(3 * self.nodes_num, 3 * self.nodes_num))
+        kin = np.matrix(np.zeros((self.total_dofs_num, self.total_dofs_num)))
         for point in self.gauss_points:
             kin += self.get_stiffness_integrand(r=point.r, s=point.s)
         k = kin * ax * ay
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(3 * self.nodes_num))
+        return np.matrix(np.eye(self.total_dofs_num))
 
 
 class PlateElements:
@@ -108,10 +111,8 @@ class PlateElements:
         self.section = section
         self.count_x = mesh_num[0]
         self.count_y = mesh_num[1]
-        self.count = self.count_x * self.count_y
         self.nodes_num_x = self.count_x + 1
         self.nodes_num_y = self.count_y + 1
-        self.nodes_num = self.nodes_num_x * self.nodes_num_y
         self.element_size_x = member_size[0] / self.count_x
         self.element_size_y = member_size[1] / self.count_y
         self.list = self.get_elements_list()
@@ -145,7 +146,7 @@ class PlateElements:
                         section=self.section,
                         size_x=self.element_size_x,
                         size_y=self.element_size_y,
-                        nodes = (
+                        nodes=(
                             Node(num=bottom_left_node_num, x=bottom_left_node_x, y=bottom_left_node_y, z=self.z_coordinate),
                             Node(num=bottom_right_node_num, x=bottom_right_node_x, y=bottom_right_node_y, z=self.z_coordinate),
                             Node(num=top_right_node_num, x=top_right_node_x, y=top_right_node_y, z=self.z_coordinate),
@@ -182,13 +183,12 @@ class PlateMember:
             mesh_num=mesh_num,
         )
 
-        self.total_dofs_num = self.nodes_num * 3
         self.nodes = self.get_nodes()
-        self.elements_nodes = self.get_elements_nodes()
+        self.nodes_num = len(self.nodes)
+        self.total_dofs_num = 3 * self.nodes_num
 
-        self.element_gauss_points = self.get_element_gauss_points()
-        self.element_gauss_points_num = len(self.element_gauss_points)
-        self.gauss_points_num = self.element_gauss_points_num * self.elements_num
+        self.gauss_points = self.get_gauss_points()
+        self.gauss_points_num = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, member_points_num=self.gauss_points_num)
 
         self.k = self.get_stiffness()
@@ -197,58 +197,58 @@ class PlateMember:
 
     def get_nodes(self):
         nodes = []
-        x = 0
-        y = 0
-        for i in range(self.nodes_num):
-            nodes.append(Node(num=i, x=x, y=y, z=0))
-            x = x + self.element_size_x
-            if (i + 1) % self.nodes_num_x == 0:
-                x = 0
-                y = y + self.element_size_y
-        return nodes
+        for element in self.elements.list:
+            for node in element.nodes:
+                nodes.append(node)
+        return sorted(set(nodes), key=lambda x: x.num)
+
+    def get_gauss_points(self):
+        points = []
+        for element in self.elements.list:
+            for point in element.gauss_points:
+                points.append(point)
+        return points
 
     def get_stiffness(self):
-        k = np.zeros((3 * self.nodes_num, 3 * self.nodes_num))
-        klix = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-        klix = klix.astype(int)
-        for i in range(self.elements_num):
-            g1 = self.elements_nodes[i, 0].num
-            g2 = self.elements_nodes[i, 1].num
-            g3 = self.elements_nodes[i, 2].num
-            g4 = self.elements_nodes[i, 3].num
+        k = np.zeros((self.total_dofs_num, self.total_dofs_num))
+        for element in self.elements.list:
+            element_global_dofs = np.zeros((element.total_dofs_num, element.total_dofs_num))
+            g0 = element.nodes[0].num
+            g1 = element.nodes[1].num
+            g2 = element.nodes[2].num
+            g3 = element.nodes[3].num
 
-            kgix = np.array([3 * g1, 3 * g1 + 1, 3 * g1 + 2,
-                             3 * g2, 3 * g2 + 1, 3 * g2 + 2,
-                             3 * g3, 3 * g3 + 1, 3 * g3 + 2,
-                             3 * g4, 3 * g4 + 1, 3 * g4 + 2
-                             ])
+            element_global_dofs = np.array([3 * g0, 3 * g0 + 1, 3 * g0 + 2,
+                                            3 * g1, 3 * g1 + 1, 3 * g1 + 2,
+                                            3 * g2, 3 * g2 + 1, 3 * g2 + 2,
+                                            3 * g3, 3 * g3 + 1, 3 * g3 + 2
+                                            ])
 
-            kgix = kgix.astype(int)
-            for i in range(3 * self.element_nodes_num):
-                for j in range(3 * self.element_nodes_num):
-                    k[kgix[i], kgix[j]] = k[kgix[i], kgix[j]] + self.ke[klix[i], klix[j]]
+            for i in range(element.total_dofs_num):
+                for j in range(element.total_dofs_num):
+                    k[element_global_dofs[i], element_global_dofs[j]] = k[element_global_dofs[i], element_global_dofs[j]] + element.k[i, j]
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(3 * self.nodes_num))
+        return np.matrix(np.eye(self.total_dofs_num))
 
-    # NOTE: these three functions is intuitional and incomplete.
-    def get_gauss_point_moments(self, r, s, d):
-        # TODO: check for possible too much function call
-        b = self.get_element_shape_derivatives(r=r, s=s)
-        return self.section.de * b * d
+    # # NOTE: these three functions is intuitional and incomplete.
+    # def get_gauss_point_moments(self, r, s, d):
+    #     # TODO: check for possible too much function call
+    #     b = self.get_element_shape_derivatives(r=r, s=s)
+    #     return self.section.de * b * d
 
-    def get_element_gauss_points_moments(self, d):
-        element_gauss_points_moments = np.matrix(np.zeros(3 * self.element_gauss_points_num, 1))
-        i = 0
-        for point in self.element_gauss_points:
-            element_gauss_points_moments[i, 0] = self.get_gauss_point_moments(point.r, point.s, d)[0, 0]
-            element_gauss_points_moments[i + 1, 0] = self.get_gauss_point_moments(point.r, point.s, d)[1, 0]
-            element_gauss_points_moments[i + 2, 0] = self.get_gauss_point_moments(point.r, point.s, d)[2, 0]
-            i +=3
-        return element_gauss_points_moments
+    # def get_element_gauss_points_moments(self, d):
+    #     element_gauss_points_moments = np.matrix(np.zeros(3 * self.element_gauss_points_num, 1))
+    #     i = 0
+    #     for point in self.element_gauss_points:
+    #         element_gauss_points_moments[i, 0] = self.get_gauss_point_moments(point.r, point.s, d)[0, 0]
+    #         element_gauss_points_moments[i + 1, 0] = self.get_gauss_point_moments(point.r, point.s, d)[1, 0]
+    #         element_gauss_points_moments[i + 2, 0] = self.get_gauss_point_moments(point.r, point.s, d)[2, 0]
+    #         i +=3
+    #     return element_gauss_points_moments
 
-    def get_gauss_points_moments(self):
-        gauss_points_moments = np.matrix(np.zeros(3 * self.gauss_points_num, 1))
-        for element in self.elements:
-            gauss_points_moments[]
+    # def get_gauss_points_moments(self):
+    #     gauss_points_moments = np.matrix(np.zeros(3 * self.gauss_points_num, 1))
+    #     for element in self.elements:
+    #         gauss_points_moments[]
