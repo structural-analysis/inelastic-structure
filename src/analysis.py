@@ -96,6 +96,10 @@ class Analysis:
                     p0[current_p0_row + 1] = member_force[2, 0]
                     p0[current_p0_row + 2] = member_force[3, 0]
                     p0[current_p0_row + 3] = member_force[5, 0]
+            elif member.__class__.__name__ == "PlateMember":
+                member_force = member.get_internal_moments(members_disps[i, 0])
+                members_forces[i, 0] = member_force
+                print(members_forces)
             current_p0_row = current_p0_row + member.yield_specs.components_num
         return {"members_forces": members_forces, "p0": p0}
 

@@ -4,6 +4,13 @@ from ..points import Node, PlateGaussPoint
 from ..sections.plate import PlateSection
 
 
+class YieldSpecs:
+    def __init__(self, section: PlateSection, points_num: int):
+        self.points_num = points_num
+        self.components_num = self.points_num * section.yield_specs.components_num
+        self.pieces_num = self.points_num * section.yield_specs.pieces_num
+
+
 class PlateElement:
     def __init__(self, num, section, size_x, size_y, nodes: tuple[Node, Node, Node, Node]):
         self.num = num
@@ -14,6 +21,8 @@ class PlateElement:
         self.nodes_num = len(self.nodes)
         self.total_dofs_num = 3 * self.nodes_num
         self.gauss_points = self.get_gauss_points()
+        self.gauss_points_num = len(self.gauss_points)
+        self.yield_specs = YieldSpecs(section=self.section, points_num=self.gauss_points_num)
 
         self.k = self.get_stiffness()
         self.t = self.get_transform()
@@ -104,6 +113,20 @@ class PlateElement:
     def get_transform(self):
         return np.matrix(np.eye(self.total_dofs_num))
 
+    def get_gauss_point_moments(self, r, s, d):
+        b = self.get_shape_derivatives(r=r, s=s)
+        return self.section.de * b * d
+
+    def get_internal_moments(self, d):
+        internal_moments = np.matrix(np.zeros((3 * self.gauss_points_num, 1)))
+        i = 0
+        for point in self.gauss_points:
+            internal_moments[i, 0] = self.get_gauss_point_moments(point.r, point.s, d)[0, 0]
+            internal_moments[i + 1, 0] = self.get_gauss_point_moments(point.r, point.s, d)[1, 0]
+            internal_moments[i + 2, 0] = self.get_gauss_point_moments(point.r, point.s, d)[2, 0]
+            i += 3
+        return internal_moments
+
 
 class PlateElements:
     def __init__(self, z_coordinate, section, member_size: tuple[float, float], mesh_num: tuple[int, int]):
@@ -111,6 +134,7 @@ class PlateElements:
         self.section = section
         self.count_x = mesh_num[0]
         self.count_y = mesh_num[1]
+        self.count = self.count_x * self.count_y
         self.nodes_num_x = self.count_x + 1
         self.nodes_num_y = self.count_y + 1
         self.element_size_x = member_size[0] / self.count_x
@@ -159,13 +183,6 @@ class PlateElements:
         return elements_list
 
 
-class YieldSpecs:
-    def __init__(self, section: PlateSection, member_points_num: int):
-        self.points_num = member_points_num
-        self.components_num = self.points_num * section.yield_specs.components_num
-        self.pieces_num = self.points_num * section.yield_specs.pieces_num
-
-
 class PlateMember:
     # calculations is based on four gauss points
     def __init__(self, section: PlateSection, initial_nodes: tuple[Node, Node, Node, Node], mesh_num: tuple[int, int]):
@@ -189,7 +206,7 @@ class PlateMember:
 
         self.gauss_points = self.get_gauss_points()
         self.gauss_points_num = len(self.gauss_points)
-        self.yield_specs = YieldSpecs(section=self.section, member_points_num=self.gauss_points_num)
+        self.yield_specs = YieldSpecs(section=self.section, points_num=self.gauss_points_num)
 
         self.k = self.get_stiffness()
         self.t = self.get_transform()
@@ -232,23 +249,25 @@ class PlateMember:
     def get_transform(self):
         return np.matrix(np.eye(self.total_dofs_num))
 
-    # # NOTE: these three functions is intuitional and incomplete.
-    # def get_gauss_point_moments(self, r, s, d):
-    #     # TODO: check for possible too much function call
-    #     b = self.get_element_shape_derivatives(r=r, s=s)
-    #     return self.section.de * b * d
+    def get_elements_nodal_disps(self, nodal_disps):
+        elements_nodal_disps = []
+        for element in self.elements.list:
+            element_nodal_disps = np.matrix(np.zeros((3 * element.nodes_num, 1)))
+            i = 0
+            for node in element.nodes:
+                element_nodal_disps[i, 0] = nodal_disps[3 * node.num]
+                element_nodal_disps[i + 1, 0] = nodal_disps[3 * node.num + 1]
+                element_nodal_disps[i + 2, 0] = nodal_disps[3 * node.num + 2]
+                i += 3
+            elements_nodal_disps.append(element_nodal_disps)
+        return elements_nodal_disps
 
-    # def get_element_gauss_points_moments(self, d):
-    #     element_gauss_points_moments = np.matrix(np.zeros(3 * self.element_gauss_points_num, 1))
-    #     i = 0
-    #     for point in self.element_gauss_points:
-    #         element_gauss_points_moments[i, 0] = self.get_gauss_point_moments(point.r, point.s, d)[0, 0]
-    #         element_gauss_points_moments[i + 1, 0] = self.get_gauss_point_moments(point.r, point.s, d)[1, 0]
-    #         element_gauss_points_moments[i + 2, 0] = self.get_gauss_point_moments(point.r, point.s, d)[2, 0]
-    #         i +=3
-    #     return element_gauss_points_moments
-
-    # def get_gauss_points_moments(self):
-    #     gauss_points_moments = np.matrix(np.zeros(3 * self.gauss_points_num, 1))
-    #     for element in self.elements:
-    #         gauss_points_moments[]
+    def get_internal_moments(self, nodal_disps):
+        elements_nodal_disps = self.get_elements_nodal_disps(nodal_disps)
+        internal_moments = np.matrix(np.zeros((3 * self.gauss_points_num, 1)))
+        for i, element in enumerate(self.elements.list):
+            element_yield_components_num = element.yield_specs.components_num
+            start_index = i * element_yield_components_num
+            end_index = (i + 1) * element_yield_components_num
+            internal_moments[start_index:end_index, 0] = element.get_internal_moments(elements_nodal_disps[i])
+        return internal_moments
