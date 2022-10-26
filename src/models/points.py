@@ -12,6 +12,9 @@ class Node:
     def __hash__(self):
         return hash(('num', self.num))
 
+    def __gt__(self, other):
+        return self.num > other.num
+
 
 class PlateGaussPoint:
     def __init__(self, r, s):

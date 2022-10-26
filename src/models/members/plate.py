@@ -113,19 +113,19 @@ class PlateElement:
     def get_transform(self):
         return np.matrix(np.eye(self.total_dofs_num))
 
-    def get_gauss_point_moments(self, r, s, d):
+    def get_gauss_point_forces(self, r, s, d):
         b = self.get_shape_derivatives(r=r, s=s)
         return self.section.de * b * d
 
-    def get_internal_moments(self, d):
-        internal_moments = np.matrix(np.zeros((3 * self.gauss_points_num, 1)))
+    def get_yield_components_force(self, d):
+        yield_components_force = np.matrix(np.zeros((self.yield_specs.components_num, 1)))
         i = 0
         for point in self.gauss_points:
-            internal_moments[i, 0] = self.get_gauss_point_moments(point.r, point.s, d)[0, 0]
-            internal_moments[i + 1, 0] = self.get_gauss_point_moments(point.r, point.s, d)[1, 0]
-            internal_moments[i + 2, 0] = self.get_gauss_point_moments(point.r, point.s, d)[2, 0]
+            yield_components_force[i, 0] = self.get_gauss_point_forces(point.r, point.s, d)[0, 0]
+            yield_components_force[i + 1, 0] = self.get_gauss_point_forces(point.r, point.s, d)[1, 0]
+            yield_components_force[i + 2, 0] = self.get_gauss_point_forces(point.r, point.s, d)[2, 0]
             i += 3
-        return internal_moments
+        return yield_components_force
 
 
 class PlateElements:
@@ -217,7 +217,7 @@ class PlateMember:
         for element in self.elements.list:
             for node in element.nodes:
                 nodes.append(node)
-        return sorted(set(nodes), key=lambda x: x.num)
+        return sorted(set(nodes))
 
     def get_gauss_points(self):
         points = []
@@ -262,12 +262,19 @@ class PlateMember:
             elements_nodal_disps.append(element_nodal_disps)
         return elements_nodal_disps
 
-    def get_internal_moments(self, nodal_disps):
+    def get_yield_components_force(self, nodal_disps):
         elements_nodal_disps = self.get_elements_nodal_disps(nodal_disps)
-        internal_moments = np.matrix(np.zeros((3 * self.gauss_points_num, 1)))
+        yield_components_force = np.matrix(np.zeros((self.yield_specs.components_num, 1)))
         for i, element in enumerate(self.elements.list):
             element_yield_components_num = element.yield_specs.components_num
             start_index = i * element_yield_components_num
             end_index = (i + 1) * element_yield_components_num
-            internal_moments[start_index:end_index, 0] = element.get_internal_moments(elements_nodal_disps[i])
-        return internal_moments
+            yield_components_force[start_index:end_index, 0] = element.get_yield_components_force(elements_nodal_disps[i])
+        return yield_components_force
+
+    # def get_nodal_force(self, nodal_disps, fixed_forces):
+    #     # displacements: numpy matrix
+    #     # fixed_forces: numpy matrix
+    #     k = self.k
+    #     f = k * nodal_disps + fixed_forces
+    #     return f
