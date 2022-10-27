@@ -72,10 +72,16 @@ class Structure:
         self.cs = self.create_cs()
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
+            self.damping = self.general_properties["dynamic_analysis"].get("damping") if self.general_properties["dynamic_analysis"].get("damping") else 0
             self.zero_mass_dofs = self.get_zero_mass_dofs()
             self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
-            # self.condensed_k, self.condensed_m, self.ku0, self.reduced_k00_inv, self.reduced_k00 = self.apply_static_condensation()
-            # self.wns, self.wds, self.modes = self.compute_modes_props()
+            condensation_params = self.apply_static_condensation()
+            self.condensed_k = condensation_params["condensed_k"]
+            self.condensed_m = condensation_params["condensed_m"]
+            self.ku0 = condensation_params["ku0"]
+            self.reduced_k00_inv = condensation_params["reduced_k00_inv"]
+            self.reduced_k00 = condensation_params["reduced_k00"]
+            self.wns, self.wds, self.modes = self.compute_modes_props()
 
     def get_nodes(self):
         nodes = self.initial_nodes
@@ -364,7 +370,14 @@ class Structure:
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
         condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)
-        return condensed_k, condensed_m, ku0, reduced_k00_inv, reduced_k00
+        condensation_params = {
+            "condensed_k": condensed_k,
+            "condensed_m": condensed_m,
+            "ku0": ku0,
+            "reduced_k00_inv": reduced_k00_inv,
+            "reduced_k00": reduced_k00,
+        }
+        return condensation_params
 
     def get_zero_and_nonzero_mass_props(self):
         mtt = self.m.copy()
@@ -392,66 +405,41 @@ class Structure:
                 mass_i += 1
         return mtt, ktt, k00, k0t
 
-    # def compute_modes_props(self):
-    #     damping = self.damping
-    #     eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False)
-    #     wn = np.sqrt(eigvals)
-    #     wd = np.sqrt(1 - damping ** 2) * wn
-    #     return wn, wd, modes
+    def get_modal_property(self, property, modes):
+        property_modal = np.dot(np.transpose(modes), np.dot(property, modes))
+        return property_modal
 
-    # def compute_modal_props(self):
-    #     m_modal = np.dot(np.transpose(self.modes), np.dot(self.condensed_m, self.modes))
-    #     k_modal = np.dot(np.transpose(self.modes), np.dot(self.condensed_k, self.modes))
-    #     return m_modal, k_modal
+    def compute_modes_props(self):
+        damping = self.damping
+        eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False)
+        wn = np.sqrt(eigvals)
+        wd = np.sqrt(1 - damping ** 2) * wn
+        return wn, wd, modes
 
-    # def compute_i_duhamel(self, t1, t2, wn, wd):
-    #     damping = self.damping
-    #     wd = np.sqrt(1 - damping ** 2) * wn
-    #     i11 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
-    #     i12 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
-    #     i1 = i11 - i12
-    #     i21 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t2) - wd * np.cos(wd * t2))
-    #     i22 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t1) - wd * np.cos(wd * t1))
-    #     i2 = i21 - i22
-    #     i3 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i21 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i11 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i22 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i12)
-    #     i4 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i11 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i21 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i12 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i22)
-    #     return i1, i2, i3, i4
+    def undo_disp_boundary_condition(self, disp, boundaries_dof):
+        free_i = 0
+        bound_i = 0
+        unrestrianed_dofs = disp.shape[0] + boundaries_dof.shape[0]
+        unrestrianed_disp = np.matrix(np.zeros((unrestrianed_dofs, 1)))
+        for dof in range(unrestrianed_dofs):
+            if bound_i < boundaries_dof.shape[0] and dof == boundaries_dof[bound_i]:
+                bound_i += 1
+            else:
+                unrestrianed_disp[dof, 0] = disp[free_i, 0]
+                free_i += 1
+        return unrestrianed_disp
 
-    # def compute_abx_duhamel(self, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
-    #     damping = self.damping
-    #     deltat = t2 - t1
-    #     deltap = p2 - p1
-    #     wd = np.sqrt(1 - damping ** 2) * wn
-    #     a2 = a1 + (p1 - t1 * deltap / deltat) * i1 + (deltap / deltat) * i4
-    #     b2 = b1 + (p1 - t1 * deltap / deltat) * i2 + (deltap / deltat) * i3
-    #     un = (np.exp(-1 * damping * wn * t2) / (mn * wd)) * (a2 * np.sin(wd * t2) - b2 * np.cos(wd * t2))
-    #     return a2, b2, un
-
-    # def displacement_unrestrained(U, JTR):
-    #     i_restraint = 0
-    #     i_free = 0
-    #     size_of_U_nonrestraint = U.shape[0]+JTR.shape[0]
-    #     U_nonrestraint = np.zeros((size_of_U_nonrestraint, 1))
-    #     for i in range(size_of_U_nonrestraint):
-    #         if i == 3*JTR[i_restraint, 0]+JTR[i_restraint, 1]:
-    #             U_nonrestraint[i, 0] = 0
-    #             i_restraint += 1
-    #         else:
-    #             U_nonrestraint[i, 0] = U[i_free, 0]
-    #             i_free += 1
-    #     return U_nonrestraint
-
-    # def non_condensed_displacement(Ut, U0):
-
-    #     size_of_U = Ut.shape[0]+U0.shape[0]
-    #     U = np.zeros((size_of_U, 1))
-    #     i_U0 = 0
-    #     i_Ut = 0
-    #     for i in range(size_of_U):
-    #         if i % 3 == 2:
-    #             U[i, 0] = U0[i_U0, 0]
-    #             i_U0 += 1
-    #         else:
-    #             U[i, 0] = Ut[i_Ut, 0]
-    #             i_Ut += 1
-    #     return U
+    def undo_disp_condensation(self, ut, u0):
+        u = np.matrix(np.zeros((self.total_dofs_num, 1)))
+        u0_i = 0
+        ut_i = 0
+        zero_mass_dofs_i = 0
+        for dof in range(self.total_dofs_num):
+            if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
+                u[dof, 0] = u0[u0_i, 0]
+                u0_i += 1
+                zero_mass_dofs_i += 1
+            else:
+                u[dof, 0] = ut[ut_i, 0]
+                ut_i += 1
+        return u
