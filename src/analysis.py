@@ -1,16 +1,8 @@
 import numpy as np
 from scipy.linalg import cho_solve
 
-from src.settings import settings
 from src.models.loads import Loads
 from src.models.structure import Structure
-from src.workshop import get_structure_input, get_loads_input, get_general_properties
-
-example_name = settings.example_name
-
-structure_input = get_structure_input(example_name)
-loads_input = get_loads_input(example_name)
-general_info = get_general_properties(example_name)
 
 
 class Analysis:

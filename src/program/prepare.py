@@ -1,6 +1,7 @@
 import numpy as np
 from src.analysis import Analysis
 
+
 class RawData:
     def __init__(self, analysis: Analysis):
         structure = analysis.structure

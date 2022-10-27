@@ -1,5 +1,10 @@
 import numpy as np
-from scipy.linalg import cho_factor, cho_solve, eigh
+from math import isclose
+from scipy.linalg import cho_factor
+
+from src.models.points import Node
+from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
+from src.settings import settings
 
 
 class YieldSpecs:
@@ -36,18 +41,21 @@ class Members:
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
-        self.nodes_num = input["nodes_num"]
         self.general_properties = input["general_properties"]
-        self.analysis_type = self._get_analysis_type()
         self.dim = self.general_properties["structure_dim"]
         self.include_softening = self.general_properties["include_softening"]
-        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 6
+        self.initial_nodes = input["initial_nodes"]
+        self.initial_nodes_num = len(self.initial_nodes)
+        self.members = Members(members_list=input["members"])
+        self.nodes = self.get_nodes()
+        self.nodes_num = len(self.nodes)
+        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
+        self.analysis_type = self._get_analysis_type()
         self.total_dofs_num = self.node_dofs_num * self.nodes_num
-        self.members = Members(input["members"])
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
-        self.boundaries = self.populate_boundaries()
+        self.boundaries = self.aggregate_boundaries()
         self.boundaries_dof = self.get_boundaries_dof()
         self.loads = input["loads"]
         self.limits = input["limits"]
@@ -62,7 +70,6 @@ class Structure:
         self.h = self.create_h()
         self.w = self.create_w()
         self.cs = self.create_cs()
-
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
             self.damping = self.general_properties["dynamic_analysis"].get("damping") if self.general_properties["dynamic_analysis"].get("damping") else 0
@@ -75,6 +82,13 @@ class Structure:
             self.reduced_k00_inv = condensation_params["reduced_k00_inv"]
             self.reduced_k00 = condensation_params["reduced_k00"]
             self.wns, self.wds, self.modes = self.compute_modes_props()
+
+    def get_nodes(self):
+        nodes = self.initial_nodes
+        for member in self.members.list:
+            if member.__class__.__name__ == "PlateMember":
+                nodes = member.nodes
+        return nodes
 
     def _get_analysis_type(self):
         if self.general_properties.get("dynamic_analysis") and self.general_properties["dynamic_analysis"]["enabled"]:
@@ -142,7 +156,7 @@ class Structure:
     def _assemble_members(self, member, member_prop, structure_prop):
         member_nodes_num = len(member.nodes)
         member_dofs_num = member.k.shape[0]
-        member_node_dofs_num = member_dofs_num / member_nodes_num
+        member_node_dofs_num = int(member_dofs_num / member_nodes_num)
         for i in range(member_dofs_num):
             for j in range(member_dofs_num):
                 local_member_node_row = int(j // member_node_dofs_num)
@@ -258,14 +272,54 @@ class Structure:
                 index_counter += yield_point_pieces
         return yield_points_indices
 
-    def populate_boundaries(self):
-        return self.nodal_boundaries
+    def aggregate_boundaries(self):
+        boundaries = self.nodal_boundaries
+        for member in self.members.list:
+            if member.__class__.__name__ == "PlateMember":
+                boundaries = self.get_nodal_boundaries_from_linear()
+        return list(set(boundaries))
+
+    def get_nodal_boundaries_from_linear(self):
+        new_nodal_boundaries = []
+        for linear_boundary in self.linear_boundaries:
+            dof_restrainer = self.get_dof_restrainer_from_linear_boundary(linear_boundary.start_node, linear_boundary.end_node, linear_boundary.dof)
+            restrain_dimension_name = dof_restrainer.dimension_name
+            restrain_dimension_value = dof_restrainer.dimension_value
+            restrain_dof = dof_restrainer.dof
+            if restrain_dimension_name == "x":
+                for node in self.nodes:
+                    if isclose(node.x, restrain_dimension_value, abs_tol=settings.isclose_tolerance):
+                        new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
+            elif restrain_dimension_name == "y":
+                for node in self.nodes:
+                    if isclose(node.y, restrain_dimension_value, abs_tol=settings.isclose_tolerance):
+                        new_nodal_boundaries.append(NodalBoundary(node=node, dof=restrain_dof))
+        return new_nodal_boundaries
+
+    def get_dof_restrainer_from_linear_boundary(self, start_node: Node, end_node: Node, dof):
+        x_diff = end_node.x - start_node.x
+        y_diff = end_node.y - start_node.y
+
+        if end_node.z != 0 or start_node.z != 0:
+            raise Exception("z dimension not supported yet")
+        elif x_diff != 0 and y_diff != 0:
+            raise Exception("linear boundaries must be straight lines")
+        elif x_diff == 0 and y_diff == 0:
+            raise Exception("linear boundary start and end nodes overlap")
+        elif x_diff == 0 and y_diff != 0:
+            restrain_dim = "x"
+            restrain_value = end_node.x
+        elif x_diff != 0 and y_diff == 0:
+            restrain_dim = "y"
+            restrain_value = end_node.y
+        dof_restrainer = NodeDOFRestrainer(dimension_name=restrain_dim, dimension_value=restrain_value, dof=dof)
+        return dof_restrainer
 
     def get_boundaries_dof(self):
-        boundaries_size = self.boundaries.shape[0]
+        boundaries_size = len(self.boundaries)
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
-            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i, 0] + self.boundaries[i, 1])
+            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i].node.num + self.boundaries[i].dof)
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):

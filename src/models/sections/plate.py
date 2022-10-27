@@ -10,12 +10,12 @@ class Material:
 
 class Geometry:
     def __init__(self, input_geometry):
-        self.t = input_geometry["t"]
+        self.thickness = input_geometry["t"]
 
 
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
-        self.mp = 0.25 * geometry.t ** 2 * material.sy
+        self.mp = 0.25 * geometry.thickness ** 2 * material.sy
         self.yield_surface = input_nonlinear["yield_surface"]
 
 
@@ -79,4 +79,4 @@ class PlateSection:
                             [self.material.nu, 1, 0],
                             [0, 0, (1 - self.material.nu) / 2]])
         self.be = (self.material.e / (1 - self.material.nu ** 2)) * self.d
-        self.de = (self.material.e * self.geometry.t ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d
+        self.de = (self.material.e * self.geometry.thickness ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d
