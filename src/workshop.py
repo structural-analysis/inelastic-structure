@@ -183,7 +183,7 @@ def create_dynamic_loads(example_name):
         dynamic_joint_loads_path = os.path.join(examples_dir, example_name, dynamic_joint_loads_file)
 
         dynamic_joint_loads_array = np.loadtxt(fname=dynamic_joint_loads_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
-        time = np.loadtxt(fname=dynamic_loads_time_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+        time = np.loadtxt(fname=dynamic_loads_time_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=0, dtype=float)
         dynamic_loads = []
         for i in range(dynamic_joint_loads_array.shape[0]):
             dynamic_load_dir = f"{dynamic_loads_dir}/{dynamic_joint_loads_array[i, 0]}.csv"
