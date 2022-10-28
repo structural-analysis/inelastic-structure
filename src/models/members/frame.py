@@ -1,5 +1,4 @@
 import numpy as np
-from math import sqrt
 
 from ..points import Node
 from ..sections.frame import FrameSection
@@ -39,7 +38,7 @@ class FrameMember2D:
     def _length(self):
         a = self.start
         b = self.end
-        l = sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+        l = np.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
         return l
 
     def _stiffness(self):
