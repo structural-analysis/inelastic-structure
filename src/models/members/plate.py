@@ -28,6 +28,8 @@ class PlateElement:
         self.t = self.get_transform()
         self.m = None
 
+        self.udefs = self.get_nodal_forces_from_unit_curvatures()
+
     def get_gauss_points(self):
         gauss_points = [
             PlateGaussPoint(r=-0.57735, s=-0.57735),
@@ -213,7 +215,7 @@ class PlateElements:
 class PlateMember:
     # calculations is based on four gauss points
     def __init__(self, section: PlateSection, initial_nodes: tuple[Node, Node, Node, Node], mesh_num: tuple[int, int]):
-        # assume plate is flate in the 0 height.
+        # assume plate is flat in the 0 height.
         self.z_coordinate = 0
         self.section = section
         self.thickness = section.geometry.thickness
@@ -239,6 +241,9 @@ class PlateMember:
         self.t = self.get_transform()
         self.m = None
 
+        self.udefs = self.get_nodal_forces_from_unit_curvatures()
+        print(self.udefs)
+
     def get_nodes(self):
         nodes = []
         for element in self.elements.list:
@@ -256,7 +261,6 @@ class PlateMember:
     def get_stiffness(self):
         k = np.zeros((self.total_dofs_num, self.total_dofs_num))
         for element in self.elements.list:
-            element_global_dofs = np.zeros((element.total_dofs_num, element.total_dofs_num))
             g0 = element.nodes[0].num
             g1 = element.nodes[1].num
             g2 = element.nodes[2].num
@@ -301,11 +305,21 @@ class PlateMember:
 
     def get_nodal_forces_from_unit_curvatures(self):
         nodal_forces = np.matrix(np.zeros((self.total_dofs_num, self.yield_specs.components_num)))
+        base_component_num = 0
         for element in self.elements.list:
-            nodal_forces[]
-    # def get_nodal_force(self, nodal_disps, fixed_forces):
-    #     # displacements: numpy matrix
-    #     # fixed_forces: numpy matrix
-    #     k = self.k
-    #     f = k * nodal_disps + fixed_forces
-    #     return f
+            g0 = element.nodes[0].num
+            g1 = element.nodes[1].num
+            g2 = element.nodes[2].num
+            g3 = element.nodes[3].num
+
+            element_global_dofs = np.array([3 * g0, 3 * g0 + 1, 3 * g0 + 2,
+                                            3 * g1, 3 * g1 + 1, 3 * g1 + 2,
+                                            3 * g2, 3 * g2 + 1, 3 * g2 + 2,
+                                            3 * g3, 3 * g3 + 1, 3 * g3 + 2
+                                            ])
+
+            for i in range(element.yield_specs.components_num):
+                for j in range(element.total_dofs_num):
+                    nodal_forces[element_global_dofs[j], base_component_num + i] = element.udefs[j, i]
+            base_component_num += element.yield_specs_components_num
+        return nodal_forces
