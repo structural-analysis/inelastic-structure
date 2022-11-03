@@ -51,7 +51,7 @@ class Structure:
         self.nodes_num = len(self.nodes)
         self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
         self.analysis_type = self._get_analysis_type()
-        self.total_dofs_num = self.node_dofs_num * self.nodes_num
+        self.dofs_count = self.node_dofs_num * self.nodes_num
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
@@ -102,7 +102,7 @@ class Structure:
         return member_global_stiffness
 
     def get_stiffness(self):
-        empty_stiffness = np.zeros((self.total_dofs_num, self.total_dofs_num))
+        empty_stiffness = np.zeros((self.dofs_count, self.dofs_count))
         structure_stiffness = np.matrix(empty_stiffness)
         for member in self.members.list:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
@@ -143,7 +143,7 @@ class Structure:
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
-        empty_mass = np.zeros((self.total_dofs_num, self.total_dofs_num))
+        empty_mass = np.zeros((self.dofs_count, self.dofs_count))
         structure_mass = np.matrix(empty_mass)
         for member in self.members.list:
             if member.m is not None:
@@ -167,7 +167,7 @@ class Structure:
         return structure_prop
 
     def _assemble_joint_load(self, loads, time_step=None):
-        f_total = np.zeros((self.total_dofs_num, 1))
+        f_total = np.zeros((self.dofs_count, 1))
         f_total = np.matrix(f_total)
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
@@ -175,7 +175,7 @@ class Structure:
         return f_total
 
     def get_load_vector(self, time_step=None):
-        f_total = np.zeros((self.total_dofs_num, 1))
+        f_total = np.zeros((self.dofs_count, 1))
         f_total = np.matrix(f_total)
         for load in self.loads:
             if self.loads[load]:
@@ -336,7 +336,7 @@ class Structure:
         zero_mass_bound_i = 0
 
         if self.zero_mass_dofs.any():
-            for dof in range(self.total_dofs_num):
+            for dof in range(self.dofs_count):
                 if dof == zero_mass_dofs[zero_mass_dof_i]:
                     if bound_i < self.boundaries_dof.shape[0]:
                         if dof == self.boundaries_dof[bound_i]:
@@ -389,7 +389,7 @@ class Structure:
         # for non-zero mass rows and columns
         zero_i = 0
         zero_mass_dofs_i = 0
-        for dof in range(self.total_dofs_num):
+        for dof in range(self.dofs_count):
             if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 mtt = np.delete(mtt, dof - zero_i, 1)
                 mtt = np.delete(mtt, dof - zero_i, 0)
@@ -430,11 +430,11 @@ class Structure:
         return unrestrianed_disp
 
     def undo_disp_condensation(self, ut, u0):
-        u = np.matrix(np.zeros((self.total_dofs_num, 1)))
+        u = np.matrix(np.zeros((self.dofs_count, 1)))
         u0_i = 0
         ut_i = 0
         zero_mass_dofs_i = 0
-        for dof in range(self.total_dofs_num):
+        for dof in range(self.dofs_count):
             if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 u[dof, 0] = u0[u0_i, 0]
                 u0_i += 1

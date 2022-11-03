@@ -19,7 +19,7 @@ class PlateElement:
         self.size_y = size_y
         self.nodes = nodes
         self.nodes_num = len(self.nodes)
-        self.total_dofs_num = 3 * self.nodes_num
+        self.dofs_count = 3 * self.nodes_num
         self.gauss_points = self.get_gauss_points()
         self.gauss_points_num = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_num=self.gauss_points_num)
@@ -110,26 +110,26 @@ class PlateElement:
     def get_stiffness(self):
         ax = (self.size_x / 2)
         ay = (self.size_y / 2)
-        kin = np.matrix(np.zeros((self.total_dofs_num, self.total_dofs_num)))
+        kin = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for gauss_point in self.gauss_points:
             kin += self.get_stiffness_integrand(gauss_point)
         k = kin * ax * ay
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(self.total_dofs_num))
+        return np.matrix(np.eye(self.dofs_count))
 
-    def get_gauss_point_forces(self, gauss_point, d):
+    def get_gauss_point_forces(self, gauss_point, nodal_disp):
         b = self.get_shape_derivatives(gauss_point)
-        return self.section.de * b * d
+        return self.section.de * b * nodal_disp
 
-    def get_yield_components_force(self, d):
+    def get_yield_components_force(self, nodal_disp):
         yield_components_force = np.matrix(np.zeros((self.yield_specs.components_num, 1)))
         i = 0
         for gauss_point in self.gauss_points:
-            yield_components_force[i, 0] = self.get_gauss_point_forces(gauss_point, d)[0, 0]
-            yield_components_force[i + 1, 0] = self.get_gauss_point_forces(gauss_point, d)[1, 0]
-            yield_components_force[i + 2, 0] = self.get_gauss_point_forces(gauss_point, d)[2, 0]
+            yield_components_force[i, 0] = self.get_gauss_point_forces(gauss_point, nodal_disp)[0, 0]
+            yield_components_force[i + 1, 0] = self.get_gauss_point_forces(gauss_point, nodal_disp)[1, 0]
+            yield_components_force[i + 2, 0] = self.get_gauss_point_forces(gauss_point, nodal_disp)[2, 0]
             i += 3
         return yield_components_force
 
@@ -149,11 +149,12 @@ class PlateElement:
         return -f
 
     def get_nodal_forces_from_unit_curvatures(self):
-        nodal_forces = np.matrix(np.zeros((self.total_dofs_num, self.yield_specs.components_num)))
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_num)))
+        component_base_num = 0
         for gauss_point in self.gauss_points:
-            for i in range(3):
-                f = self.get_nodal_force_from_unit_curvature(gauss_point=gauss_point, gauss_point_component_num=i)
-                nodal_forces.append(f)
+            for j in range(3):
+                nodal_forces[:, component_base_num + j] = self.get_nodal_force_from_unit_curvature(gauss_point=gauss_point, gauss_point_component_num=j)
+            component_base_num += 3
         return nodal_forces
 
 
@@ -231,7 +232,7 @@ class PlateMember:
 
         self.nodes = self.get_nodes()
         self.nodes_num = len(self.nodes)
-        self.total_dofs_num = 3 * self.nodes_num
+        self.dofs_count = 3 * self.nodes_num
 
         self.gauss_points = self.get_gauss_points()
         self.gauss_points_num = len(self.gauss_points)
@@ -242,7 +243,6 @@ class PlateMember:
         self.m = None
 
         self.udefs = self.get_nodal_forces_from_unit_curvatures()
-        print(self.udefs)
 
     def get_nodes(self):
         nodes = []
@@ -259,7 +259,7 @@ class PlateMember:
         return points
 
     def get_stiffness(self):
-        k = np.zeros((self.total_dofs_num, self.total_dofs_num))
+        k = np.zeros((self.dofs_count, self.dofs_count))
         for element in self.elements.list:
             g0 = element.nodes[0].num
             g1 = element.nodes[1].num
@@ -272,29 +272,35 @@ class PlateMember:
                                             3 * g3, 3 * g3 + 1, 3 * g3 + 2
                                             ])
 
-            for i in range(element.total_dofs_num):
-                for j in range(element.total_dofs_num):
+            for i in range(element.dofs_count):
+                for j in range(element.dofs_count):
                     k[element_global_dofs[i], element_global_dofs[j]] = k[element_global_dofs[i], element_global_dofs[j]] + element.k[i, j]
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(self.total_dofs_num))
+        return np.matrix(np.eye(self.dofs_count))
 
-    def get_elements_nodal_disps(self, nodal_disps):
+    def get_elements_nodal_disps(self, nodal_disp):
         elements_nodal_disps = []
         for element in self.elements.list:
             element_nodal_disps = np.matrix(np.zeros((3 * element.nodes_num, 1)))
             i = 0
             for node in element.nodes:
-                element_nodal_disps[i, 0] = nodal_disps[3 * node.num]
-                element_nodal_disps[i + 1, 0] = nodal_disps[3 * node.num + 1]
-                element_nodal_disps[i + 2, 0] = nodal_disps[3 * node.num + 2]
+                element_nodal_disps[i, 0] = nodal_disp[3 * node.num]
+                element_nodal_disps[i + 1, 0] = nodal_disp[3 * node.num + 1]
+                element_nodal_disps[i + 2, 0] = nodal_disp[3 * node.num + 2]
                 i += 3
             elements_nodal_disps.append(element_nodal_disps)
         return elements_nodal_disps
 
-    def get_yield_components_force(self, nodal_disps):
-        elements_nodal_disps = self.get_elements_nodal_disps(nodal_disps)
+    # TODO: fixed_forces?
+    def get_nodal_force(self, nodal_disp):
+        # nodal_disp: numpy matrix
+        nodal_force = self.k * nodal_disp
+        return nodal_force
+
+    def get_yield_components_force(self, nodal_disp):
+        elements_nodal_disps = self.get_elements_nodal_disps(nodal_disp)
         yield_components_force = np.matrix(np.zeros((self.yield_specs.components_num, 1)))
         for i, element in enumerate(self.elements.list):
             element_yield_components_num = element.yield_specs.components_num
@@ -304,7 +310,7 @@ class PlateMember:
         return yield_components_force
 
     def get_nodal_forces_from_unit_curvatures(self):
-        nodal_forces = np.matrix(np.zeros((self.total_dofs_num, self.yield_specs.components_num)))
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_num)))
         base_component_num = 0
         for element in self.elements.list:
             g0 = element.nodes[0].num
@@ -319,7 +325,7 @@ class PlateMember:
                                             ])
 
             for i in range(element.yield_specs.components_num):
-                for j in range(element.total_dofs_num):
+                for j in range(element.dofs_count):
                     nodal_forces[element_global_dofs[j], base_component_num + i] = element.udefs[j, i]
-            base_component_num += element.yield_specs_components_num
+            base_component_num += element.yield_specs.components_num
         return nodal_forces
