@@ -122,15 +122,15 @@ class Analysis:
         empty_members_disps = np.zeros((structure.members.num, 1), dtype=object)
         members_disps = np.matrix(empty_members_disps)
         for i_member, member in enumerate(structure.members.list):
-            member_dofs_num = member.dofs_count
+            member_dofs_count = member.dofs_count
             member_nodes_num = len(member.nodes)
-            member_node_dofs_num = int(member_dofs_num / member_nodes_num)
-            v = np.zeros((member_dofs_num, 1))
+            member_node_dofs_count = int(member_dofs_count / member_nodes_num)
+            v = np.zeros((member_dofs_count, 1))
             v = np.matrix(v)
-            for i in range(member_dofs_num):
-                member_node = i // member_node_dofs_num
-                node_dof = i % member_node_dofs_num
-                v[i, 0] = disp[member_node_dofs_num * member.nodes[member_node].num + node_dof, 0]
+            for i in range(member_dofs_count):
+                member_node = i // member_node_dofs_count
+                node_dof = i % member_node_dofs_count
+                v[i, 0] = disp[member_node_dofs_count * member.nodes[member_node].num + node_dof, 0]
             u = member.t * v
             members_disps[i_member, 0] = u
         return members_disps
@@ -179,20 +179,20 @@ class Analysis:
                 global_force = member.t.T * force.T
                 node_local_base_dof = 0
                 for node in member.nodes:
-                    node_global_base_dof = structure.node_dofs_num * node.num
-                    for i in range(structure.node_dofs_num):
+                    node_global_base_dof = structure.node_dofs_count * node.num
+                    for i in range(structure.node_dofs_count):
                         fv[node_global_base_dof + i] = global_force[node_local_base_dof + i]
-                    node_local_base_dof += structure.node_dofs_num
-                print(f"{fv=}")
+                    node_local_base_dof += structure.node_dofs_count
+
                 affected_structure_disp = self.get_nodal_disp(fv)
-                nodal_disps_sensitivity[0, pv_column] = affected_structure_disp
-                affected_member_disps = self.get_members_disps(affected_structure_disp)
+                nodal_disps_sensitivity[0, pv_column] = affected_structure_disp[0, 0]
+                affected_member_disps = self.get_members_disps(affected_structure_disp[0, 0])
                 current_affected_member_ycns = 0
                 for i_affected_member, affected_member_disp in enumerate(affected_member_disps):
                     if i_member == i_affected_member:
-                        fixed_force = -force
+                        fixed_force = -force.T
                     else:
-                        fixed_force = np.zeros((structure.node_dofs_num * 2, 1))
+                        fixed_force = np.zeros((structure.node_dofs_count * 2, 1))
                         fixed_force = np.matrix(fixed_force)
                     # FIXME: affected_member_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
                     affected_member_force = structure.members.list[i_affected_member].get_nodal_force(affected_member_disp[0, 0], fixed_force)
@@ -357,8 +357,8 @@ class Analysis:
                         fv = np.zeros((fv_size, 1))
                         fv = np.matrix(fv)
                         component_udef_global = member.t.T * yield_point_udef[:, i_component]
-                        start_dof = structure.node_dofs_num * member.nodes[0].num
-                        end_dof = structure.node_dofs_num * member.nodes[1].num
+                        start_dof = structure.node_dofs_count * member.nodes[0].num
+                        end_dof = structure.node_dofs_count * member.nodes[1].num
 
                         fv[start_dof] = component_udef_global[0]
                         fv[start_dof + 1] = component_udef_global[1]
@@ -380,7 +380,7 @@ class Analysis:
                             if i_member == i_affected_member:
                                 fixed_force = -yield_point_udef[:, i_component]
                             else:
-                                fixed_force = np.zeros((structure.node_dofs_num * 2, 1))
+                                fixed_force = np.zeros((structure.node_dofs_count * 2, 1))
                                 fixed_force = np.matrix(fixed_force)
                             # FIXME: affected_member_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
                             affected_member_force = structure.members.list[i_affected_member].get_nodal_force(affected_member_disp[0, 0], fixed_force)

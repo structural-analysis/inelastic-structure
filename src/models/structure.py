@@ -49,9 +49,9 @@ class Structure:
         self.members = Members(members_list=input["members"])
         self.nodes = self.get_nodes()
         self.nodes_num = len(self.nodes)
-        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
+        self.node_dofs_count = 3 if self.dim.lower() == "2d" else 3
         self.analysis_type = self._get_analysis_type()
-        self.dofs_count = self.node_dofs_num * self.nodes_num
+        self.dofs_count = self.node_dofs_count * self.nodes_num
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
@@ -155,14 +155,14 @@ class Structure:
 
     def _assemble_members(self, member, member_prop, structure_prop):
         member_nodes_num = len(member.nodes)
-        member_dofs_num = member.k.shape[0]
-        member_node_dofs_num = int(member_dofs_num / member_nodes_num)
-        for i in range(member_dofs_num):
-            for j in range(member_dofs_num):
-                local_member_node_row = int(j // member_node_dofs_num)
-                p = int(member_node_dofs_num * member.nodes[local_member_node_row].num + j % member_node_dofs_num)
-                local_member_node_column = int(i // member_node_dofs_num)
-                q = int(member_node_dofs_num * member.nodes[local_member_node_column].num + i % member_node_dofs_num)
+        member_dofs_count = member.k.shape[0]
+        member_node_dofs_count = int(member_dofs_count / member_nodes_num)
+        for i in range(member_dofs_count):
+            for j in range(member_dofs_count):
+                local_member_node_row = int(j // member_node_dofs_count)
+                p = int(member_node_dofs_count * member.nodes[local_member_node_row].num + j % member_node_dofs_count)
+                local_member_node_column = int(i // member_node_dofs_count)
+                q = int(member_node_dofs_count * member.nodes[local_member_node_column].num + i % member_node_dofs_count)
                 structure_prop[p, q] = structure_prop[p, q] + member_prop[j, i]
         return structure_prop
 
@@ -171,7 +171,7 @@ class Structure:
         f_total = np.matrix(f_total)
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
-            f_total[self.node_dofs_num * load.node + load.dof] = f_total[self.node_dofs_num * load.node + load.dof] + load_magnitude
+            f_total[self.node_dofs_count * load.node + load.dof] = f_total[self.node_dofs_count * load.node + load.dof] + load_magnitude
         return f_total
 
     def get_load_vector(self, time_step=None):
@@ -196,7 +196,7 @@ class Structure:
         return reduced_f
 
     def get_global_dof(self, node_num, dof):
-        global_dof = int(self.node_dofs_num * node_num + dof)
+        global_dof = int(self.node_dofs_count * node_num + dof)
         return global_dof
 
     def create_phi(self):
@@ -319,7 +319,7 @@ class Structure:
         boundaries_size = len(self.boundaries)
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
-            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i].node.num + self.boundaries[i].dof)
+            boundaries_dof[i] = int(self.node_dofs_count * self.boundaries[i].node.num + self.boundaries[i].dof)
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):
