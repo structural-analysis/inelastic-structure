@@ -6,8 +6,8 @@ from src.visualization.get_data import (
     get_yield_points,
     get_yield_surface,
     get_yield_components_data,
-    selected_increments_num,
-    selected_yield_points_num,
+    selected_increments_count,
+    selected_yield_points_count,
 )
 
 examples_dir = "input/examples/"
@@ -62,9 +62,9 @@ def edit_plot_labes(yield_components):
     plt.title('Yield Surface')
 
 
-def calculate_figure_grid_size(total_diagrams_num, maximum_diagram_in_row):
-    grid_size_y = min(maximum_diagram_in_row, total_diagrams_num)
-    grid_size_x = total_diagrams_num // maximum_diagram_in_row + 1
+def calculate_figure_grid_size(total_diagrams_count, maximum_diagram_in_row):
+    grid_size_y = min(maximum_diagram_in_row, total_diagrams_count)
+    grid_size_x = total_diagrams_count // maximum_diagram_in_row + 1
     return (grid_size_x, grid_size_y)
 
 
@@ -85,13 +85,13 @@ def add_diagram_to_figure(
     return ax
 
 
-def generate_increments_yield_surfaces(increments_num, yield_components_num, yield_components, increments_yield_points, yield_surface):
+def generate_increments_yield_surfaces(increments_count, yield_components_count, yield_components, increments_yield_points, yield_surface):
     fig = plt.figure(figsize=plt.figaspect(0.5))
     maximum_diagram_in_row = 4
-    figure_grid_size = calculate_figure_grid_size(increments_num, maximum_diagram_in_row)
-    dimension = f"{yield_components_num}d"
+    figure_grid_size = calculate_figure_grid_size(increments_count, maximum_diagram_in_row)
+    dimension = f"{yield_components_count}d"
     # dimension = "3d"
-    for increment in range(increments_num):
+    for increment in range(increments_count):
         x_position = increment // maximum_diagram_in_row
         y_position = increment % figure_grid_size[1]
         position = (x_position, y_position)
@@ -105,13 +105,13 @@ def generate_increments_yield_surfaces(increments_num, yield_components_num, yie
 
 
 
-increments_yield_points = get_yield_points(selected_increments_num, selected_yield_points_num)
+increments_yield_points = get_yield_points(selected_increments_count, selected_yield_points_count)
 yield_components_data = get_yield_components_data()
-yield_components_num = yield_components_data.get("yield_components_num")
+yield_components_count = yield_components_data.get("yield_components_count")
 yield_components = yield_components_data.get("yield_components")
 yield_surface = get_yield_surface()
-increments_num = len(increments_yield_points)
-generate_increments_yield_surfaces(increments_num, yield_components_num, yield_components, increments_yield_points, yield_surface)
+increments_count = len(increments_yield_points)
+generate_increments_yield_surfaces(increments_count, yield_components_count, yield_components, increments_yield_points, yield_surface)
 
 
 plt.show()

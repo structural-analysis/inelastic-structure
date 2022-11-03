@@ -22,7 +22,7 @@ increments_path = os.path.join(examples_dir, example_name, "visualization/increm
 frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
 
 output_increments_path = os.path.join(output_dir, example_name)
-total_increments_num = find_subdir_count(output_increments_path)
+total_increments_count = find_subdir_count(output_increments_path)
 yield_data_path = os.path.join(output_dir, example_name, "yield_data.csv")
 
 increments_array = np.loadtxt(fname=increments_path, skiprows=1, delimiter=",", dtype=str)
@@ -31,21 +31,21 @@ yield_surface_array = np.loadtxt(fname=yield_surface_path, skiprows=1, delimiter
 frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
 yield_data_array = np.loadtxt(fname=yield_data_path, usecols=range(6), delimiter=",", ndmin=2, dtype=float)
 
-members_num = frames_array.shape[0]
+members_count = frames_array.shape[0]
 
-member_yield_points_num = 2
+member_yield_points_count = 2
 node_dofs_count = 3
 
 if increments_array[0] == "all":
-    selected_increments_num = total_increments_num
+    selected_increments_count = total_increments_count
 
 if yield_points_array[0] == "all":
-    selected_yield_points_num = members_num * member_yield_points_num
+    selected_yield_points_count = members_count * member_yield_points_count
 
 
 def get_yield_components_data():
-    yield_components_num = int(yield_surface_array[0])
-    if yield_components_num == 1:
+    yield_components_count = int(yield_surface_array[0])
+    if yield_components_count == 1:
         yield_components = {
             "x": yield_surface_array[1],
         }
@@ -53,7 +53,7 @@ def get_yield_components_data():
             int(yield_surface_array[2])
         ]
 
-    elif yield_components_num == 2:
+    elif yield_components_count == 2:
         yield_components = {
             "x": yield_surface_array[1],
             "y": yield_surface_array[2],
@@ -63,7 +63,7 @@ def get_yield_components_data():
             int(yield_surface_array[4]),
         ]
 
-    elif yield_components_num == 3:
+    elif yield_components_count == 3:
         yield_components = {
             "x": yield_surface_array[1],
             "y": yield_surface_array[2],
@@ -75,50 +75,50 @@ def get_yield_components_data():
             int(yield_surface_array[6]),
         ]
     yield_components_data = {
-        "yield_components_num": yield_components_num,
+        "yield_components_count": yield_components_count,
         "yield_components": yield_components,
         "yield_components_dof": yield_components_dof,
     }
     return yield_components_data
 
 
-def get_yield_points(selected_increments_num, selected_yield_points_num):
+def get_yield_points(selected_increments_count, selected_yield_points_count):
     yield_components_data = get_yield_components_data()
-    yield_components_num = yield_components_data.get("yield_components_num")
+    yield_components_count = yield_components_data.get("yield_components_count")
     yield_components_dof = yield_components_data.get("yield_components_dof")
 
     increments_yield_points = []
 
-    for increment in range(selected_increments_num):
+    for increment in range(selected_increments_count):
         members_forces_path = os.path.join(output_dir, example_name, f"{increment}/members_forces.csv")
         members_forces = np.loadtxt(fname=members_forces_path, delimiter=",", ndmin=2, dtype=float)
 
-        yield_points_num = members_forces.shape[1]
-        increment_yield_points = np.zeros((yield_components_num, yield_points_num))
+        yield_points_count = members_forces.shape[1]
+        increment_yield_points = np.zeros((yield_components_count, yield_points_count))
 
-        for member_num in range(yield_points_num):
-            for member_yield_point in range(member_yield_points_num):
+        for member_num in range(yield_points_count):
+            for member_yield_point in range(member_yield_points_count):
                 for yield_component in range(len(yield_components_dof)):
                     dof = member_yield_point * node_dofs_count + yield_component
                     increment_yield_points[yield_component, member_num] = members_forces[dof, member_num]
 
-    if yield_components_num == 1:
+    if yield_components_count == 1:
         yield_points = {
             "x": increment_yield_points[0, :],
-            "label": [i for i in range(members_num)],
+            "label": [i for i in range(members_count)],
         }
-    elif yield_components_num == 2:
+    elif yield_components_count == 2:
         yield_points = {
             "x": increment_yield_points[0, :],
             "y": increment_yield_points[1, :],
-            "label": [i for i in range(members_num)],
+            "label": [i for i in range(members_count)],
         }
-    elif yield_components_num == 3:
+    elif yield_components_count == 3:
         yield_points = {
             "x": increment_yield_points[0, :],
             "y": increment_yield_points[1, :],
             "z": increment_yield_points[2, :],
-            "label": [i for i in range(members_num)],
+            "label": [i for i in range(members_count)],
         }
 
     increments_yield_points.append(yield_points)

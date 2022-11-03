@@ -181,7 +181,7 @@ def create_plate_members(example_name, nodes):
                         nodes[int(plates_array[i, 1][2])],
                         nodes[int(plates_array[i, 1][3])],
                     ),
-                    mesh_num=(int(plates_array[i, 2]), int(plates_array[i, 3])),
+                    mesh_count=(int(plates_array[i, 2]), int(plates_array[i, 3])),
                 )
             )
     return plate_members

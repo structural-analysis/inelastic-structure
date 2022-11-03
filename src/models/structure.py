@@ -9,9 +9,9 @@ from src.settings import settings
 
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
-        self.points_num = yield_specs_dict["points_num"]
-        self.components_num = yield_specs_dict["components_num"]
-        self.pieces_num = yield_specs_dict["pieces_num"]
+        self.points_count = yield_specs_dict["points_count"]
+        self.components_count = yield_specs_dict["components_count"]
+        self.pieces_count = yield_specs_dict["pieces_count"]
 
 
 class Members:
@@ -21,19 +21,19 @@ class Members:
         self.yield_specs = YieldSpecs(self.get_yield_specs_dict())
 
     def get_yield_specs_dict(self):
-        points_num = 0
-        components_num = 0
-        pieces_num = 0
+        points_count = 0
+        components_count = 0
+        pieces_count = 0
 
         for member in self.list:
-            points_num += member.yield_specs.points_num
-            components_num += member.yield_specs.components_num
-            pieces_num += member.yield_specs.pieces_num
+            points_count += member.yield_specs.points_count
+            components_count += member.yield_specs.components_count
+            pieces_count += member.yield_specs.pieces_count
 
         yield_specs_dict = {
-            "points_num": points_num,
-            "components_num": components_num,
-            "pieces_num": pieces_num,
+            "points_count": points_count,
+            "components_count": components_count,
+            "pieces_count": pieces_count,
         }
         return yield_specs_dict
 
@@ -45,13 +45,13 @@ class Structure:
         self.dim = self.general_properties["structure_dim"]
         self.include_softening = self.general_properties["include_softening"]
         self.initial_nodes = input["initial_nodes"]
-        self.initial_nodes_num = len(self.initial_nodes)
+        self.initial_nodes_count = len(self.initial_nodes)
         self.members = Members(members_list=input["members"])
         self.nodes = self.get_nodes()
-        self.nodes_num = len(self.nodes)
+        self.nodes_count = len(self.nodes)
         self.node_dofs_count = 3 if self.dim.lower() == "2d" else 3
         self.analysis_type = self._get_analysis_type()
-        self.dofs_count = self.node_dofs_count * self.nodes_num
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
@@ -154,9 +154,9 @@ class Structure:
         return np.sort(np.where(~self.m.any(axis=1))[0])
 
     def _assemble_members(self, member, member_prop, structure_prop):
-        member_nodes_num = len(member.nodes)
+        member_nodes_count = len(member.nodes)
         member_dofs_count = member.k.shape[0]
-        member_node_dofs_count = int(member_dofs_count / member_nodes_num)
+        member_node_dofs_count = int(member_dofs_count / member_nodes_count)
         for i in range(member_dofs_count):
             for j in range(member_dofs_count):
                 local_member_node_row = int(j // member_node_dofs_count)
@@ -200,12 +200,12 @@ class Structure:
         return global_dof
 
     def create_phi(self):
-        empty_phi = np.zeros((self.yield_specs.components_num, self.yield_specs.pieces_num))
+        empty_phi = np.zeros((self.yield_specs.components_count, self.yield_specs.pieces_count))
         phi = np.matrix(empty_phi)
         current_row = 0
         current_column = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 for yield_section_row in range(member.section.yield_specs.phi.shape[0]):
                     for yield_section_column in range(member.section.yield_specs.phi.shape[1]):
                         phi[current_row + yield_section_row, current_column + yield_section_column] = member.section.yield_specs.phi[yield_section_row, yield_section_column]
@@ -214,45 +214,45 @@ class Structure:
         return phi
 
     def create_q(self):
-        empty_q = np.zeros((2 * self.yield_specs.points_num, self.yield_specs.pieces_num))
+        empty_q = np.zeros((2 * self.yield_specs.points_count, self.yield_specs.pieces_count))
         q = np.matrix(empty_q)
         yield_point_counter = 0
-        yield_pieces_num_counter = 0
+        yield_pieces_count_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
-                q[2 * yield_point_counter:2 * yield_point_counter + 2, yield_pieces_num_counter:member.section.yield_specs.pieces_num + yield_pieces_num_counter] = member.section.softening.q
+            for _ in range(member.yield_specs.points_count):
+                q[2 * yield_point_counter:2 * yield_point_counter + 2, yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter] = member.section.softening.q
                 yield_point_counter += 1
-                yield_pieces_num_counter += member.section.yield_specs.pieces_num
+                yield_pieces_count_counter += member.section.yield_specs.pieces_count
         return q
 
     def create_h(self):
-        empty_h = np.zeros((self.yield_specs.pieces_num, 2 * self.yield_specs.points_num))
+        empty_h = np.zeros((self.yield_specs.pieces_count, 2 * self.yield_specs.points_count))
         h = np.matrix(empty_h)
         yield_point_counter = 0
-        yield_pieces_num_counter = 0
+        yield_pieces_count_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
-                h[yield_pieces_num_counter:member.section.yield_specs.pieces_num + yield_pieces_num_counter, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.h
+            for _ in range(member.yield_specs.points_count):
+                h[yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.h
                 yield_point_counter += 1
-                yield_pieces_num_counter += member.section.yield_specs.pieces_num
+                yield_pieces_count_counter += member.section.yield_specs.pieces_count
         return h
 
     def create_w(self):
-        empty_w = np.zeros((2 * self.yield_specs.points_num, 2 * self.yield_specs.points_num))
+        empty_w = np.zeros((2 * self.yield_specs.points_count, 2 * self.yield_specs.points_count))
         w = np.matrix(empty_w)
         yield_point_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 w[2 * yield_point_counter:2 * yield_point_counter + 2, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.w
                 yield_point_counter += 1
         return w
 
     def create_cs(self):
-        empty_cs = np.zeros((2 * self.yield_specs.points_num, 1))
+        empty_cs = np.zeros((2 * self.yield_specs.points_count, 1))
         cs = np.matrix(empty_cs)
         yield_point_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 cs[2 * yield_point_counter:2 * yield_point_counter + 2, 0] = member.section.softening.cs
                 yield_point_counter += 1
         return cs
@@ -261,8 +261,8 @@ class Structure:
         yield_points_indices = []
         index_counter = 0
         for member in self.members.list:
-            yield_point_pieces = int(member.yield_specs.pieces_num / member.yield_specs.points_num)
-            for _ in range(member.yield_specs.points_num):
+            yield_point_pieces = int(member.yield_specs.pieces_count / member.yield_specs.points_count)
+            for _ in range(member.yield_specs.points_count):
                 yield_points_indices.append(
                     {
                         "begin": index_counter,

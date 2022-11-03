@@ -6,9 +6,9 @@ from ..sections.frame import FrameSection
 
 class YieldSpecs:
     def __init__(self, section: FrameSection):
-        self.points_num = 2
-        self.components_num = self.points_num * section.yield_specs.components_num
-        self.pieces_num = self.points_num * section.yield_specs.pieces_num
+        self.points_count = 2
+        self.components_count = self.points_count * section.yield_specs.components_count
+        self.pieces_count = self.points_count * section.yield_specs.pieces_count
 
 
 class Mass:
@@ -142,7 +142,7 @@ class FrameMember2D:
         return p
 
     def get_nodal_forces_from_unit_distortions(self):
-        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_num)))
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
         if self.section.nonlinear.has_axial_yield:
             nodal_forces[:, 0] = self.k[:, 0]
             nodal_forces[:, 1] = self.k[:, 2]

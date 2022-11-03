@@ -9,21 +9,21 @@ def calculate_responses(analysis: Analysis):
     structure = analysis.structure
     pms_history = analysis.plastic_vars["pms_history"]
     load_level_history = analysis.plastic_vars["load_level_history"]
-    increments_num = len(load_level_history)
+    increments_count = len(load_level_history)
     phi = structure.phi
 
-    load_levels = np.zeros([increments_num, 1], dtype=object)
+    load_levels = np.zeros([increments_count, 1], dtype=object)
 
     nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
-    nodal_disps = np.zeros([increments_num, 1], dtype=object)
+    nodal_disps = np.zeros([increments_count, 1], dtype=object)
 
     members_forces_sensitivity = analysis.members_forces_sensitivity
-    members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
+    members_forces = np.zeros([increments_count, structure.members.num], dtype=object)
 
     members_disps_sensitivity = analysis.members_disps_sensitivity
-    members_disps = np.zeros([increments_num, structure.members.num], dtype=object)
+    members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
 
-    for i in range(increments_num):
+    for i in range(increments_count):
         pms = pms_history[i]
         load_level = load_level_history[i]
         phi_x = phi * pms
@@ -90,23 +90,23 @@ def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity)
     elastoplastic_response = scaled_elastic_response + plastic_response
     return elastoplastic_response
 
-    # members_yield_points_num = 0
+    # members_yield_points_count = 0
     # for member in structure.members:
-    #     members_yield_points_num += len(member.yield_points)
+    #     members_yield_points_count += len(member.yield_points)
 
-    # empty_array = np.zeros((members_yield_points_num, 6))
+    # empty_array = np.zeros((members_yield_points_count, 6))
     # yield_points_data = np.matrix(empty_array)
     # yp_counter = 0
     # for i, member in enumerate(structure.members):
-    #     member_yield_points_num = len(member.yield_points)
-    #     for j in range(member_yield_points_num):
+    #     member_yield_points_count = len(member.yield_points)
+    #     for j in range(member_yield_points_count):
     #         if member.has_axial_yield:
-    #             components_num = 2
+    #             components_count = 2
     #             components_dofs = [0, 2]
     #             yield_capacity = [member.section.ap, member.section.mp]
     #             node_dof = 3
     #             yield_points_data[yp_counter, 0:6] = np.array([[
-    #                 components_num,
+    #                 components_count,
     #                 components_dofs[0],
     #                 components_dofs[1],
     #                 yield_capacity[0],
@@ -114,12 +114,12 @@ def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity)
     #                 node_dof,
     #             ]])
     #         else:
-    #             components_num = 1
+    #             components_count = 1
     #             components_dofs = [2]
     #             yield_capacity = [member.section.mp]
     #             node_dof = 3
     #             yield_points_data[yp_counter, 0:4] = np.array([[
-    #                 components_num,
+    #                 components_count,
     #                 components_dofs[0],
     #                 yield_capacity[0],
     #                 node_dof,
