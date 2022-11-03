@@ -50,7 +50,7 @@ class Analysis:
             self.a_duhamel = np.zeros((time_steps, modes_num, 1))
             self.b_duhamel = np.zeros((time_steps, modes_num, 1))
             self.un = np.zeros((time_steps, modes_num, 1))
-            self.elastic_nodal_disp_history = np.zeros((time_steps, structure.total_dofs_num, 1))
+            self.elastic_nodal_disp_history = np.zeros((time_steps, structure.dofs_count, 1))
             self.elastic_members_disps_history = np.zeros((time_steps, structure.members.num, 1), dtype=object)
             self.elastic_members_forces_history = np.zeros((time_steps, structure.members.num, 1), dtype=object)
 
@@ -107,8 +107,8 @@ class Analysis:
         reduced_disp = cho_solve(structure.kc, reduced_total_load)
         empty_nodal_disp = np.zeros((1, 1), dtype=object)
         nodal_disp = np.matrix(empty_nodal_disp)
-        disp = np.matrix(np.zeros((structure.total_dofs_num, 1)))
-        for i in range(structure.total_dofs_num):
+        disp = np.matrix(np.zeros((structure.dofs_count, 1)))
+        for i in range(structure.dofs_count):
             if (j != structure.boundaries_dof.shape[0] and i == structure.boundaries_dof[j]):
                 j += 1
             else:
@@ -122,7 +122,7 @@ class Analysis:
         empty_members_disps = np.zeros((structure.members.num, 1), dtype=object)
         members_disps = np.matrix(empty_members_disps)
         for i_member, member in enumerate(structure.members.list):
-            member_dofs_num = member.total_dofs_num
+            member_dofs_num = member.dofs_count
             member_nodes_num = len(member.nodes)
             member_node_dofs_num = int(member_dofs_num / member_nodes_num)
             v = np.zeros((member_dofs_num, 1))
@@ -137,34 +137,17 @@ class Analysis:
 
     def get_internal_forces(self, members_disps):
         structure = self.structure
-
-        fixed_force = np.zeros((structure.node_dofs_num * 2, 1))
-        fixed_force = np.matrix(fixed_force)
-
         # calculate p0
-        empty_members_forces = np.zeros((structure.members.num, 1), dtype=object)
-        members_forces = np.matrix(empty_members_forces)
-        empty_p0 = np.zeros((structure.yield_specs.components_num, 1))
-        p0 = np.matrix(empty_p0)
-        current_p0_row = 0
+        members_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        p0 = np.matrix(np.zeros((structure.yield_specs.components_num, 1)))
+        base_p0_row = 0
 
         for i, member in enumerate(structure.members.list):
-            if member.__class__.__name__ == "FrameMember2D":
-                member_force = member.get_nodal_force(members_disps[i, 0], fixed_force)
-                members_forces[i, 0] = member_force
-                if not member.section.nonlinear.has_axial_yield:
-                    p0[current_p0_row] = member_force[2, 0]
-                    p0[current_p0_row + 1] = member_force[5, 0]
-                else:
-                    p0[current_p0_row] = member_force[0, 0]
-                    p0[current_p0_row + 1] = member_force[2, 0]
-                    p0[current_p0_row + 2] = member_force[3, 0]
-                    p0[current_p0_row + 3] = member_force[5, 0]
-            elif member.__class__.__name__ == "PlateMember":
-                member_force = member.get_yield_components_force(members_disps[i, 0])
-                p0[current_p0_row:(current_p0_row + member.yield_specs.components_num)] = member_force
-                members_forces[i, 0] = member_force
-            current_p0_row = current_p0_row + member.yield_specs.components_num
+            p = member.get_yield_components_force(members_disps[i, 0])
+            member_force = member.get_nodal_force(members_disps[i, 0])
+            members_forces[i, 0] = member_force
+            p0[base_p0_row:(base_p0_row + member.yield_specs.components_num)] = p
+            base_p0_row = base_p0_row + member.yield_specs.components_num
         return {"members_forces": members_forces, "p0": p0}
 
     def get_nodal_disp_limits(self, elastic_nodal_disp):
@@ -201,7 +184,7 @@ class Analysis:
                 for yield_point_udef in member.udefs:
                     udef_components_num = yield_point_udef.shape[1]
                     for i_component in range(udef_components_num):
-                        fv_size = structure.total_dofs_num
+                        fv_size = structure.dofs_count
                         fv = np.zeros((fv_size, 1))
                         fv = np.matrix(fv)
                         component_udef_global = member.t.T * yield_point_udef[:, i_component]
@@ -386,7 +369,7 @@ class Analysis:
                 for yield_point_udef in member.udefs:
                     udef_components_num = yield_point_udef.shape[1]
                     for i_component in range(udef_components_num):
-                        fv_size = structure.total_dofs_num
+                        fv_size = structure.dofs_count
                         fv = np.zeros((fv_size, 1))
                         fv = np.matrix(fv)
                         component_udef_global = member.t.T * yield_point_udef[:, i_component]

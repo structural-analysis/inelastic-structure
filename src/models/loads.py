@@ -39,7 +39,7 @@ class Loads:
 
     def assemble_joint_load(self, structure, loads, time_step=None):
         # f_total = np.zeros((9, 1))
-        f_total = np.zeros((structure.total_dofs_num, 1))
+        f_total = np.zeros((structure.dofs_count, 1))
         f_total = np.matrix(f_total)
         # node_dofs_num = 3
         node_dofs_num = structure.node_dofs_num
@@ -49,7 +49,7 @@ class Loads:
         return f_total
 
     def get_total_load(self, structure, loads, time_step=None):
-        f_total = np.zeros((structure.total_dofs_num, 1))
+        f_total = np.zeros((structure.dofs_count, 1))
         # f_total = np.zeros((9, 1))
         f_total = np.matrix(f_total)
         loads_dict = vars(loads)
@@ -75,7 +75,7 @@ class Loads:
         mass_i = 0
         zero_i = 0
         zero_mass_dofs_i = 0
-        for dof in range(structure.total_dofs_num):
+        for dof in range(structure.dofs_count):
             if dof == structure.zero_mass_dofs[zero_mass_dofs_i]:
                 pt = np.delete(pt, dof - zero_i, 0)
                 zero_i += 1
