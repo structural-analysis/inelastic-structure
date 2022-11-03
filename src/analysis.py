@@ -176,23 +176,19 @@ class Analysis:
         for i_member, member in enumerate(members):
             for force in member.udefs.T:
                 fv = np.matrix(np.zeros((structure.dofs_count, 1)))
-                global_force = member.t.T * force
+                global_force = member.t.T * force.T
+                node_local_base_dof = 0
                 for node in member.nodes:
-                    node_base_dof = structure.node_dofs_num * node.num
-                    fv[node_base_dof] = global_force[0]
-                    fv[node_base_dof + 1] = global_force[1]
-                    fv[node_base_dof + 2] = global_force[2]
-
-                fv[end_dof] = global_force[3]
-                fv[end_dof + 1] = global_force[4]
-                fv[end_dof + 2] = global_force[5]
-
-                affected_struc_disp = self.get_nodal_disp(fv)
-                nodal_disps_sensitivity[0, pv_column] = affected_struc_disp
-                affected_member_disps = self.get_members_disps(affected_struc_disp)
+                    node_global_base_dof = structure.node_dofs_num * node.num
+                    for i in range(structure.node_dofs_num):
+                        fv[node_global_base_dof + i] = global_force[node_local_base_dof + i]
+                    node_local_base_dof += structure.node_dofs_num
+                print(f"{fv=}")
+                affected_structure_disp = self.get_nodal_disp(fv)
+                nodal_disps_sensitivity[0, pv_column] = affected_structure_disp
+                affected_member_disps = self.get_members_disps(affected_structure_disp)
                 current_affected_member_ycns = 0
                 for i_affected_member, affected_member_disp in enumerate(affected_member_disps):
-
                     if i_member == i_affected_member:
                         fixed_force = -force
                     else:
