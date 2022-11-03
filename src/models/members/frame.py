@@ -32,8 +32,8 @@ class FrameMember2D:
         self.k = self._stiffness()
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces
-        self.udefs = self._udefs()
-        # self.udefs = self.get_nodal_forces_from_unit_displacements()
+        # self.udefs = self._udefs()
+        self.udefs = self.get_nodal_forces_from_unit_distortions()
 
     def _length(self):
         a = self.start
@@ -101,41 +101,6 @@ class FrameMember2D:
         )
         return m
 
-    def get_nodal_forces_from_unit_displacements(self):
-        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_num)))
-        if self.section.nonlinear.has_axial_yield:
-            nodal_forces[:, 0] = self.k[:, 0]
-            nodal_forces[:, 1] = self.k[:, 2]
-            nodal_forces[:, 2] = self.k[:, 3]
-            nodal_forces[:, 3] = self.k[:, 5]
-        else:
-            nodal_forces[:, 0] = self.k[:, 2]
-            nodal_forces[:, 1] = self.k[:, 5]
-        return nodal_forces
-
-    def _udefs(self):
-        k = self.k
-        k_size = k.shape[0]
-        if self.section.nonlinear.has_axial_yield:
-            udef_start_empty = np.zeros((k_size, 2))
-            udef_end_empty = np.zeros((k_size, 2))
-            udef_start = np.matrix(udef_start_empty)
-            udef_end = np.matrix(udef_end_empty)
-            udef_start[:, 0] = k[:, 0]
-            udef_start[:, 1] = k[:, 2]
-            udef_end[:, 0] = k[:, 3]
-            udef_end[:, 1] = k[:, 5]
-        else:
-            udef_start_empty = np.zeros((k_size, 1))
-            udef_end_empty = np.zeros((k_size, 1))
-            udef_start = np.matrix(udef_start_empty)
-            udef_end = np.matrix(udef_end_empty)
-            udef_start[:, 0] = k[:, 2]
-            udef_end[:, 0] = k[:, 5]
-
-        udefs = (udef_start, udef_end)
-        return udefs
-
     def _transform_matrix(self):
         a = self.start
         b = self.end
@@ -175,3 +140,38 @@ class FrameMember2D:
             p[0, 0] = f[2, 0]
             p[1, 0] = f[5, 0]
         return p
+
+    def get_nodal_forces_from_unit_distortions(self):
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_num)))
+        if self.section.nonlinear.has_axial_yield:
+            nodal_forces[:, 0] = self.k[:, 0]
+            nodal_forces[:, 1] = self.k[:, 2]
+            nodal_forces[:, 2] = self.k[:, 3]
+            nodal_forces[:, 3] = self.k[:, 5]
+        else:
+            nodal_forces[:, 0] = self.k[:, 2]
+            nodal_forces[:, 1] = self.k[:, 5]
+        return nodal_forces
+
+    # def _udefs(self):
+    #     k = self.k
+    #     k_size = k.shape[0]
+    #     if self.section.nonlinear.has_axial_yield:
+    #         udef_start_empty = np.zeros((k_size, 2))
+    #         udef_end_empty = np.zeros((k_size, 2))
+    #         udef_start = np.matrix(udef_start_empty)
+    #         udef_end = np.matrix(udef_end_empty)
+    #         udef_start[:, 0] = k[:, 0]
+    #         udef_start[:, 1] = k[:, 2]
+    #         udef_end[:, 0] = k[:, 3]
+    #         udef_end[:, 1] = k[:, 5]
+    #     else:
+    #         udef_start_empty = np.zeros((k_size, 1))
+    #         udef_end_empty = np.zeros((k_size, 1))
+    #         udef_start = np.matrix(udef_start_empty)
+    #         udef_end = np.matrix(udef_end_empty)
+    #         udef_start[:, 0] = k[:, 2]
+    #         udef_end[:, 0] = k[:, 5]
+
+    #     udefs = (udef_start, udef_end)
+    #     return udefs
