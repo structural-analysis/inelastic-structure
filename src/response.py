@@ -1,27 +1,25 @@
 import os
 import numpy as np
 from src.analysis import Analysis
-from src.models.functions import get_members_max_dofs_num
 
 outputs_dir = "output/examples/"
 
 
-def calculate_responses(analysis: Analysis, result, example_name):
+def calculate_responses(analysis: Analysis):
     structure = analysis.structure
-    pms_history = result["pms_history"]
-    load_level_history = result["load_level_history"]
+    pms_history = analysis.plastic_vars["pms_history"]
+    load_level_history = analysis.plastic_vars["load_level_history"]
     increments_num = len(load_level_history)
     phi = structure.phi
-    max_member_dofs_num = get_members_max_dofs_num(structure.members.list)
-    load_levels = np.zeros([increments_num, 1])
+
+    load_levels = np.zeros([increments_num, 1], dtype=object)
 
     nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
-    nodal_disps = np.zeros([increments_num, structure.total_dofs_num])
+    nodal_disps = np.zeros([increments_num, 1], dtype=object)
 
     members_forces_sensitivity = analysis.members_forces_sensitivity
     members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
 
-    # members displacements
     members_disps_sensitivity = analysis.members_disps_sensitivity
     members_disps = np.zeros([increments_num, structure.members.num], dtype=object)
 
@@ -30,54 +28,67 @@ def calculate_responses(analysis: Analysis, result, example_name):
         load_level = load_level_history[i]
         phi_x = phi * pms
 
-        load_levels[i, 0] = load_level
+        load_levels[i, 0] = np.matrix([[load_level]])
 
-        # structure nodal displacements
-        scaled_elastic_nodal_disp = np.matrix(np.dot(load_level, analysis.elastic_nodal_disp))
-        plastic_nodal_disp = nodal_disps_sensitivity * phi_x
-        elastoplastic_nodal_disp = scaled_elastic_nodal_disp + plastic_nodal_disp[0, 0]
-        nodal_disps[i, :] = np.asarray(elastoplastic_nodal_disp).reshape(-1)
+        elastoplastic_nodal_disp = get_elastoplastic_response(
+            load_level=load_level,
+            phi_x=phi_x,
+            elastic_response=analysis.elastic_nodal_disp,
+            sensitivity=nodal_disps_sensitivity,
+        )
+        nodal_disps[i, 0] = elastoplastic_nodal_disp[0, 0]
 
-        # members forces
-        scaled_elastic_members_forces = np.matrix(np.dot(load_level, analysis.elastic_members_forces))
-        plastic_members_forces = members_forces_sensitivity * phi_x
-        elastoplastic_members_forces = scaled_elastic_members_forces + plastic_members_forces
+        elastoplastic_members_forces = get_elastoplastic_response(
+            load_level=load_level,
+            phi_x=phi_x,
+            elastic_response=analysis.elastic_members_forces,
+            sensitivity=members_forces_sensitivity,
+        )
         for j in range(structure.members.num):
             members_forces[i, j] = elastoplastic_members_forces[j, 0]
 
-        # members disps
-        scaled_elastic_members_disps = np.matrix(np.dot(load_level, analysis.elastic_members_disps))
-        plastic_members_disps = members_disps_sensitivity * phi_x
-        elastoplastic_members_disps = scaled_elastic_members_disps + plastic_members_disps
+        elastoplastic_members_disps = get_elastoplastic_response(
+            load_level=load_level,
+            phi_x=phi_x,
+            elastic_response=analysis.elastic_members_disps,
+            sensitivity=members_disps_sensitivity,
+        )
         for j in range(structure.members.num):
             members_disps[i, j] = elastoplastic_members_disps[j, 0]
 
-    for i in range(increments_num):
-        increment_dir = os.path.join(outputs_dir, example_name, str(i))
-        os.makedirs(increment_dir, exist_ok=True)
+    responses = {
+        "nodal_disps": nodal_disps,
+        "members_forces": members_forces,
+        "members_disps": members_disps,
+        "load_levels": load_levels,
+    }
+    return responses
 
-        load_levels_path = os.path.join(increment_dir, "load_levels.csv")
-        nodal_disps_path = os.path.join(increment_dir, "nodal_disps.csv")
-        members_forces_path = os.path.join(increment_dir, "members_forces.csv")
-        members_disps_path = os.path.join(increment_dir, "members_disps.csv")
-        yield_points_data_path = os.path.join(outputs_dir, example_name, "yield_data.csv")
 
-        current_increment_members_forces = members_forces[i, :]
-        empty_current_increment_members_forces_compact = np.zeros([max_member_dofs_num, structure.members.num])
-        current_increment_members_forces_compact = np.matrix(empty_current_increment_members_forces_compact)
-        for j in range(structure.members.num):
-            current_increment_members_forces_compact[:, j] = current_increment_members_forces[j]
+def write_responses_to_file(example_name, responses, desired_responses):
+    for response in responses:
+        if response in desired_responses:
+            write_response_to_file(
+                example_name=example_name,
+                response=responses[response],
+                response_name=response,
+            )
 
-        current_increment_members_disps = members_disps[i, :]
-        empty_current_increment_members_disps_compact = np.zeros([max_member_dofs_num, structure.members.num])
-        current_increment_members_disps_compact = np.matrix(empty_current_increment_members_disps_compact)
-        for j in range(structure.members.num):
-            current_increment_members_disps_compact[:, j] = current_increment_members_disps[j]
 
-        np.savetxt(fname=load_levels_path, X=np.array([load_levels[i, 0]]), delimiter=",")
-        np.savetxt(fname=nodal_disps_path, X=nodal_disps[i, :], delimiter=",")
-        np.savetxt(fname=members_forces_path, X=current_increment_members_forces_compact, delimiter=",")
-        np.savetxt(fname=members_disps_path, X=current_increment_members_disps_compact, delimiter=",")
+def write_response_to_file(example_name, response, response_name):
+    for increment in range(response.shape[0]):
+        response_dir = os.path.join(outputs_dir, example_name, str(increment), response_name)
+        os.makedirs(response_dir, exist_ok=True)
+        for i in range(response.shape[1]):
+            dir = os.path.join(response_dir, f"{str(i)}.csv")
+            np.savetxt(fname=dir, X=np.array(response[increment, i]), delimiter=",")
+
+
+def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity):
+    scaled_elastic_response = np.matrix(np.dot(load_level, elastic_response))
+    plastic_response = sensitivity * phi_x
+    elastoplastic_response = scaled_elastic_response + plastic_response
+    return elastoplastic_response
 
     # members_yield_points_num = 0
     # for member in structure.members:

@@ -1,9 +1,8 @@
 import numpy as np
-from src.analysis import Analysis
 
 
 class RawData:
-    def __init__(self, analysis: Analysis):
+    def __init__(self, analysis):
         structure = analysis.structure
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
