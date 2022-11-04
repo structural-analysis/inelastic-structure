@@ -125,8 +125,8 @@ class FrameMember2D:
         return nodal_force
 
     # NOTE: extra function call for consistency.
-    def get_yield_components_force(self, nodal_disp):
-        f = self.get_nodal_force(nodal_disp)
+    def get_yield_components_force(self, nodal_disp, fixed_force=None):
+        f = self.get_nodal_force(nodal_disp, fixed_force)
         if self.section.nonlinear.has_axial_yield:
             p = np.matrix(np.zeros((4, 1)))
             p[0, 0] = f[0, 0]

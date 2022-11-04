@@ -304,7 +304,7 @@ class PlateMember:
             nodal_force = self.k * nodal_disp
         return nodal_force
 
-    def get_yield_components_force(self, nodal_disp):
+    def get_yield_components_force(self, nodal_disp, fixed_force=None):
         elements_nodal_disps = self.get_elements_nodal_disps(nodal_disp)
         yield_components_force = np.matrix(np.zeros((self.yield_specs.components_count, 1)))
         for i, element in enumerate(self.elements.list):

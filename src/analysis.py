@@ -168,7 +168,7 @@ class Analysis:
         members_disps_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         pv_column = 0
 
-        for i_member, member in enumerate(members):
+        for member_num, member in enumerate(members):
             for force in member.udefs.T:
                 fv = np.matrix(np.zeros((structure.dofs_count, 1)))
                 global_force = member.t.T * force.T
@@ -183,26 +183,14 @@ class Analysis:
                 nodal_disps_sensitivity[0, pv_column] = affected_structure_disp[0, 0]
                 affected_member_disps = self.get_members_disps(affected_structure_disp[0, 0])
                 current_affected_member_ycns = 0
-                for i_affected_member, affected_member_disp in enumerate(affected_member_disps):
-                    if i_member == i_affected_member:
-                        fixed_force = -force.T
-                    else:
-                        fixed_force = np.zeros((structure.node_dofs_count * 2, 1))
-                        fixed_force = np.matrix(fixed_force)
-                    # FIXME: affected_member_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
-                    affected_member_force = structure.members.list[i_affected_member].get_nodal_force(affected_member_disp[0, 0], fixed_force)
-                    members_forces_sensitivity[i_affected_member, pv_column] = affected_member_force
-                    members_disps_sensitivity[i_affected_member, pv_column] = affected_member_disp[0, 0]
-
-                    if not member.section.nonlinear.has_axial_yield:
-                        pv[current_affected_member_ycns, pv_column] = affected_member_force[2, 0]
-                        pv[current_affected_member_ycns + 1, pv_column] = affected_member_force[5, 0]
-                    else:
-                        pv[current_affected_member_ycns, pv_column] = affected_member_force[0, 0]
-                        pv[current_affected_member_ycns + 1, pv_column] = affected_member_force[2, 0]
-                        pv[current_affected_member_ycns + 2, pv_column] = affected_member_force[3, 0]
-                        pv[current_affected_member_ycns + 3, pv_column] = affected_member_force[5, 0]
-                    current_affected_member_ycns = current_affected_member_ycns + structure.members.list[i_affected_member].yield_specs.components_count
+                for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
+                    fixed_force = -force.T if member_num == affected_member_num else None
+                    affected_member_force = structure.members.list[affected_member_num].get_nodal_force(affected_member_disp[0, 0], fixed_force)
+                    affected_member_yield_components_force = structure.members.list[affected_member_num].get_yield_components_force(affected_member_disp[0, 0], fixed_force)
+                    members_forces_sensitivity[affected_member_num, pv_column] = affected_member_force
+                    members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
+                    pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
+                    current_affected_member_ycns = current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count
 
                 pv_column += 1
         results = {
