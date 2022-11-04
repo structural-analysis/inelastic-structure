@@ -94,8 +94,7 @@ def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity)
     # for member in structure.members:
     #     members_yield_points_count += len(member.yield_points)
 
-    # empty_array = np.zeros((members_yield_points_count, 6))
-    # yield_points_data = np.matrix(empty_array)
+    # yield_points_data = np.matrix(np.zeros((members_yield_points_count, 6)))
     # yp_counter = 0
     # for i, member in enumerate(structure.members):
     #     member_yield_points_count = len(member.yield_points)

@@ -73,8 +73,7 @@ class Softening:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
     def _get_h(self, yield_specs):
-        empty_h = np.zeros([yield_specs.pieces_count, 2])
-        h = np.matrix(empty_h)
+        h = np.matrix(np.zeros([yield_specs.pieces_count, 2]))
         h[:, 0] = self.slope
         return h
 

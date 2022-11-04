@@ -90,8 +90,6 @@ class Analysis:
                 mahini_method = MahiniMethod(raw_data)
                 self.plastic_vars = mahini_method.solve()
 
-
-
     def _get_type(self):
         if self.general_info.get("dynamic_analysis") and self.general_info["dynamic_analysis"]["enabled"]:
             type = "dynamic"
@@ -105,8 +103,7 @@ class Analysis:
         structure = self.structure
         reduced_total_load = self.loads.apply_boundary_conditions(structure.boundaries_dof, total_load)
         reduced_disp = cho_solve(structure.kc, reduced_total_load)
-        empty_nodal_disp = np.zeros((1, 1), dtype=object)
-        nodal_disp = np.matrix(empty_nodal_disp)
+        nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
         disp = np.matrix(np.zeros((structure.dofs_count, 1)))
         for i in range(structure.dofs_count):
             if (j != structure.boundaries_dof.shape[0] and i == structure.boundaries_dof[j]):
@@ -119,8 +116,7 @@ class Analysis:
 
     def get_members_disps(self, disp):
         structure = self.structure
-        empty_members_disps = np.zeros((structure.members.num, 1), dtype=object)
-        members_disps = np.matrix(empty_members_disps)
+        members_disps = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         for i_member, member in enumerate(structure.members.list):
             member_dofs_count = member.dofs_count
             member_nodes_count = len(member.nodes)
@@ -154,8 +150,7 @@ class Analysis:
         structure = self.structure
         disp_limits = structure.limits["disp_limits"]
         disp_limits_count = disp_limits.shape[0]
-        empty_d0 = np.zeros((disp_limits_count, 1))
-        d0 = np.matrix(empty_d0)
+        d0 = np.matrix(np.zeros((disp_limits_count, 1)))
         for i, disp_limit in enumerate(disp_limits):
             node = disp_limit[0]
             node_dof = disp_limit[1]
@@ -222,8 +217,7 @@ class Analysis:
         structure = self.structure
         disp_limits = structure.limits["disp_limits"]
         disp_limits_count = disp_limits.shape[0]
-        empty_dv = np.zeros((disp_limits_count, structure.yield_specs.components_count))
-        dv = np.matrix(empty_dv)
+        dv = np.matrix(np.zeros((disp_limits_count, structure.yield_specs.components_count)))
         for i, disp_limit in enumerate(disp_limits):
             node = disp_limit[0]
             node_dof = disp_limit[1]
@@ -330,23 +324,15 @@ class Analysis:
         structure = self.structure
         # fv: equivalent global force vector for a yield component's udef
         members = structure.members.list
-        empty_pv = np.zeros((structure.yield_specs.components_count, structure.yield_specs.components_count))
-        pv = np.matrix(empty_pv)
+        pv = np.matrix(np.zeros((structure.yield_specs.components_count, structure.yield_specs.components_count)))
         pv_column = 0
 
-        empty_members_forces_sensitivity = np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object)
-        empty_members_disps_sensitivity = np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object)
-        empty_nodal_disps_sensitivity = np.zeros((1, structure.yield_specs.components_count), dtype=object)
-        empty_p2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object)
-        empty_a2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object)
-        empty_b2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object)
-
-        members_forces_sensitivity = np.matrix(empty_members_forces_sensitivity)
-        members_disps_sensitivity = np.matrix(empty_members_disps_sensitivity)
-        nodal_disps_sensitivity = np.matrix(empty_nodal_disps_sensitivity)
-        p2_sensitivity = np.matrix(empty_p2_sensitivity)
-        a2_sensitivity = np.matrix(empty_a2_sensitivity)
-        b2_sensitivity = np.matrix(empty_b2_sensitivity)
+        members_forces_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_disps_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        nodal_disps_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.components_count), dtype=object))
+        p2_sensitivity = np.matrix(np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object))
+        a2_sensitivity = np.matrix(np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object))
+        b2_sensitivity = np.matrix(np.zeros((modes.shape[1], structure.yield_specs.components_count), dtype=object))
 
         for i_member, member in enumerate(members):
             if member.__class__.__name__ == "FrameMember2D":

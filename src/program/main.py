@@ -24,8 +24,7 @@ class MahiniMethod:
         basic_variables = self.get_initial_basic_variables()
         b_matrix_inv = np.eye(self.slack_vars_count)
         cb = np.zeros(self.slack_vars_count)
-        empty_x_cumulative = np.zeros((self.constraints_count, 1))
-        x_cumulative = np.matrix(empty_x_cumulative)
+        x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
         x_history = []
         fpm = FPM
         fpm.var = self.landa_var

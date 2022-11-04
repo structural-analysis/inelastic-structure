@@ -47,8 +47,7 @@ class RawData:
         phi_pv_phi = self.phi.T * self.pv * self.phi
         phi_p0 = self.phi.T * self.p0
         dv_phi = self.dv * self.phi
-        empty_a = np.zeros((constraints_count, primary_vars_count))
-        raw_a = np.matrix(empty_a)
+        raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
         raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
 
         if softening_vars_count:

@@ -102,8 +102,7 @@ class Structure:
         return member_global_stiffness
 
     def get_stiffness(self):
-        empty_stiffness = np.zeros((self.dofs_count, self.dofs_count))
-        structure_stiffness = np.matrix(empty_stiffness)
+        structure_stiffness = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
             structure_stiffness = self._assemble_members(member, member_global_stiffness, structure_stiffness)
@@ -143,8 +142,7 @@ class Structure:
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
-        empty_mass = np.zeros((self.dofs_count, self.dofs_count))
-        structure_mass = np.matrix(empty_mass)
+        structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             if member.m is not None:
                 structure_mass = self._assemble_members(member, member.m, structure_mass)
@@ -200,8 +198,7 @@ class Structure:
         return global_dof
 
     def create_phi(self):
-        empty_phi = np.zeros((self.yield_specs.components_count, self.yield_specs.pieces_count))
-        phi = np.matrix(empty_phi)
+        phi = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.pieces_count)))
         current_row = 0
         current_column = 0
         for member in self.members.list:
@@ -214,8 +211,7 @@ class Structure:
         return phi
 
     def create_q(self):
-        empty_q = np.zeros((2 * self.yield_specs.points_count, self.yield_specs.pieces_count))
-        q = np.matrix(empty_q)
+        q = np.matrix(np.zeros((2 * self.yield_specs.points_count, self.yield_specs.pieces_count)))
         yield_point_counter = 0
         yield_pieces_count_counter = 0
         for member in self.members.list:
@@ -226,8 +222,7 @@ class Structure:
         return q
 
     def create_h(self):
-        empty_h = np.zeros((self.yield_specs.pieces_count, 2 * self.yield_specs.points_count))
-        h = np.matrix(empty_h)
+        h = np.matrix(np.zeros((self.yield_specs.pieces_count, 2 * self.yield_specs.points_count)))
         yield_point_counter = 0
         yield_pieces_count_counter = 0
         for member in self.members.list:
@@ -238,8 +233,7 @@ class Structure:
         return h
 
     def create_w(self):
-        empty_w = np.zeros((2 * self.yield_specs.points_count, 2 * self.yield_specs.points_count))
-        w = np.matrix(empty_w)
+        w = np.matrix(np.zeros((2 * self.yield_specs.points_count, 2 * self.yield_specs.points_count)))
         yield_point_counter = 0
         for member in self.members.list:
             for _ in range(member.yield_specs.points_count):
@@ -248,8 +242,7 @@ class Structure:
         return w
 
     def create_cs(self):
-        empty_cs = np.zeros((2 * self.yield_specs.points_count, 1))
-        cs = np.matrix(empty_cs)
+        cs = np.matrix(np.zeros((2 * self.yield_specs.points_count, 1)))
         yield_point_counter = 0
         for member in self.members.list:
             for _ in range(member.yield_specs.points_count):
