@@ -172,12 +172,12 @@ class Analysis:
             for force in member.udefs.T:
                 fv = np.matrix(np.zeros((structure.dofs_count, 1)))
                 global_force = member.t.T * force.T
-                node_local_base_dof = 0
+                local_node_base_dof = 0
                 for node in member.nodes:
-                    node_global_base_dof = structure.node_dofs_count * node.num
+                    global_node_base_dof = structure.node_dofs_count * node.num
                     for i in range(structure.node_dofs_count):
-                        fv[node_global_base_dof + i] = global_force[node_local_base_dof + i]
-                    node_local_base_dof += structure.node_dofs_count
+                        fv[global_node_base_dof + i] = global_force[local_node_base_dof + i]
+                    local_node_base_dof += structure.node_dofs_count
 
                 affected_structure_disp = self.get_nodal_disp(fv)
                 nodal_disps_sensitivity[0, pv_column] = affected_structure_disp[0, 0]
