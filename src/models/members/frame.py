@@ -113,21 +113,20 @@ class FrameMember2D:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
-    def get_nodal_force(self, displacements, fixed_forces=None):
-        # displacements: numpy matrix
-        if fixed_forces is None:
-            fixed_forces = np.matrix(np.zeros((self.dofs_count, 1)))
+    def get_nodal_force(self, nodal_disp, fixed_force=None):
+        # nodal_disp: numpy matrix
+        if fixed_force is None:
+            fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
 
-        k = self.k
-        if fixed_forces.any():
-            f = k * displacements + fixed_forces
+        if fixed_force.any():
+            nodal_force = self.k * nodal_disp + fixed_force
         else:
-            f = k * displacements
-        return f
+            nodal_force = self.k * nodal_disp
+        return nodal_force
 
     # NOTE: extra function call for consistency.
-    def get_yield_components_force(self, displacements, fixed_forces=None):
-        f = self.get_nodal_force(displacements, fixed_forces)
+    def get_yield_components_force(self, nodal_disp):
+        f = self.get_nodal_force(nodal_disp)
         if self.section.nonlinear.has_axial_yield:
             p = np.matrix(np.zeros((4, 1)))
             p[0, 0] = f[0, 0]

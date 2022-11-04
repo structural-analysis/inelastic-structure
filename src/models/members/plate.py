@@ -242,7 +242,7 @@ class PlateMember:
         self.t = self.get_transform()
         self.m = None
 
-        self.udefs = self.get_nodal_forces_from_unit_curvatures()
+        self.udefs = self.get_nodal_forces_from_unit_distortions()
 
     def get_nodes(self):
         nodes = []
@@ -293,10 +293,15 @@ class PlateMember:
             elements_nodal_disps.append(element_nodal_disps)
         return elements_nodal_disps
 
-    # TODO: fixed_forces?
-    def get_nodal_force(self, nodal_disp):
+    def get_nodal_force(self, nodal_disp, fixed_force=None):
         # nodal_disp: numpy matrix
-        nodal_force = self.k * nodal_disp
+        if fixed_force is None:
+            fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
+
+        if fixed_force.any():
+            nodal_force = self.k * nodal_disp + fixed_force
+        else:
+            nodal_force = self.k * nodal_disp
         return nodal_force
 
     def get_yield_components_force(self, nodal_disp):
@@ -309,7 +314,7 @@ class PlateMember:
             yield_components_force[start_index:end_index, 0] = element.get_yield_components_force(elements_nodal_disps[i])
         return yield_components_force
 
-    def get_nodal_forces_from_unit_curvatures(self):
+    def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
         base_component_num = 0
         for element in self.elements.list:
