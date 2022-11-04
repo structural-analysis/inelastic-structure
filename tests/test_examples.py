@@ -1,16 +1,5 @@
 from src.main import run
+from src.settings import settings
 
-example_names = [
-    # "1story_1span",
-    "3story_perfect",
-    "3story_softening",
-    "simple_beam",
-    # "simple_beam_dynamic",
-    "skew_beams",
-    # "triangle_truss",
-    "tripod_corner",
-    "tripod_unload",
-]
-
-for example_name in example_names:
+for example_name in settings.examples_to_test:
     run(example_name)
