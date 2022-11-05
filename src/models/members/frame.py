@@ -1,7 +1,14 @@
 import numpy as np
+from dataclasses import dataclass
 
 from ..points import Node
 from ..sections.frame import FrameSection
+
+
+@dataclass
+class Response:
+    nodal_force: np.matrix
+    yield_components_force: np.matrix
 
 
 class YieldSpecs:
@@ -113,7 +120,7 @@ class FrameMember2D:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
-    def get_nodal_force(self, nodal_disp, fixed_force=None):
+    def get_response(self, nodal_disp, fixed_force=None):
         # nodal_disp: numpy matrix
         if fixed_force is None:
             fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
@@ -122,22 +129,23 @@ class FrameMember2D:
             nodal_force = self.k * nodal_disp + fixed_force
         else:
             nodal_force = self.k * nodal_disp
-        return nodal_force
 
-    # NOTE: extra function call for consistency.
-    def get_yield_components_force(self, nodal_disp, fixed_force=None):
-        f = self.get_nodal_force(nodal_disp, fixed_force)
         if self.section.nonlinear.has_axial_yield:
-            p = np.matrix(np.zeros((4, 1)))
-            p[0, 0] = f[0, 0]
-            p[1, 0] = f[2, 0]
-            p[2, 0] = f[3, 0]
-            p[3, 0] = f[5, 0]
+            yield_components_force = np.matrix(np.zeros((4, 1)))
+            yield_components_force[0, 0] = nodal_force[0, 0]
+            yield_components_force[1, 0] = nodal_force[2, 0]
+            yield_components_force[2, 0] = nodal_force[3, 0]
+            yield_components_force[3, 0] = nodal_force[5, 0]
         else:
-            p = np.matrix(np.zeros((2, 1)))
-            p[0, 0] = f[2, 0]
-            p[1, 0] = f[5, 0]
-        return p
+            yield_components_force = np.matrix(np.zeros((2, 1)))
+            yield_components_force[0, 0] = nodal_force[2, 0]
+            yield_components_force[1, 0] = nodal_force[5, 0]
+
+        response = Response(
+            nodal_force=nodal_force,
+            yield_components_force=yield_components_force,
+        )
+        return response
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))

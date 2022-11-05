@@ -1,10 +1,25 @@
 import numpy as np
+from dataclasses import dataclass
 from scipy.linalg import cho_solve
 
 from src.models.loads import Loads
 from src.program.prepare import RawData
 from src.program.main import MahiniMethod
 from src.models.structure import Structure
+
+
+@dataclass
+class InternalResponses:
+    p0: np.matrix
+    members_nodal_forces: np.matrix
+
+
+@dataclass
+class Sensitivity:
+    pv: np.matrix
+    nodal_disps: np.matrix
+    members_forces: np.matrix
+    members_disps: np.matrix
 
 
 class Analysis:
@@ -18,15 +33,15 @@ class Analysis:
             self.total_load = self.loads.get_total_load(self.structure, self.loads)
             self.elastic_nodal_disp = self.get_nodal_disp(self.total_load)
             self.elastic_members_disps = self.get_members_disps(self.elastic_nodal_disp[0, 0])
-            internal_forces = self.get_internal_forces(self.elastic_members_disps)
-            self.elastic_members_forces = internal_forces["members_forces"]
-            self.p0 = internal_forces["p0"]
+            internal_responses = self.get_internal_responses(self.elastic_members_disps)
+            self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
+            self.p0 = internal_responses.p0
             self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
             sensitivity = self.get_sensitivity()
-            self.pv = sensitivity["pv"]
-            self.members_forces_sensitivity = sensitivity["members_forces_sensitivity"]
-            self.members_disps_sensitivity = sensitivity["members_disps_sensitivity"]
-            self.nodal_disps_sensitivity = sensitivity["nodal_disps_sensitivity"]
+            self.pv = sensitivity.pv
+            self.members_forces_sensitivity = sensitivity.members_forces
+            self.members_disps_sensitivity = sensitivity.members_disps
+            self.nodal_disps_sensitivity = sensitivity.nodal_disps
             self.dv = self.get_nodal_disp_limits_sensitivity_rows()
             raw_data = RawData(self)
             mahini_method = MahiniMethod(raw_data)
@@ -67,9 +82,9 @@ class Analysis:
                 #     f.write(f"{self.u[time_step, 4, 0]}\n")
                 self.elastic_members_disps_history[time_step, :, :] = self.get_members_disps(self.elastic_nodal_disp_history[time_step, :, :])
 
-                internal_forces = self.get_internal_forces(self.elastic_members_disps_history[time_step, :, :])
-                self.elastic_members_forces_history[time_step, :, :] = internal_forces["members_forces"]
-                self.p0 = internal_forces["p0"]
+                internal_responses = self.get_internal_responses(self.elastic_members_disps_history[time_step, :, :])
+                self.elastic_members_forces_history[time_step, :, :] = internal_responses["members_forces"]
+                self.p0 = internal_responses["p0"]
                 self.p0_history[time_step, :, :] = self.p0[:, 0]
 
                 self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp_history[time_step, :, :])
@@ -131,20 +146,21 @@ class Analysis:
             members_disps[i_member, 0] = u
         return members_disps
 
-    def get_internal_forces(self, members_disps):
+    def get_internal_responses(self, members_disps):
         structure = self.structure
         # calculate p0
-        members_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_nodal_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         p0 = np.matrix(np.zeros((structure.yield_specs.components_count, 1)))
         base_p0_row = 0
 
         for i, member in enumerate(structure.members.list):
-            p = member.get_yield_components_force(members_disps[i, 0])
-            member_force = member.get_nodal_force(members_disps[i, 0])
-            members_forces[i, 0] = member_force
-            p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = p
+            member_response = member.get_response(members_disps[i, 0])
+            member_nodal_force = member_response.nodal_force
+            member_yield_components_force = member_response.yield_components_force
+            members_nodal_forces[i, 0] = member_nodal_force
+            p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = member_yield_components_force
             base_p0_row = base_p0_row + member.yield_specs.components_count
-        return {"members_forces": members_forces, "p0": p0}
+        return InternalResponses(p0=p0, members_nodal_forces=members_nodal_forces)
 
     def get_nodal_disp_limits(self, elastic_nodal_disp):
         structure = self.structure
@@ -185,21 +201,22 @@ class Analysis:
                 current_affected_member_ycns = 0
                 for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
                     fixed_force = -force.T if member_num == affected_member_num else None
-                    affected_member_force = structure.members.list[affected_member_num].get_nodal_force(affected_member_disp[0, 0], fixed_force)
-                    affected_member_yield_components_force = structure.members.list[affected_member_num].get_yield_components_force(affected_member_disp[0, 0], fixed_force)
-                    members_forces_sensitivity[affected_member_num, pv_column] = affected_member_force
+                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
+                    affected_member_nodal_force = affected_member_response.nodal_force
+                    affected_member_yield_components_force = affected_member_response.yield_components_force
+                    members_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
                     current_affected_member_ycns = current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count
-
                 pv_column += 1
-        results = {
-            "pv": pv,
-            "nodal_disps_sensitivity": nodal_disps_sensitivity,
-            "members_forces_sensitivity": members_forces_sensitivity,
-            "members_disps_sensitivity": members_disps_sensitivity,
-        }
-        return results
+
+        sensitivity = Sensitivity(
+            pv=pv,
+            nodal_disps=nodal_disps_sensitivity,
+            members_forces=members_forces_sensitivity,
+            members_disps=members_disps_sensitivity,
+        )
+        return sensitivity
 
     def get_nodal_disp_limits_sensitivity_rows(self):
         structure = self.structure
@@ -357,7 +374,7 @@ class Analysis:
                                 fixed_force = np.zeros((structure.node_dofs_count * 2, 1))
                                 fixed_force = np.matrix(fixed_force)
                             # FIXME: affected_member_disp[0, 0] is for numpy oskolation when use matrix in matrix and enumerating on it.
-                            affected_member_force = structure.members.list[i_affected_member].get_nodal_force(affected_member_disp[0, 0], fixed_force)
+                            affected_member_force = structure.members.list[i_affected_member].get_response(affected_member_disp[0, 0], fixed_force).nodal_force
                             members_forces_sensitivity[i_affected_member, pv_column] = affected_member_force
                             members_disps_sensitivity[i_affected_member, pv_column] = affected_member_disp[0, 0]
 

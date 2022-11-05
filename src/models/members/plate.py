@@ -1,7 +1,14 @@
 import numpy as np
+from dataclasses import dataclass
 
 from ..points import Node, PlateGaussPoint
 from ..sections.plate import PlateSection
+
+
+@dataclass
+class Response:
+    nodal_force: np.matrix
+    yield_components_force: np.matrix
 
 
 class YieldSpecs:
@@ -293,8 +300,7 @@ class PlateMember:
             elements_nodal_disps.append(element_nodal_disps)
         return elements_nodal_disps
 
-    def get_nodal_force(self, nodal_disp, fixed_force=None):
-        # nodal_disp: numpy matrix
+    def get_response(self, nodal_disp, fixed_force=None):
         if fixed_force is None:
             fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
 
@@ -302,9 +308,7 @@ class PlateMember:
             nodal_force = self.k * nodal_disp + fixed_force
         else:
             nodal_force = self.k * nodal_disp
-        return nodal_force
 
-    def get_yield_components_force(self, nodal_disp, fixed_force=None):
         elements_nodal_disps = self.get_elements_nodal_disps(nodal_disp)
         yield_components_force = np.matrix(np.zeros((self.yield_specs.components_count, 1)))
         for i, element in enumerate(self.elements.list):
@@ -312,7 +316,12 @@ class PlateMember:
             start_index = i * element_yield_components_count
             end_index = (i + 1) * element_yield_components_count
             yield_components_force[start_index:end_index, 0] = element.get_yield_components_force(elements_nodal_disps[i])
-        return yield_components_force
+
+        response = Response(
+            nodal_force=nodal_force,
+            yield_components_force=yield_components_force,
+        )
+        return response
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))

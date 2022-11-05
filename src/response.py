@@ -41,7 +41,7 @@ def calculate_responses(analysis: Analysis):
         elastoplastic_members_forces = get_elastoplastic_response(
             load_level=load_level,
             phi_x=phi_x,
-            elastic_response=analysis.elastic_members_forces,
+            elastic_response=analysis.elastic_members_nodal_forces,
             sensitivity=members_forces_sensitivity,
         )
         for j in range(structure.members.num):
