@@ -290,14 +290,14 @@ class PlateMember:
     def get_elements_nodal_disps(self, nodal_disp):
         elements_nodal_disps = []
         for element in self.elements.list:
-            element_nodal_disps = np.matrix(np.zeros((3 * element.nodes_count, 1)))
+            element_nodal_disp = np.matrix(np.zeros((3 * element.nodes_count, 1)))
             i = 0
             for node in element.nodes:
-                element_nodal_disps[i, 0] = nodal_disp[3 * node.num]
-                element_nodal_disps[i + 1, 0] = nodal_disp[3 * node.num + 1]
-                element_nodal_disps[i + 2, 0] = nodal_disp[3 * node.num + 2]
+                element_nodal_disp[i, 0] = nodal_disp[3 * node.num]
+                element_nodal_disp[i + 1, 0] = nodal_disp[3 * node.num + 1]
+                element_nodal_disp[i + 2, 0] = nodal_disp[3 * node.num + 2]
                 i += 3
-            elements_nodal_disps.append(element_nodal_disps)
+            elements_nodal_disps.append(element_nodal_disp)
         return elements_nodal_disps
 
     def get_response(self, nodal_disp, fixed_force=None):

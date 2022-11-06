@@ -61,7 +61,7 @@ class Structure:
         self.limits = input["limits"]
         self.k = self.get_stiffness()
 
-        self.reduced_k = self.apply_boundary_condition(self.boundaries_dof, self.k)
+        self.reduced_k = self.apply_boundary_conditions(self.boundaries_dof, self.k)
         self.kc = cho_factor(self.reduced_k)
         self.yield_points_indices = self.get_yield_points_indices()
 
@@ -108,7 +108,7 @@ class Structure:
             structure_stiffness = self._assemble_members(member, member_global_stiffness, structure_stiffness)
         return structure_stiffness
 
-    def apply_boundary_condition(self, boundaries_dof, structure_prop):
+    def apply_boundary_conditions(self, boundaries_dof, structure_prop):
         reduced_structure_prop = structure_prop
         row_deleted_counter = 0
         col_deleted_counter = 0
@@ -356,10 +356,10 @@ class Structure:
 
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
-        reduced_ktt = self.apply_boundary_condition(mass_bounds, ktt)
-        condensed_m = self.apply_boundary_condition(mass_bounds, mtt)
-        reduced_k00 = self.apply_boundary_condition(zero_mass_bounds, k00)
-        reduced_k0t = self.apply_boundary_condition(self.boundaries_dof, k0t)
+        reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
+        condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
+        reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
+        reduced_k0t = self.apply_boundary_conditions(self.boundaries_dof, k0t)
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
         condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)
