@@ -28,8 +28,8 @@ class Nonlinear:
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.phi = self.create_phi(nonlinear)
-        self.components_num = 2 if nonlinear.has_axial_yield else 1
-        self.pieces_num = self.phi.shape[1]
+        self.components_count = 2 if nonlinear.has_axial_yield else 1
+        self.pieces_count = self.phi.shape[1]
 
     def create_phi(self, nonlinear):
         if nonlinear.has_axial_yield:
@@ -73,13 +73,12 @@ class Softening:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
     def _get_h(self, yield_specs):
-        empty_h = np.zeros([yield_specs.pieces_num, 2])
-        h = np.matrix(empty_h)
+        h = np.matrix(np.zeros([yield_specs.pieces_count, 2]))
         h[:, 0] = self.slope
         return h
 
     def _get_q(self, yield_specs):
-        q = np.matrix(np.zeros([2, yield_specs.pieces_num]))
+        q = np.matrix(np.zeros([2, yield_specs.pieces_count]))
         q[0, :] = np.linalg.norm(yield_specs.phi, axis=0)
         return q
 

@@ -5,12 +5,12 @@ from .functions import zero_out_small_values
 
 class MahiniMethod:
     def __init__(self, raw_data):
-        self.primary_vars_num = raw_data.primary_vars_num
-        self.slack_vars_num = raw_data.slack_vars_num
-        self.total_vars_num = raw_data.total_vars_num
-        self.plastic_vars_num = raw_data.plastic_vars_num
-        self.softening_vars_num = raw_data.softening_vars_num
-        self.constraints_num = raw_data.constraints_num
+        self.primary_vars_count = raw_data.primary_vars_count
+        self.slack_vars_count = raw_data.slack_vars_count
+        self.total_vars_count = raw_data.total_vars_count
+        self.plastic_vars_count = raw_data.plastic_vars_count
+        self.softening_vars_count = raw_data.softening_vars_count
+        self.constraints_count = raw_data.constraints_count
         self.yield_points_indices = raw_data.yield_points_indices
 
         self.landa_var = raw_data.landa_var
@@ -22,10 +22,9 @@ class MahiniMethod:
     def solve(self):
         bbar = self.b
         basic_variables = self.get_initial_basic_variables()
-        b_matrix_inv = np.eye(self.slack_vars_num)
-        cb = np.zeros(self.slack_vars_num)
-        empty_x_cumulative = np.zeros((self.constraints_num, 1))
-        x_cumulative = np.matrix(empty_x_cumulative)
+        b_matrix_inv = np.eye(self.slack_vars_count)
+        cb = np.zeros(self.slack_vars_count)
+        x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
         x_history = []
         fpm = FPM
         fpm.var = self.landa_var
@@ -94,7 +93,7 @@ class MahiniMethod:
         pms_history = []
         load_level_history = []
         for x in x_history:
-            pms = x[0:self.plastic_vars_num]
+            pms = x[0:self.plastic_vars_count]
             load_level = x[self.landa_var][0, 0]
             pms_history.append(pms)
             load_level_history.append(load_level)
@@ -105,10 +104,10 @@ class MahiniMethod:
         return result
 
     def get_slack_var(self, primary_var):
-        return primary_var + self.primary_vars_num
+        return primary_var + self.primary_vars_count
 
     def get_primary_var(self, slack_var):
-        return slack_var - self.primary_vars_num
+        return slack_var - self.primary_vars_count
 
     def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb):
         will_in_col = fpm.var
@@ -174,12 +173,12 @@ class MahiniMethod:
         return basic_variables, b_matrix_inv, cb, landa_row
 
     def get_pm_var_family(self, pm_var):
-        if self.softening_vars_num:
+        if self.softening_vars_count:
             yield_point = self.get_plastic_var_yield_point(pm_var)
             pm_var_family = [
                 pm_var,
-                self.plastic_vars_num + yield_point * 2,
-                self.plastic_vars_num + yield_point * 2 + 1,
+                self.plastic_vars_count + yield_point * 2,
+                self.plastic_vars_count + yield_point * 2 + 1,
             ]
         else:
             pm_var_family = [
@@ -198,8 +197,8 @@ class MahiniMethod:
 
     def calculate_cbar(self, cb, b_matrix_inv):
         pi_transpose = np.dot(cb, b_matrix_inv)
-        cbar = np.zeros(self.total_vars_num)
-        for i in range(self.total_vars_num):
+        cbar = np.zeros(self.total_vars_count)
+        for i in range(self.total_vars_count):
             cbar[i] = self.c[i] - np.dot(pi_transpose, self.table[:, i])
         return cbar
 
@@ -225,7 +224,7 @@ class MahiniMethod:
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
             # if will in variable is plastic
-            if will_in_col < self.plastic_vars_num or will_in_col == self.primary_vars_num:
+            if will_in_col < self.plastic_vars_count or will_in_col == self.primary_vars_count:
                 # skip landa variable from exiting
                 if landa_row == sorted_zipped_ba[0, 0]:
                     will_out_row = int(sorted_zipped_ba[0, 1])
@@ -240,7 +239,7 @@ class MahiniMethod:
                     will_out_row = int(ba_row)
                     if will_out_row != landa_row:
                         # if exiting variable is load or disp limit
-                        if will_out_row >= self.primary_vars_num - 1:
+                        if will_out_row >= self.primary_vars_count - 1:
                             break
                         will_out_var = basic_variables[will_out_row]
                         will_out_yield_point = self.get_will_out_yield_point(will_out_var)
@@ -250,14 +249,14 @@ class MahiniMethod:
         return will_out_row
 
     def get_initial_basic_variables(self):
-        basic_variables = np.zeros(self.constraints_num, dtype=int)
-        for i in range(self.constraints_num):
-            basic_variables[i] = self.primary_vars_num + i
+        basic_variables = np.zeros(self.constraints_count, dtype=int)
+        for i in range(self.constraints_count):
+            basic_variables[i] = self.primary_vars_count + i
         return basic_variables
 
     def update_b_matrix_inverse(self, b_matrix_inv, abar, will_out_row):
-        e = np.eye(self.slack_vars_num)
-        eta = np.zeros(self.slack_vars_num)
+        e = np.eye(self.slack_vars_count)
+        eta = np.zeros(self.slack_vars_count)
         will_out_item = abar[will_out_row]
 
         for i, item in enumerate(abar):
@@ -277,7 +276,7 @@ class MahiniMethod:
 
     def is_will_out_var_opm(self, will_out_var):
         # opm: obstacle plastic multiplier
-        return True if will_out_var < (self.primary_vars_num - 1) else False
+        return True if will_out_var < (self.primary_vars_count - 1) else False
 
     def update_basic_variables(self, basic_variables, will_out_row, will_in_col):
         basic_variables[will_out_row] = will_in_col
@@ -305,7 +304,7 @@ class MahiniMethod:
 
     def reset(self, basic_variables, x_cumulative, bbar):
         for i, basic_variable in enumerate(basic_variables):
-            if basic_variable < self.primary_vars_num:
+            if basic_variable < self.primary_vars_count:
                 x_cumulative[basic_variables[i], 0] += bbar[i]
                 bbar[i] = 0
         return x_cumulative, bbar
@@ -327,25 +326,25 @@ class MahiniMethod:
         return yield_point
 
     def get_softening_var_yield_point(self, sm):
-        yield_point = (sm - self.plastic_vars_num) // 2
+        yield_point = (sm - self.plastic_vars_count) // 2
         # TODO: complete for pm slacks and softening slacks
         return yield_point
 
     def get_will_out_yield_point(self, will_out_var):
-        if will_out_var < self.plastic_vars_num:
+        if will_out_var < self.plastic_vars_count:
             # plastic primary
             will_out_yield_point = self.get_plastic_var_yield_point(will_out_var)
 
-        elif self.plastic_vars_num <= will_out_var < self.primary_vars_num - 1:
+        elif self.plastic_vars_count <= will_out_var < self.primary_vars_count - 1:
             # softening primary
             will_out_yield_point = self.get_softening_var_yield_point(will_out_var)
 
-        elif self.primary_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num:
+        elif self.primary_vars_count <= will_out_var < self.primary_vars_count + self.plastic_vars_count:
             # plastic slack
             primary_will_out_var = self.get_primary_var(will_out_var)
             will_out_yield_point = self.get_plastic_var_yield_point(primary_will_out_var)
 
-        elif self.primary_vars_num + self.plastic_vars_num <= will_out_var < self.primary_vars_num + self.plastic_vars_num + self.softening_vars_num:
+        elif self.primary_vars_count + self.plastic_vars_count <= will_out_var < self.primary_vars_count + self.plastic_vars_count + self.softening_vars_count:
             # softening slack
             primary_will_out_var = self.get_primary_var(will_out_var)
             will_out_yield_point = self.get_softening_var_yield_point(primary_will_out_var)

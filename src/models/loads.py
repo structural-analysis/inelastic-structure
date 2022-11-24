@@ -41,11 +41,11 @@ class Loads:
         # f_total = np.zeros((9, 1))
         f_total = np.zeros((structure.dofs_count, 1))
         f_total = np.matrix(f_total)
-        # node_dofs_num = 3
-        node_dofs_num = structure.node_dofs_num
+        # node_dofs_count = 3
+        node_dofs_count = structure.node_dofs_count
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step is not None else load.magnitude
-            f_total[node_dofs_num * load.node + load.dof] = f_total[node_dofs_num * load.node + load.dof] + load_magnitude
+            f_total[node_dofs_count * load.node + load.dof] = f_total[node_dofs_count * load.node + load.dof] + load_magnitude
         return f_total
 
     def get_total_load(self, structure, loads, time_step=None):

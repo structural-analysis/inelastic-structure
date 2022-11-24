@@ -9,9 +9,9 @@ from src.settings import settings
 
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
-        self.points_num = yield_specs_dict["points_num"]
-        self.components_num = yield_specs_dict["components_num"]
-        self.pieces_num = yield_specs_dict["pieces_num"]
+        self.points_count = yield_specs_dict["points_count"]
+        self.components_count = yield_specs_dict["components_count"]
+        self.pieces_count = yield_specs_dict["pieces_count"]
 
 
 class Members:
@@ -21,19 +21,19 @@ class Members:
         self.yield_specs = YieldSpecs(self.get_yield_specs_dict())
 
     def get_yield_specs_dict(self):
-        points_num = 0
-        components_num = 0
-        pieces_num = 0
+        points_count = 0
+        components_count = 0
+        pieces_count = 0
 
         for member in self.list:
-            points_num += member.yield_specs.points_num
-            components_num += member.yield_specs.components_num
-            pieces_num += member.yield_specs.pieces_num
+            points_count += member.yield_specs.points_count
+            components_count += member.yield_specs.components_count
+            pieces_count += member.yield_specs.pieces_count
 
         yield_specs_dict = {
-            "points_num": points_num,
-            "components_num": components_num,
-            "pieces_num": pieces_num,
+            "points_count": points_count,
+            "components_count": components_count,
+            "pieces_count": pieces_count,
         }
         return yield_specs_dict
 
@@ -45,13 +45,13 @@ class Structure:
         self.dim = self.general_properties["structure_dim"]
         self.include_softening = self.general_properties["include_softening"]
         self.initial_nodes = input["initial_nodes"]
-        self.initial_nodes_num = len(self.initial_nodes)
+        self.initial_nodes_count = len(self.initial_nodes)
         self.members = Members(members_list=input["members"])
         self.nodes = self.get_nodes()
-        self.nodes_num = len(self.nodes)
-        self.node_dofs_num = 3 if self.dim.lower() == "2d" else 3
+        self.nodes_count = len(self.nodes)
+        self.node_dofs_count = 3 if self.dim.lower() == "2d" else 3
         self.analysis_type = self._get_analysis_type()
-        self.dofs_count = self.node_dofs_num * self.nodes_num
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         self.yield_specs = self.members.yield_specs
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
@@ -61,7 +61,7 @@ class Structure:
         self.limits = input["limits"]
         self.k = self.get_stiffness()
 
-        self.reduced_k = self.apply_boundary_condition(self.boundaries_dof, self.k)
+        self.reduced_k = self.apply_boundary_conditions(self.boundaries_dof, self.k)
         self.kc = cho_factor(self.reduced_k)
         self.yield_points_indices = self.get_yield_points_indices()
 
@@ -102,14 +102,13 @@ class Structure:
         return member_global_stiffness
 
     def get_stiffness(self):
-        empty_stiffness = np.zeros((self.dofs_count, self.dofs_count))
-        structure_stiffness = np.matrix(empty_stiffness)
+        structure_stiffness = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
             structure_stiffness = self._assemble_members(member, member_global_stiffness, structure_stiffness)
         return structure_stiffness
 
-    def apply_boundary_condition(self, boundaries_dof, structure_prop):
+    def apply_boundary_conditions(self, boundaries_dof, structure_prop):
         reduced_structure_prop = structure_prop
         row_deleted_counter = 0
         col_deleted_counter = 0
@@ -143,8 +142,7 @@ class Structure:
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
-        empty_mass = np.zeros((self.dofs_count, self.dofs_count))
-        structure_mass = np.matrix(empty_mass)
+        structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             if member.m is not None:
                 structure_mass = self._assemble_members(member, member.m, structure_mass)
@@ -154,15 +152,15 @@ class Structure:
         return np.sort(np.where(~self.m.any(axis=1))[0])
 
     def _assemble_members(self, member, member_prop, structure_prop):
-        member_nodes_num = len(member.nodes)
-        member_dofs_num = member.k.shape[0]
-        member_node_dofs_num = int(member_dofs_num / member_nodes_num)
-        for i in range(member_dofs_num):
-            for j in range(member_dofs_num):
-                local_member_node_row = int(j // member_node_dofs_num)
-                p = int(member_node_dofs_num * member.nodes[local_member_node_row].num + j % member_node_dofs_num)
-                local_member_node_column = int(i // member_node_dofs_num)
-                q = int(member_node_dofs_num * member.nodes[local_member_node_column].num + i % member_node_dofs_num)
+        member_nodes_count = len(member.nodes)
+        member_dofs_count = member.k.shape[0]
+        member_node_dofs_count = int(member_dofs_count / member_nodes_count)
+        for i in range(member_dofs_count):
+            for j in range(member_dofs_count):
+                local_member_node_row = int(j // member_node_dofs_count)
+                p = int(member_node_dofs_count * member.nodes[local_member_node_row].num + j % member_node_dofs_count)
+                local_member_node_column = int(i // member_node_dofs_count)
+                q = int(member_node_dofs_count * member.nodes[local_member_node_column].num + i % member_node_dofs_count)
                 structure_prop[p, q] = structure_prop[p, q] + member_prop[j, i]
         return structure_prop
 
@@ -171,7 +169,7 @@ class Structure:
         f_total = np.matrix(f_total)
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
-            f_total[self.node_dofs_num * load.node + load.dof] = f_total[self.node_dofs_num * load.node + load.dof] + load_magnitude
+            f_total[self.node_dofs_count * load.node + load.dof] = f_total[self.node_dofs_count * load.node + load.dof] + load_magnitude
         return f_total
 
     def get_load_vector(self, time_step=None):
@@ -196,16 +194,15 @@ class Structure:
         return reduced_f
 
     def get_global_dof(self, node_num, dof):
-        global_dof = int(self.node_dofs_num * node_num + dof)
+        global_dof = int(self.node_dofs_count * node_num + dof)
         return global_dof
 
     def create_phi(self):
-        empty_phi = np.zeros((self.yield_specs.components_num, self.yield_specs.pieces_num))
-        phi = np.matrix(empty_phi)
+        phi = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.pieces_count)))
         current_row = 0
         current_column = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 for yield_section_row in range(member.section.yield_specs.phi.shape[0]):
                     for yield_section_column in range(member.section.yield_specs.phi.shape[1]):
                         phi[current_row + yield_section_row, current_column + yield_section_column] = member.section.yield_specs.phi[yield_section_row, yield_section_column]
@@ -214,45 +211,41 @@ class Structure:
         return phi
 
     def create_q(self):
-        empty_q = np.zeros((2 * self.yield_specs.points_num, self.yield_specs.pieces_num))
-        q = np.matrix(empty_q)
+        q = np.matrix(np.zeros((2 * self.yield_specs.points_count, self.yield_specs.pieces_count)))
         yield_point_counter = 0
-        yield_pieces_num_counter = 0
+        yield_pieces_count_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
-                q[2 * yield_point_counter:2 * yield_point_counter + 2, yield_pieces_num_counter:member.section.yield_specs.pieces_num + yield_pieces_num_counter] = member.section.softening.q
+            for _ in range(member.yield_specs.points_count):
+                q[2 * yield_point_counter:2 * yield_point_counter + 2, yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter] = member.section.softening.q
                 yield_point_counter += 1
-                yield_pieces_num_counter += member.section.yield_specs.pieces_num
+                yield_pieces_count_counter += member.section.yield_specs.pieces_count
         return q
 
     def create_h(self):
-        empty_h = np.zeros((self.yield_specs.pieces_num, 2 * self.yield_specs.points_num))
-        h = np.matrix(empty_h)
+        h = np.matrix(np.zeros((self.yield_specs.pieces_count, 2 * self.yield_specs.points_count)))
         yield_point_counter = 0
-        yield_pieces_num_counter = 0
+        yield_pieces_count_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
-                h[yield_pieces_num_counter:member.section.yield_specs.pieces_num + yield_pieces_num_counter, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.h
+            for _ in range(member.yield_specs.points_count):
+                h[yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.h
                 yield_point_counter += 1
-                yield_pieces_num_counter += member.section.yield_specs.pieces_num
+                yield_pieces_count_counter += member.section.yield_specs.pieces_count
         return h
 
     def create_w(self):
-        empty_w = np.zeros((2 * self.yield_specs.points_num, 2 * self.yield_specs.points_num))
-        w = np.matrix(empty_w)
+        w = np.matrix(np.zeros((2 * self.yield_specs.points_count, 2 * self.yield_specs.points_count)))
         yield_point_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 w[2 * yield_point_counter:2 * yield_point_counter + 2, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.w
                 yield_point_counter += 1
         return w
 
     def create_cs(self):
-        empty_cs = np.zeros((2 * self.yield_specs.points_num, 1))
-        cs = np.matrix(empty_cs)
+        cs = np.matrix(np.zeros((2 * self.yield_specs.points_count, 1)))
         yield_point_counter = 0
         for member in self.members.list:
-            for _ in range(member.yield_specs.points_num):
+            for _ in range(member.yield_specs.points_count):
                 cs[2 * yield_point_counter:2 * yield_point_counter + 2, 0] = member.section.softening.cs
                 yield_point_counter += 1
         return cs
@@ -261,8 +254,8 @@ class Structure:
         yield_points_indices = []
         index_counter = 0
         for member in self.members.list:
-            yield_point_pieces = int(member.yield_specs.pieces_num / member.yield_specs.points_num)
-            for _ in range(member.yield_specs.points_num):
+            yield_point_pieces = int(member.yield_specs.pieces_count / member.yield_specs.points_count)
+            for _ in range(member.yield_specs.points_count):
                 yield_points_indices.append(
                     {
                         "begin": index_counter,
@@ -319,7 +312,7 @@ class Structure:
         boundaries_size = len(self.boundaries)
         boundaries_dof = np.zeros(boundaries_size, dtype=int)
         for i in range(boundaries_size):
-            boundaries_dof[i] = int(self.node_dofs_num * self.boundaries[i].node.num + self.boundaries[i].dof)
+            boundaries_dof[i] = int(self.node_dofs_count * self.boundaries[i].node.num + self.boundaries[i].dof)
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):
@@ -363,10 +356,10 @@ class Structure:
 
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
-        reduced_ktt = self.apply_boundary_condition(mass_bounds, ktt)
-        condensed_m = self.apply_boundary_condition(mass_bounds, mtt)
-        reduced_k00 = self.apply_boundary_condition(zero_mass_bounds, k00)
-        reduced_k0t = self.apply_boundary_condition(self.boundaries_dof, k0t)
+        reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
+        condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
+        reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
+        reduced_k0t = self.apply_boundary_conditions(self.boundaries_dof, k0t)
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
         condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)

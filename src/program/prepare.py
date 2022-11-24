@@ -18,86 +18,85 @@ class RawData:
         self.d0 = analysis.d0
         self.dv = analysis.dv
 
-        self.disp_limits_num = self.disp_limits.shape[0]
-        self.limits_num = 1 + self.disp_limits_num * 2
-        self.plastic_vars_num = structure.yield_specs.pieces_num
-        self.softening_vars_num = 2 * structure.yield_specs.points_num if structure.include_softening else 0
+        self.disp_limits_count = self.disp_limits.shape[0]
+        self.limits_count = 1 + self.disp_limits_count * 2
+        self.plastic_vars_count = structure.yield_specs.pieces_count
+        self.softening_vars_count = 2 * structure.yield_specs.points_count if structure.include_softening else 0
         self.yield_points_indices = structure.yield_points_indices
 
-        self.primary_vars_num = self.plastic_vars_num + self.softening_vars_num + 1
-        self.constraints_num = self.plastic_vars_num + self.softening_vars_num + self.limits_num
-        self.slack_vars_num = self.constraints_num
-        self.total_vars_num = self.primary_vars_num + self.slack_vars_num
+        self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
+        self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
+        self.slack_vars_count = self.constraints_count
+        self.total_vars_count = self.primary_vars_count + self.slack_vars_count
 
         self.table = self._create_table()
-        self.landa_var = self.plastic_vars_num + self.softening_vars_num
+        self.landa_var = self.plastic_vars_count + self.softening_vars_count
         self.landa_bar_var = 2 * self.landa_var + 1
 
-        self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_num))
+        self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
         self.b = self._get_b_column()
         self.c = self._get_costs_row()
 
     def _create_table(self):
-        constraints_num = self.constraints_num
-        yield_pieces_num = self.plastic_vars_num
-        softening_vars_num = self.softening_vars_num
-        disp_limits_num = self.disp_limits_num
-        primary_vars_num = self.primary_vars_num
+        constraints_count = self.constraints_count
+        yield_pieces_count = self.plastic_vars_count
+        softening_vars_count = self.softening_vars_count
+        disp_limits_count = self.disp_limits_count
+        primary_vars_count = self.primary_vars_count
 
         phi_pv_phi = self.phi.T * self.pv * self.phi
         phi_p0 = self.phi.T * self.p0
         dv_phi = self.dv * self.phi
-        empty_a = np.zeros((constraints_num, primary_vars_num))
-        raw_a = np.matrix(empty_a)
-        raw_a[0:yield_pieces_num, 0:yield_pieces_num] = phi_pv_phi
+        raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
+        raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
 
-        if softening_vars_num:
-            raw_a[yield_pieces_num:(yield_pieces_num + softening_vars_num), 0:yield_pieces_num] = self.q
-            raw_a[0:yield_pieces_num, yield_pieces_num:(yield_pieces_num + softening_vars_num)] = - self.h
-            raw_a[yield_pieces_num:(yield_pieces_num + softening_vars_num), yield_pieces_num:(yield_pieces_num + softening_vars_num)] = self.w
+        if softening_vars_count:
+            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = self.q
+            raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - self.h
+            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = self.w
 
-        landa_base_num = yield_pieces_num + softening_vars_num
-        raw_a[0:yield_pieces_num, landa_base_num] = phi_p0
+        landa_base_num = yield_pieces_count + softening_vars_count
+        raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
         raw_a[landa_base_num, landa_base_num] = 1.0
 
         if self.disp_limits.any():
-            disp_limit_base_num = yield_pieces_num + softening_vars_num + 1
-            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_num), 0:yield_pieces_num] = dv_phi
-            raw_a[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num), 0:yield_pieces_num] = - dv_phi
+            disp_limit_base_num = yield_pieces_count + softening_vars_count + 1
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), 0:yield_pieces_count] = dv_phi
+            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), 0:yield_pieces_count] = - dv_phi
 
-            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_num), landa_base_num] = self.d0
-            raw_a[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num), landa_base_num] = - self.d0
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = self.d0
+            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - self.d0
 
         a_matrix = np.array(raw_a)
-        columns_num = primary_vars_num + self.slack_vars_num
-        table = np.zeros((constraints_num, columns_num))
-        table[0:constraints_num, 0:primary_vars_num] = a_matrix
+        columns_count = primary_vars_count + self.slack_vars_count
+        table = np.zeros((constraints_count, columns_count))
+        table[0:constraints_count, 0:primary_vars_count] = a_matrix
 
         # Assigning diagonal arrays of slack variables.
-        j = primary_vars_num
-        for i in range(constraints_num):
+        j = primary_vars_count
+        for i in range(constraints_count):
             table[i, j] = 1.0
             j += 1
 
         return table
 
     def _get_b_column(self):
-        yield_pieces_num = self.plastic_vars_num
-        disp_limits_num = self.disp_limits_num
+        yield_pieces_count = self.plastic_vars_count
+        disp_limits_count = self.disp_limits_count
 
-        b = np.ones((self.constraints_num))
-        b[yield_pieces_num + self.softening_vars_num] = self.load_limit
-        if self.softening_vars_num:
-            b[yield_pieces_num:(yield_pieces_num + self.softening_vars_num)] = np.array(self.cs)[:, 0]
+        b = np.ones((self.constraints_count))
+        b[yield_pieces_count + self.softening_vars_count] = self.load_limit
+        if self.softening_vars_count:
+            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:, 0]
 
         if self.disp_limits.any():
-            disp_limit_base_num = yield_pieces_num + self.softening_vars_num + 1
-            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_num)] = abs(self.disp_limits[:, 2])
-            b[(disp_limit_base_num + disp_limits_num):(disp_limit_base_num + 2 * disp_limits_num)] = abs(self.disp_limits[:, 2])
+            disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
+            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.disp_limits[:, 2])
+            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.disp_limits[:, 2])
 
         return b
 
     def _get_costs_row(self):
-        c = np.zeros(self.total_vars_num)
-        c[0:self.plastic_vars_num] = 1.0
+        c = np.zeros(self.total_vars_count)
+        c[0:self.plastic_vars_count] = 1.0
         return -1 * c
