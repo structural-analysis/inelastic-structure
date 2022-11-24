@@ -1,0 +1,2 @@
+structure_dim: 3d
+include_softening: false
