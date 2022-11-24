@@ -1,6 +1,6 @@
 import numpy as np
 from math import isclose
-from scipy.linalg import cho_factor
+from scipy.linalg import cho_factor, eigh
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
@@ -430,16 +430,16 @@ class Structure:
         return unrestrianed_disp
 
     def undo_disp_condensation(self, ut, u0):
-        u = np.matrix(np.zeros((self.dofs_count, 1)))
+        disp = np.matrix(np.zeros((self.dofs_count, 1)))
         u0_i = 0
         ut_i = 0
         zero_mass_dofs_i = 0
         for dof in range(self.dofs_count):
             if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
-                u[dof, 0] = u0[u0_i, 0]
+                disp[dof, 0] = u0[u0_i, 0]
                 u0_i += 1
                 zero_mass_dofs_i += 1
             else:
-                u[dof, 0] = ut[ut_i, 0]
+                disp[dof, 0] = ut[ut_i, 0]
                 ut_i += 1
-        return u
+        return disp

@@ -90,8 +90,8 @@ class Loads:
 
         mass_bounds = structure.mass_bounds
         zero_mass_bounds = structure.zero_mass_bounds
-        reduced_pt = self.apply_boundary_condition(mass_bounds, pt)
-        reduced_p0 = self.apply_boundary_condition(zero_mass_bounds, p0)
+        reduced_pt = self.apply_boundary_conditions(mass_bounds, pt)
+        reduced_p0 = self.apply_boundary_conditions(zero_mass_bounds, p0)
 
         condensed_load = reduced_pt + np.dot(np.transpose(structure.ku0), reduced_p0)
         return condensed_load, reduced_p0

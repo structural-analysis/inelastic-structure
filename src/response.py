@@ -55,6 +55,8 @@ def calculate_responses(analysis: Analysis):
         )
         for j in range(structure.members.num):
             members_disps[i, j] = elastoplastic_members_disps[j, 0]
+    if analysis.type == "dynamic":
+        members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
 
     responses = {
         "nodal_disps": nodal_disps,

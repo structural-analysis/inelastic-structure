@@ -12,7 +12,7 @@ class Analysis:
         self.structure = Structure(structure_input)
         self.loads = Loads(loads_input)
         self.general_info = general_info
-        self.type = self._get_type()
+        # self.type = self._type
 
         if self.type == "static":
             self.total_load = self.loads.get_total_load(self.structure, self.loads)
@@ -46,53 +46,105 @@ class Analysis:
             self.time_steps = time_steps
             self.time = loads.dynamic[0].time
 
-            self.modal_loads = np.zeros((time_steps, modes_num, 1))
-            self.a_duhamel = np.zeros((time_steps, modes_num, 1))
-            self.b_duhamel = np.zeros((time_steps, modes_num, 1))
-            self.un = np.zeros((time_steps, modes_num, 1))
-            self.elastic_nodal_disp_history = np.zeros((time_steps, structure.dofs_count, 1))
-            self.elastic_members_disps_history = np.zeros((time_steps, structure.members.num, 1), dtype=object)
-            self.elastic_members_forces_history = np.zeros((time_steps, structure.members.num, 1), dtype=object)
+            # self.modal_loads = np.zeros((time_steps, modes_num, 1))
+            # self.a_duhamel = np.zeros((time_steps, modes_num, 1))
+            # self.b_duhamel = np.zeros((time_steps, modes_num, 1))
+            # self.un = np.zeros((time_steps, modes_num, 1))
 
-            self.p0_history = np.zeros((time_steps, structure.yield_specs.components_num, 1))
-            self.d0_history = np.zeros((time_steps, structure.limits["disp_limits"].shape[0], 1))
-            self.pv_history = np.zeros((time_steps, structure.yield_specs.components_num, structure.yield_specs.components_num))
+            self.modal_loads = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            modal_load = np.matrix(np.zeros((modes_num, 1)))
+            modal_loads = np.matrix((1, 1), dtype=object)
+            modal_loads[0, 0] = modal_load
+            self.modal_loads[0, 0] = modal_loads
+            a_duhamel = np.matrix(np.zeros((modes_num, 1)))
+            a_duhamels = np.matrix((1, 1), dtype=object)
+            self.a_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            a_duhamels[0, 0] = a_duhamel
+            self.a_duhamel[0, 0] = a_duhamels
+
+            b_duhamel = np.matrix(np.zeros((modes_num, 1)))
+            b_duhamels = np.matrix((1, 1), dtype=object)
+            self.b_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            b_duhamels[0, 0] = b_duhamel
+            self.b_duhamel[0, 0] = b_duhamels
+
+            self.modal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+
+            # self.elastic_nodal_disp_history = np.zeros((time_steps, structure.dofs_count, 1))
+            self.elastic_nodal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.elastic_members_disps_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.elastic_members_forces_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.nodal_disps_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.members_forces_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.members_disps_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.modal_loads_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.a2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.b2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.p0_history = np.zeros((time_steps, 1), dtype=object)
+            self.d0_history = np.zeros((time_steps, 1), dtype=object)
+            self.pv_history = np.zeros((time_steps, 1), dtype=object)
+
+            # self.p0_history = np.zeros((time_steps, structure.yield_specs.components_num, 1))
+            # self.d0_history = np.zeros((time_steps, structure.limits["disp_limits"].shape[0], 1))
+            # self.pv_history = np.zeros((time_steps, structure.yield_specs.components_num, structure.yield_specs.components_num))
 
             for time_step in range(1, time_steps):
                 print(f"{time_step=}")
                 self.total_load = loads.get_total_load(structure, loads, time_step)
-                self.elastic_nodal_disp_history[time_step, :, :] = self.get_dynamic_nodal_disp(self.total_load, modes, time_step)
+                a2s, b2s, elastic_modal_loads, elastic_nodal_disp = self.get_dynamic_nodal_disp(
+                    time_step=time_step,
+                    modes=modes,
+                    previous_modal_loads=self.modal_loads[time_step - 1, 0],
+                    total_load=self.total_load,
+                    a1s=self.a_duhamel[time_step - 1, 0],
+                    b1s=self.b_duhamel[time_step - 1, 0],
+                )
+                self.a_duhamel[time_step, 0] = a2s
+                self.b_duhamel[time_step, 0] = b2s
 
-                # with open("disp.txt", "a") as f:
-                #     f.write(f"{self.u[time_step, 4, 0]}\n")
-                self.elastic_members_disps_history[time_step, :, :] = self.get_members_disps(self.elastic_nodal_disp_history[time_step, :, :])
+                self.elastic_nodal_disp_history[time_step, 0] = elastic_nodal_disp
+                elastic_members_disps = self.get_members_disps(elastic_nodal_disp[0, 0])
+                self.elastic_members_disps_history[time_step, 0] = elastic_members_disps
 
-                internal_forces = self.get_internal_forces(self.elastic_members_disps_history[time_step, :, :])
-                self.elastic_members_forces_history[time_step, :, :] = internal_forces["members_forces"]
+                internal_forces = self.get_internal_forces(elastic_members_disps)
+                self.elastic_members_forces_history[time_step, 0] = internal_forces["members_forces"]
+                # with open("section4-elastic-force.txt", "a") as f:
+                #     f.write(f"{internal_forces['members_forces'][1][0, 0][5, 0]}\n")
                 self.p0 = internal_forces["p0"]
-                self.p0_history[time_step, :, :] = self.p0[:, 0]
+                self.p0_history[time_step, 0] = self.p0
 
-                self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp_history[time_step, :, :])
-                self.d0_history[time_step, :, :] = self.d0[:, 0]
+                self.d0 = self.get_nodal_disp_limits(elastic_nodal_disp[0, 0])
+                self.d0_history[time_step, 0] = self.d0
 
                 sensitivity = self.get_dynamic_sensitivity(modes, time_step)
                 self.pv = sensitivity["pv"]
-                self.pv_history[time_steps, :, :] = self.pv[:, :]
-                self.members_forces_sensitivity = sensitivity["members_forces_sensitivity"]
-                self.members_disps_sensitivity = sensitivity["members_disps_sensitivity"]
+                self.pv_history[time_step, 0] = self.pv
+
                 self.nodal_disps_sensitivity = sensitivity["nodal_disps_sensitivity"]
-                self.dv = self.get_nodal_disp_limits_sensitivity_rows()
-                self.p2_sensitivity = sensitivity["p2_sensitivity"]
+                self.nodal_disps_sensitivity_history[time_step, 0] = self.nodal_disps_sensitivity
+
+                self.members_forces_sensitivity = sensitivity["members_forces_sensitivity"]
+                self.members_forces_sensitivity_history[time_step, 0] = self.members_forces_sensitivity
+
+                self.members_disps_sensitivity = sensitivity["members_disps_sensitivity"]
+                self.members_disps_sensitivity_history[time_step, 0] = self.members_disps_sensitivity
+
+                self.modal_loads_sensitivity = sensitivity["modal_loads_sensitivity"]
+                self.modal_loads_sensitivity_history[time_step, 0] = self.modal_loads_sensitivity
+
                 self.a2_sensitivity = sensitivity["a2_sensitivity"]
+                self.a2_sensitivity_history[time_step, 0] = self.a2_sensitivity
+
                 self.b2_sensitivity = sensitivity["b2_sensitivity"]
+                self.b2_sensitivity_history[time_step, 0] = self.b2_sensitivity
+
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
                 self.plastic_vars = mahini_method.solve()
 
-
-
-    def _get_type(self):
+    @property
+    def type(self):
         if self.general_info.get("dynamic_analysis") and self.general_info["dynamic_analysis"]["enabled"]:
             type = "dynamic"
         else:
@@ -105,8 +157,7 @@ class Analysis:
         structure = self.structure
         reduced_total_load = self.loads.apply_boundary_conditions(structure.boundaries_dof, total_load)
         reduced_disp = cho_solve(structure.kc, reduced_total_load)
-        empty_nodal_disp = np.zeros((1, 1), dtype=object)
-        nodal_disp = np.matrix(empty_nodal_disp)
+        nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
         disp = np.matrix(np.zeros((structure.dofs_count, 1)))
         for i in range(structure.dofs_count):
             if (j != structure.boundaries_dof.shape[0] and i == structure.boundaries_dof[j]):
@@ -271,13 +322,16 @@ class Analysis:
         un = (np.exp(-1 * damping * wn * t2) / (mn * wd)) * (a2 * np.sin(wd * t2) - b2 * np.cos(wd * t2))
         return a2, b2, un
 
-    def get_dynamic_nodal_disp(self, total_load, modes, time_step):
+    def get_modal_disp(self, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s):
         structure = self.structure
-        loads = self.loads
         modes_num = modes.shape[1]
-        condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
-        self.modal_load = loads.get_modal_load(condense_load, modes)
-        self.modal_loads[time_step, :, :] = self.modal_load
+
+        modal_disp = np.matrix(np.zeros((modes_num, 1)))
+        modal_disps = np.matrix(np.zeros((1, 1), dtype=object))
+        a2 = np.matrix(np.zeros((modes_num, 1)))
+        a2s = np.matrix(np.zeros((1, 1), dtype=object))
+        b2 = np.matrix(np.zeros((modes_num, 1)))
+        b2s = np.matrix(np.zeros((1, 1), dtype=object))
 
         t1 = self.time[time_step - 1, 0]
         t2 = self.time[time_step, 0]
@@ -287,82 +341,76 @@ class Analysis:
             i1, i2, i3, i4 = self.get_i_duhamel(t1, t2, wn, wd)
 
             mn = self.m_modal[mode_num, mode_num]
-            p1 = self.modal_loads[time_step - 1, mode_num]
-            p2 = self.modal_loads[time_step, mode_num]
-            a1 = self.a_duhamel[time_step - 1, mode_num]
-            b1 = self.b_duhamel[time_step - 1, mode_num]
-            a2, b2, un = self.get_abx_duhamel(t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2)
-            self.a_duhamel[time_step, mode_num] = a2
-            self.b_duhamel[time_step, mode_num] = b2
-            self.un[time_step, mode_num] = un
+            p1 = previous_modal_loads[0, 0][mode_num, 0]
+            p2 = modal_loads[0, 0][mode_num, 0]
+            a1 = a1s[0, 0][mode_num, 0]
+            b1 = b1s[0, 0][mode_num, 0]
 
-        ut = np.dot(modes, self.un[time_step, :, :])
-        u0 = np.dot(structure.reduced_k00, reduced_p0) + np.dot(structure.ku0, ut)
+            a2[mode_num, 0], b2[mode_num, 0], modal_disp[mode_num, 0] = self.get_abx_duhamel(t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2)
 
-        unrestrianed_ut = structure.undo_disp_boundary_condition(ut, structure.mass_bounds)
-        unrestrianed_u0 = structure.undo_disp_boundary_condition(u0, structure.zero_mass_bounds)
+        a2s[0, 0] = a2
+        b2s[0, 0] = b2
 
-        u = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
-        return u
+        modal_disps[0, 0] = modal_disp
+        return modal_disps, a2s, b2s
 
-    def get_dynamic_unit_nodal_disp(self, total_load, modes, time_step):
+    def get_dynamic_nodal_disp(self, time_step, modes, previous_modal_loads, total_load, a1s, b1s):
         structure = self.structure
         loads = self.loads
-        modes_num = modes.shape[1]
+        nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
+        modal_loads = np.matrix(np.zeros((1, 1), dtype=object))
+
         condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
-        modal_load = loads.get_modal_load(condense_load, modes)
-        # self.modal_loads[time_step, :, :] = modal_load
-        a2_modes = np.zeros((modes_num, 1))
-        b2_modes = np.zeros((modes_num, 1))
-        p2_modes = np.zeros((modes_num, 1))
-        t1 = self.time[time_step - 1, 0]
-        t2 = self.time[time_step, 0]
-        for mode_num in range(modes_num):
-            wn = structure.wns[mode_num]
-            wd = structure.wds[mode_num]
-            i1, i2, i3, i4 = self.get_i_duhamel(t1, t2, wn, wd)
-
-            mn = self.m_modal[mode_num, mode_num]
-            p1 = 0
-            p2 = modal_load
-            a1 = 0
-            b1 = 0
-            a2, b2, un = self.get_abx_duhamel(t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2)
-            a2_modes[mode_num, 0] = a2
-            b2_modes[mode_num, 0] = b2
-            p2_modes[mode_num, 0] = p2
-            self.un[time_step, mode_num] = un
-
-        ut = np.dot(modes, self.un[time_step, :, :])
+        modal_loads[0, 0] = loads.get_modal_load(condense_load, modes)
+        modal_disps, a2s, b2s = self.get_modal_disp(
+            time_step=time_step,
+            modes=modes,
+            # previous_modal_loads=self.modal_loads[time_step - 1, 0],
+            previous_modal_loads=previous_modal_loads,
+            modal_loads=modal_loads,
+            a1s=a1s,
+            b1s=b1s,
+            # b1s=self.b_duhamel[time_step - 1, 0],
+        )
+        self.modal_disp_history[time_step, 0] = modal_disps
+        ut = np.dot(modes, modal_disps[0, 0])
         u0 = np.dot(structure.reduced_k00, reduced_p0) + np.dot(structure.ku0, ut)
 
         unrestrianed_ut = structure.undo_disp_boundary_condition(ut, structure.mass_bounds)
         unrestrianed_u0 = structure.undo_disp_boundary_condition(u0, structure.zero_mass_bounds)
 
-        u = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
-        return u, p2_modes, a2_modes, b2_modes
+        disp = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
+        nodal_disp[0, 0] = disp
+        return a2s, b2s, modal_loads, nodal_disp
 
     def get_dynamic_sensitivity(self, modes, time_step):
         structure = self.structure
+        modes_num = modes.shape[1]
         # fv: equivalent global force vector for a yield component's udef
         members = structure.members.list
-        empty_pv = np.zeros((structure.yield_specs.components_num, structure.yield_specs.components_num))
-        pv = np.matrix(empty_pv)
+        pv = np.matrix(np.zeros((
+            structure.yield_specs.components_num, structure.yield_specs.components_num
+        )))
         pv_column = 0
 
-        empty_members_forces_sensitivity = np.zeros((structure.members.num, structure.yield_specs.components_num), dtype=object)
-        empty_members_disps_sensitivity = np.zeros((structure.members.num, structure.yield_specs.components_num), dtype=object)
-        empty_nodal_disps_sensitivity = np.zeros((1, structure.yield_specs.components_num), dtype=object)
-        empty_p2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_num), dtype=object)
-        empty_a2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_num), dtype=object)
-        empty_b2_sensitivity = np.zeros((modes.shape[1], structure.yield_specs.components_num), dtype=object)
-
-        members_forces_sensitivity = np.matrix(empty_members_forces_sensitivity)
-        members_disps_sensitivity = np.matrix(empty_members_disps_sensitivity)
-        nodal_disps_sensitivity = np.matrix(empty_nodal_disps_sensitivity)
-        p2_sensitivity = np.matrix(empty_p2_sensitivity)
-        a2_sensitivity = np.matrix(empty_a2_sensitivity)
-        b2_sensitivity = np.matrix(empty_b2_sensitivity)
+        members_forces_sensitivity = np.matrix(np.zeros((
+            structure.members.num, structure.yield_specs.components_num), dtype=object
+        ))
+        members_disps_sensitivity = np.matrix(np.zeros((
+            structure.members.num, structure.yield_specs.components_num), dtype=object
+        ))
+        nodal_disps_sensitivity = np.matrix(np.zeros((
+            1, structure.yield_specs.components_num), dtype=object
+        ))
+        modal_load_sensitivity = np.matrix(np.zeros((
+            1, structure.yield_specs.components_num), dtype=object
+        ))
+        a2_sensitivity = np.matrix(np.zeros((
+            1, structure.yield_specs.components_num), dtype=object
+        ))
+        b2_sensitivity = np.matrix(np.zeros((
+            1, structure.yield_specs.components_num), dtype=object
+        ))
 
         for i_member, member in enumerate(members):
             if member.__class__.__name__ == "FrameMember2D":
@@ -384,12 +432,29 @@ class Analysis:
                         fv[end_dof + 1] = component_udef_global[4]
                         fv[end_dof + 2] = component_udef_global[5]
 
-                        affected_struc_disp, p2_modes, a2_modes, b2_mdoes = self.get_dynamic_unit_nodal_disp(fv, modes, time_step)
+                        # affected_struc_disp, p2_modes, a2_modes, b2_mdoes = self.get_dynamic_unit_nodal_disp(fv, modes, time_step)
+                        a1 = np.matrix(np.zeros((modes_num, 1)))
+                        a1s = np.matrix((1, 1), dtype=object)
+                        a1s[0, 0] = a1
+                        b1 = np.matrix(np.zeros((modes_num, 1)))
+                        b1s = np.matrix((1, 1), dtype=object)
+                        b1s[0, 0] = b1
+                        initial_modal_load = np.matrix(np.zeros((modes_num, 1)))
+                        initial_modal_loads = np.matrix((1, 1), dtype=object)
+                        initial_modal_loads[0, 0] = initial_modal_load
+                        affected_a2s, affected_b2s, affected_modal_load, affected_struc_disp = self.get_dynamic_nodal_disp(
+                            time_step=time_step,
+                            modes=modes,
+                            previous_modal_loads=initial_modal_loads,
+                            total_load=fv,
+                            a1s=a1s,
+                            b1s=b1s,
+                        )
                         nodal_disps_sensitivity[0, pv_column] = affected_struc_disp
-                        p2_sensitivity[:, pv_column] = p2_modes[:, 0]
-                        a2_sensitivity[:, pv_column] = a2_modes[:, 0]
-                        b2_sensitivity[:, pv_column] = b2_mdoes[:, 0]
-                        affected_member_disps = self.get_members_disps(affected_struc_disp)
+                        modal_load_sensitivity[0, pv_column] = affected_modal_load
+                        a2_sensitivity[0, pv_column] = affected_a2s
+                        b2_sensitivity[0, pv_column] = affected_b2s
+                        affected_member_disps = self.get_members_disps(affected_struc_disp[0, 0])
                         current_affected_member_ycns = 0
                         for i_affected_member, affected_member_disp in enumerate(affected_member_disps):
 
@@ -419,7 +484,7 @@ class Analysis:
             "nodal_disps_sensitivity": nodal_disps_sensitivity,
             "members_forces_sensitivity": members_forces_sensitivity,
             "members_disps_sensitivity": members_disps_sensitivity,
-            "p2_sensitivity": p2_sensitivity,
+            "modal_loads_sensitivity": modal_load_sensitivity,
             "a2_sensitivity": a2_sensitivity,
             "b2_sensitivity": b2_sensitivity,
         }
