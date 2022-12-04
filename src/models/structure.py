@@ -43,7 +43,6 @@ class Structure:
     def __init__(self, input):
         self.general_properties = input["general_properties"]
         self.dim = self.general_properties["structure_dim"]
-        self.include_softening = self.general_properties["include_softening"]
         self.initial_nodes = input["initial_nodes"]
         self.initial_nodes_count = len(self.initial_nodes)
         self.members = Members(members_list=input["members"])
@@ -63,13 +62,15 @@ class Structure:
 
         self.reduced_k = self.apply_boundary_conditions(self.boundaries_dof, self.k)
         self.kc = cho_factor(self.reduced_k)
-        self.yield_points_indices = self.get_yield_points_indices()
 
-        self.phi = self.create_phi()
-        self.q = self.create_q()
-        self.h = self.create_h()
-        self.w = self.create_w()
-        self.cs = self.create_cs()
+        if self.is_inelastic:
+            self.yield_points_indices = self.get_yield_points_indices()
+            self.phi = self.create_phi()
+            self.q = self.create_q()
+            self.h = self.create_h()
+            self.w = self.create_w()
+            self.cs = self.create_cs()
+
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
             self.damping = self.general_properties["dynamic_analysis"].get("damping") if self.general_properties["dynamic_analysis"].get("damping") else 0
@@ -82,6 +83,19 @@ class Structure:
             self.reduced_k00_inv = condensation_params["reduced_k00_inv"]
             self.reduced_k00 = condensation_params["reduced_k00"]
             self.wns, self.wds, self.modes = self.compute_modes_props()
+
+    @property
+    def is_inelastic(self):
+        if self.general_properties["inelastic"]["enabled"]:
+            return True
+        return False
+
+    @property
+    def include_softening(self):
+        if self.general_properties["inelastic"]["enabled"]:
+            if self.general_properties["inelastic"]["include_softening"]:
+                return True
+        return False
 
     def get_nodes(self):
         nodes = self.initial_nodes

@@ -1,4 +1,4 @@
 structure_dim: 3d
 inelastic:
-  enabled: true
+  enabled: false
   include_softening: false

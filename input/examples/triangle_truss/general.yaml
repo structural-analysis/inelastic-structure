@@ -1,2 +1,4 @@
 structure_dim: 2d
-include_softening: false
+inelastic:
+  enabled: true
+  include_softening: false

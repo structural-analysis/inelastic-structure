@@ -45,17 +45,19 @@ class Analysis:
             self.elastic_members_disps = self.get_members_disps(self.elastic_nodal_disp[0, 0])
             internal_responses = self.get_internal_responses(self.elastic_members_disps)
             self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
-            self.p0 = internal_responses.p0
-            self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
-            sensitivity = self.get_sensitivity()
-            self.pv = sensitivity.pv
-            self.members_forces_sensitivity = sensitivity.members_forces
-            self.members_disps_sensitivity = sensitivity.members_disps
-            self.nodal_disps_sensitivity = sensitivity.nodal_disps
-            self.dv = self.get_nodal_disp_limits_sensitivity_rows()
-            raw_data = RawData(self)
-            mahini_method = MahiniMethod(raw_data)
-            self.plastic_vars = mahini_method.solve()
+
+            if self.structure.is_inelastic:
+                self.p0 = internal_responses.p0
+                self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
+                sensitivity = self.get_sensitivity()
+                self.pv = sensitivity.pv
+                self.members_forces_sensitivity = sensitivity.members_forces
+                self.members_disps_sensitivity = sensitivity.members_disps
+                self.nodal_disps_sensitivity = sensitivity.nodal_disps
+                self.dv = self.get_nodal_disp_limits_sensitivity_rows()
+                raw_data = RawData(self)
+                mahini_method = MahiniMethod(raw_data)
+                self.plastic_vars = mahini_method.solve()
 
         elif self.type == "dynamic":
             self.damping = self.general_info["dynamic_analysis"]["damping"]

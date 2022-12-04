@@ -7,63 +7,73 @@ outputs_dir = "output/examples/"
 
 def calculate_responses(analysis: Analysis):
     structure = analysis.structure
-    pms_history = analysis.plastic_vars["pms_history"]
-    load_level_history = analysis.plastic_vars["load_level_history"]
-    increments_count = len(load_level_history)
-    phi = structure.phi
+    if structure.is_inelastic:
+        pms_history = analysis.plastic_vars["pms_history"]
+        load_level_history = analysis.plastic_vars["load_level_history"]
+        increments_count = len(load_level_history)
+        phi = structure.phi
 
-    load_levels = np.zeros([increments_count, 1], dtype=object)
+        load_levels = np.zeros([increments_count, 1], dtype=object)
 
-    nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
-    nodal_disps = np.zeros([increments_count, 1], dtype=object)
+        nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
+        nodal_disps = np.zeros([increments_count, 1], dtype=object)
 
-    members_forces_sensitivity = analysis.members_forces_sensitivity
-    members_forces = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_forces_sensitivity = analysis.members_forces_sensitivity
+        members_forces = np.zeros([increments_count, structure.members.num], dtype=object)
 
-    members_disps_sensitivity = analysis.members_disps_sensitivity
-    members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_disps_sensitivity = analysis.members_disps_sensitivity
+        members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
 
-    for i in range(increments_count):
-        pms = pms_history[i]
-        load_level = load_level_history[i]
-        phi_x = phi * pms
+        for i in range(increments_count):
+            pms = pms_history[i]
+            load_level = load_level_history[i]
+            phi_x = phi * pms
 
-        load_levels[i, 0] = np.matrix([[load_level]])
+            load_levels[i, 0] = np.matrix([[load_level]])
 
-        elastoplastic_nodal_disp = get_elastoplastic_response(
-            load_level=load_level,
-            phi_x=phi_x,
-            elastic_response=analysis.elastic_nodal_disp,
-            sensitivity=nodal_disps_sensitivity,
-        )
-        nodal_disps[i, 0] = elastoplastic_nodal_disp[0, 0]
+            elastoplastic_nodal_disp = get_elastoplastic_response(
+                load_level=load_level,
+                phi_x=phi_x,
+                elastic_response=analysis.elastic_nodal_disp,
+                sensitivity=nodal_disps_sensitivity,
+            )
+            nodal_disps[i, 0] = elastoplastic_nodal_disp[0, 0]
 
-        elastoplastic_members_forces = get_elastoplastic_response(
-            load_level=load_level,
-            phi_x=phi_x,
-            elastic_response=analysis.elastic_members_nodal_forces,
-            sensitivity=members_forces_sensitivity,
-        )
-        for j in range(structure.members.num):
-            members_forces[i, j] = elastoplastic_members_forces[j, 0]
+            elastoplastic_members_forces = get_elastoplastic_response(
+                load_level=load_level,
+                phi_x=phi_x,
+                elastic_response=analysis.elastic_members_nodal_forces,
+                sensitivity=members_forces_sensitivity,
+            )
+            for j in range(structure.members.num):
+                members_forces[i, j] = elastoplastic_members_forces[j, 0]
 
-        elastoplastic_members_disps = get_elastoplastic_response(
-            load_level=load_level,
-            phi_x=phi_x,
-            elastic_response=analysis.elastic_members_disps,
-            sensitivity=members_disps_sensitivity,
-        )
-        for j in range(structure.members.num):
-            members_disps[i, j] = elastoplastic_members_disps[j, 0]
+            elastoplastic_members_disps = get_elastoplastic_response(
+                load_level=load_level,
+                phi_x=phi_x,
+                elastic_response=analysis.elastic_members_disps,
+                sensitivity=members_disps_sensitivity,
+            )
+            for j in range(structure.members.num):
+                members_disps[i, j] = elastoplastic_members_disps[j, 0]
+        responses = {
+            "nodal_disps": nodal_disps,
+            "members_forces": members_forces,
+            "members_disps": members_disps,
+            "load_levels": load_levels,
+        }
+    else:
+        nodal_disps = structure.limits["load_limit"] * analysis.elastic_nodal_disp
+        members_forces = structure.limits["load_limit"] * analysis.elastic_members_nodal_forces
+        members_disps = structure.limits["load_limit"] * analysis.elastic_members_disps
+        responses = {
+            "nodal_disps": nodal_disps,
+            "members_forces": members_forces,
+            "members_disps": members_disps,
+        }
     if analysis.type == "dynamic":
         members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
 
-    responses = {
-        "nodal_disps": nodal_disps,
-        "members_forces": members_forces,
-        "members_disps": members_disps,
-        "load_levels": load_levels,
-    }
     return responses
 
 
