@@ -11,10 +11,15 @@ def run(example_name):
     analysis = Analysis(structure_input=structure_input, loads_input=loads_input, general_info=general_info)
     responses = calculate_responses(analysis)
     desired_responses = [
-        "nodal_disps",
-        "members_forces",
-        "members_disps",
         "load_levels",
+        "nodal_disps",
+        "members_disps",
+        "members_forces",
+        "internal_moments",
+        "top_internal_strains",
+        "bottom_internal_strains",
+        "top_internal_stresses",
+        "bottom_internal_stresses",
     ]
     write_responses_to_file(example_name, responses, desired_responses)
 
