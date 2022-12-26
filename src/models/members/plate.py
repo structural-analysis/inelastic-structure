@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 from ..points import Node, PlateGaussPoint
 from ..sections.plate import PlateSection
-
+from .mkq12 import get_mkq12_shape_derivatives
+from .mkqb import get_mkqb
 
 @dataclass
 class Response:
@@ -57,6 +58,8 @@ class PlateElement:
         self.nodes_count = len(self.nodes)
         self.dofs_count = 3 * self.nodes_count
         self.gauss_points_shape_derivatives = [self.get_shape_derivatives(gauss_point) for gauss_point in self.gauss_points]
+        # self.gauss_points_shape_derivatives = [get_mkq12_shape_derivatives(gauss_point, self.nodes) for gauss_point in self.gauss_points]
+        # self.gauss_points_shape_derivatives = [get_mkqb(gauss_point, self.nodes) for gauss_point in self.gauss_points]
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
 
