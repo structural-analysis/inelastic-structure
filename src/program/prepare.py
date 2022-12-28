@@ -7,7 +7,6 @@ class RawData:
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
         self.phi = structure.phi
-
         self.q = structure.q
         self.h = structure.h
         self.w = structure.w
@@ -18,23 +17,30 @@ class RawData:
         self.d0 = analysis.d0
         self.dv = analysis.dv
 
-        self.disp_limits_count = self.disp_limits.shape[0]
-        self.limits_count = 1 + self.disp_limits_count * 2
-        self.plastic_vars_count = structure.yield_specs.pieces_count
-        self.softening_vars_count = 2 * structure.yield_specs.points_count if structure.include_softening else 0
-        self.yield_points_indices = structure.yield_points_indices
+        vars_count = VarsCount(analysis)
+        self.disp_limits_count = vars_count.disp_limits_count
+        self.limits_count = vars_count.limits_count
+        self.plastic_vars_count = vars_count.plastic_vars_count
+        self.softening_vars_count = vars_count.softening_vars_count
+        self.yield_points_indices = vars_count.yield_points_indices
 
-        self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
-        self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
-        self.slack_vars_count = self.constraints_count
-        self.total_vars_count = self.primary_vars_count + self.slack_vars_count
+        self.primary_vars_count = vars_count.primary_vars_count
+        self.constraints_count = vars_count.constraints_count
+        self.slack_vars_count = vars_count.slack_vars_count
+        self.total_vars_count = vars_count.total_vars_count
 
+        self.b = self._get_b_column()
         self.table = self._create_table()
+
+        if analysis.type == "dynamic":
+            self.update_b_for_dynamic_analysis(analysis)
+            self.update_table_for_dynamic_analysis()
+
         self.landa_var = self.plastic_vars_count + self.softening_vars_count
         self.landa_bar_var = 2 * self.landa_var + 1
 
         self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
-        self.b = self._get_b_column()
+
         self.c = self._get_costs_row()
 
     def _create_table(self):
@@ -43,7 +49,6 @@ class RawData:
         softening_vars_count = self.softening_vars_count
         disp_limits_count = self.disp_limits_count
         primary_vars_count = self.primary_vars_count
-
         phi_pv_phi = self.phi.T * self.pv * self.phi
         phi_p0 = self.phi.T * self.p0
         dv_phi = self.dv * self.phi
@@ -100,3 +105,46 @@ class RawData:
         c = np.zeros(self.total_vars_count)
         c[0:self.plastic_vars_count] = 1.0
         return -1 * c
+
+    def update_b_for_dynamic_analysis(self, analysis):
+        self.b[0:self.plastic_vars_count] = (
+            self.b[0:self.plastic_vars_count] -
+            np.array(
+                self.phi.T * analysis.pv_prev * self.phi * analysis.plastic_multipliers_prev
+            ).flatten()
+        )
+        print(f"{self.b=}")
+
+    def update_table_for_dynamic_analysis(self):
+        if any(self.b < 0):
+            # negative_b_count = np.count_nonzero(self.b < 0)
+            # new_table = np.matrix(
+            #     np.zeros((self.constraints_count, self.primary_vars_count + negative_b_count))
+            # )
+            # new_table[:, :-negative_b_count] = self.table
+            # negative_b_counter = 1
+            for i in range(self.constraints_count):
+                if self.b[i] < 0:
+                    # new_table[i, :] = - new_table[i, :]
+                    self.table[i, :] = - self.table[i, :]
+                    self.b[i] = - self.b[i]
+                    # new_table[i, self.primary_vars_count + negative_b_counter] = 1
+                    # negative_b_counter += 1
+                    # self.table = new_table.copy()
+
+
+class VarsCount:
+    def __init__(self, analysis):
+        structure = analysis.structure
+        self.disp_limits = structure.limits["disp_limits"]
+
+        self.disp_limits_count = self.disp_limits.shape[0]
+        self.limits_count = 1 + self.disp_limits_count * 2
+        self.plastic_vars_count = structure.yield_specs.pieces_count
+        self.softening_vars_count = 2 * structure.yield_specs.points_count if structure.include_softening else 0
+        self.yield_points_indices = structure.yield_points_indices
+
+        self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
+        self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
+        self.slack_vars_count = self.constraints_count
+        self.total_vars_count = self.primary_vars_count + self.slack_vars_count

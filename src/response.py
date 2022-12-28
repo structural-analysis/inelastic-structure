@@ -1,11 +1,11 @@
 import os
 import numpy as np
-from src.analysis import Analysis
+# from src.analysis import Analysis
 
 outputs_dir = "output/examples/"
 
 
-def calculate_responses(analysis: Analysis):
+def calculate_responses(analysis):
     structure = analysis.structure
     pms_history = analysis.plastic_vars["pms_history"]
     load_level_history = analysis.plastic_vars["load_level_history"]
@@ -56,7 +56,8 @@ def calculate_responses(analysis: Analysis):
         for j in range(structure.members.num):
             members_disps[i, j] = elastoplastic_members_disps[j, 0]
     if analysis.type == "dynamic":
-        members_forces = np.zeros([increments_num, structure.members.num], dtype=object)
+        print("-------------------------------")
+        members_forces = np.zeros([646546, structure.members.num], dtype=object)
 
     responses = {
         "nodal_disps": nodal_disps,
