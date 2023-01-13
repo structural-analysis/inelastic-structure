@@ -63,14 +63,14 @@ def calculate_responses(analysis: Analysis):
             "load_levels": load_levels,
         }
     else:
-        nodal_disps = structure.limits["load_limit"] * analysis.elastic_nodal_disp
-        members_disps = structure.limits["load_limit"] * analysis.elastic_members_disps
-        members_forces = structure.limits["load_limit"] * analysis.elastic_members_nodal_forces
-        internal_moments = structure.limits["load_limit"] * analysis.elastic_members_internal_moments
-        top_internal_strains = structure.limits["load_limit"] * analysis.elastic_members_top_internal_strains
-        bottom_internal_strains = structure.limits["load_limit"] * analysis.elastic_members_bottom_internal_strains
-        top_internal_stresses = structure.limits["load_limit"] * analysis.elastic_members_top_internal_stresses
-        bottom_internal_stresses = structure.limits["load_limit"] * analysis.elastic_members_bottom_internal_stresses
+        nodal_disps = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp
+        members_disps = structure.limits["load_limit"][0] * analysis.elastic_members_disps
+        members_forces = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces
+        internal_moments = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments
+        top_internal_strains = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_strains
+        bottom_internal_strains = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_strains
+        top_internal_stresses = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_stresses
+        bottom_internal_stresses = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_stresses
 
         responses = {
             "nodal_disps": nodal_disps,
