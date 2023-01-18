@@ -9,11 +9,11 @@ from ..sections.frame import FrameSection
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
-    internal_moments: np.matrix = None
-    top_internal_strains: np.matrix = None
-    bottom_internal_strains: np.matrix = None
-    top_internal_stresses: np.matrix = None
-    bottom_internal_stresses: np.matrix = None
+    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
+    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 class YieldSpecs:

@@ -12,11 +12,11 @@ from src.models.structure import Structure
 class InternalResponses:
     p0: np.matrix
     members_nodal_forces: np.matrix
-    members_internal_moments: np.matrix = None
-    members_top_internal_strains: np.matrix = None
-    members_bottom_internal_strains: np.matrix = None
-    members_top_internal_stresses: np.matrix = None
-    members_bottom_internal_stresses: np.matrix = None
+    members_internal_moments: np.matrix
+    members_top_internal_strains: np.matrix
+    members_bottom_internal_strains: np.matrix
+    members_top_internal_stresses: np.matrix
+    members_bottom_internal_stresses: np.matrix
 
 
 @dataclass
@@ -236,7 +236,8 @@ class Analysis:
 
         for i, member in enumerate(structure.members.list):
             member_response = member.get_response(members_disps[i, 0])
-            p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = member_response.yield_components_force
+            yield_components_force = member_response.yield_components_force
+            p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = yield_components_force
             base_p0_row = base_p0_row + member.yield_specs.components_count
 
             members_nodal_forces[i, 0] = member_response.nodal_force

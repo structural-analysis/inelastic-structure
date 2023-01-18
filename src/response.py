@@ -63,14 +63,24 @@ def calculate_responses(analysis: Analysis):
             "load_levels": load_levels,
         }
     else:
-        nodal_disps = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp
-        members_disps = structure.limits["load_limit"][0] * analysis.elastic_members_disps
-        members_forces = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces
-        internal_moments = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments
-        top_internal_strains = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_strains
-        bottom_internal_strains = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_strains
-        top_internal_stresses = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_stresses
-        bottom_internal_stresses = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_stresses
+        nodal_disps = np.zeros([1, 1], dtype=object)
+        members_disps = np.zeros([1, structure.members.num], dtype=object)
+        members_forces = np.zeros([1, structure.members.num], dtype=object)
+        internal_moments = np.zeros([1, structure.members.num], dtype=object)
+        top_internal_strains = np.zeros([1, structure.members.num], dtype=object)
+        bottom_internal_strains = np.zeros([1, structure.members.num], dtype=object)
+        top_internal_stresses = np.zeros([1, structure.members.num], dtype=object)
+        bottom_internal_stresses = np.zeros([1, structure.members.num], dtype=object)
+
+        nodal_disps[0, 0] = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp[0, 0]
+        for i in range(structure.members.num):
+            members_disps[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_disps[i, 0]
+            members_forces[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces[i, 0]
+            internal_moments[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments[i, 0]
+            top_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_strains[i, 0]
+            bottom_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_strains[i, 0]
+            top_internal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_stresses[i, 0]
+            bottom_internal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_stresses[i, 0]
 
         responses = {
             "nodal_disps": nodal_disps,
