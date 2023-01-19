@@ -16,7 +16,7 @@ class Node:
         return self.num > other.num
 
 
-class PlateGaussPoint:
+class GaussPoint:
     def __init__(self, r, s):
         self.r = r
         self.s = s

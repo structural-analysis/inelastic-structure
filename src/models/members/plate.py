@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from ..points import Node, PlateGaussPoint
+from ..points import Node, GaussPoint
 from ..sections.plate import PlateSection
 # from .plate_elements.mkq12_b_simple_new import get_mkq12_simple_new_shape_derivatives
 # from .plate_elements.mkq12_b_complicated_new import get_mkq12_complicated_new_shape_derivatives
@@ -75,10 +75,10 @@ class PlateElement:
     @property
     def gauss_points(self):
         gauss_points = [
-            PlateGaussPoint(r=-0.57735, s=-0.57735),
-            PlateGaussPoint(r=+0.57735, s=-0.57735),
-            PlateGaussPoint(r=+0.57735, s=+0.57735),
-            PlateGaussPoint(r=-0.57735, s=+0.57735),
+            GaussPoint(r=-0.57735, s=-0.57735),
+            GaussPoint(r=+0.57735, s=-0.57735),
+            GaussPoint(r=+0.57735, s=+0.57735),
+            GaussPoint(r=-0.57735, s=+0.57735),
         ]
         return gauss_points
 
