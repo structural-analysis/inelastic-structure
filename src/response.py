@@ -24,7 +24,7 @@ def calculate_static_responses(analysis):
         load_levels = np.zeros([increments_count, 1], dtype=object)
 
         nodal_disps_sensitivity = analysis.nodal_disps_sensitivity
-        nodal_disps = np.zeros([increments_count, 1], dtype=object)
+        nodal_disp = np.zeros([increments_count, 1], dtype=object)
 
         members_nodal_forces_sensitivity = analysis.members_nodal_forces_sensitivity
         members_nodal_forces = np.zeros([increments_count, structure.members.num], dtype=object)
@@ -45,7 +45,7 @@ def calculate_static_responses(analysis):
                 elastic_response=analysis.elastic_nodal_disp,
                 sensitivity=nodal_disps_sensitivity,
             )
-            nodal_disps[i, 0] = elastoplastic_nodal_disp[0, 0]
+            nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
 
             elastoplastic_members_nodal_forces = get_elastoplastic_response(
                 load_level=load_level,
@@ -65,13 +65,13 @@ def calculate_static_responses(analysis):
             for j in range(structure.members.num):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
         responses = {
-            "nodal_disps": nodal_disps,
+            "nodal_disp": nodal_disp,
             "members_nodal_forces": members_nodal_forces,
             "members_disps": members_disps,
             "load_levels": load_levels,
         }
     else:
-        nodal_disps = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp
+        nodal_disp = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp
         members_disps = structure.limits["load_limit"][0] * analysis.elastic_members_disps
         members_nodal_forces = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces
         internal_moments = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments
@@ -81,7 +81,7 @@ def calculate_static_responses(analysis):
         bottom_internal_stresses = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_stresses
 
         responses = {
-            "nodal_disps": nodal_disps,
+            "nodal_disp": nodal_disp,
             "members_disps": members_disps,
             "members_nodal_forces": members_nodal_forces,
             "internal_moments": internal_moments,
@@ -121,7 +121,7 @@ def calculate_dynamic_responses(analysis):
         load_levels = np.zeros([increments_count, 1], dtype=object)
 
         nodal_disps_sensitivity = nodal_disps_sensitivity_history[time_step, 0]
-        nodal_disps = np.zeros([increments_count, 1], dtype=object)
+        nodal_disp = np.zeros([increments_count, 1], dtype=object)
 
         members_nodal_forces_sensitivity = members_nodal_forces_sensitivity_history[time_step, 0]
         members_nodal_forces = np.zeros([increments_count, structure.members.num], dtype=object)
@@ -143,7 +143,7 @@ def calculate_dynamic_responses(analysis):
                 elastic_response=elastic_nodal_disp_history[time_step, 0],
                 sensitivity=nodal_disps_sensitivity,
             )
-            nodal_disps[i, 0] = elastoplastic_nodal_disp[0, 0]
+            nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
             elastoplastic_members_nodal_forces = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
@@ -163,7 +163,7 @@ def calculate_dynamic_responses(analysis):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
 
         responses[time_step, 0] = {
-            "nodal_disps": nodal_disps,
+            "nodal_disp": nodal_disp,
             "members_nodal_forces": members_nodal_forces,
             "members_disps": members_disps,
             "load_levels": load_levels,

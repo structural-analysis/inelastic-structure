@@ -12,7 +12,7 @@ def run(example_name):
     responses = calculate_responses(analysis)
     desired_responses = [
         "load_levels",
-        "nodal_disps",
+        "nodal_disp",
         "members_nodal_forces",
         "members_disps",
         "internal_moments",

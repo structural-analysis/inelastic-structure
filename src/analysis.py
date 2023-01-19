@@ -31,7 +31,7 @@ class StaticSensitivity:
 @dataclass
 class DynamicSensitivity:
     pv: np.matrix
-    nodal_disps: np.matrix
+    nodal_disp: np.matrix
     members_nodal_forces: np.matrix
     members_disps: np.matrix
     modal_loads: np.matrix
@@ -62,9 +62,9 @@ class Analysis:
                 self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
                 sensitivity = self.get_sensitivity()
                 self.pv = sensitivity.pv
-                self.members_forces_sensitivity = sensitivity.members_forces
+                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
                 self.members_disps_sensitivity = sensitivity.members_disps
-                self.nodal_disps_sensitivity = sensitivity.nodal_disps
+                self.nodal_disps_sensitivity = sensitivity.nodal_disp
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
@@ -161,7 +161,7 @@ class Analysis:
                 internal_responses = self.get_internal_responses(elastic_members_disps)
                 self.elastic_members_nodal_forces_history[time_step, 0] = internal_responses.members_nodal_forces
                 # with open("section4-elastic-force.txt", "a") as f:
-                #     f.write(f"{internal_forces['members_forces'][1][0, 0][5, 0]}\n")
+                #     f.write(f"{internal_forces['members_nodal_forces'][1][0, 0][5, 0]}\n")
                 self.p0 = internal_responses.p0
                 self.p0_prev = self.p0_history[time_step - 1, 0]
                 self.p0_history[time_step, 0] = self.p0
@@ -173,7 +173,7 @@ class Analysis:
                 self.pv = sensitivity.pv
                 self.pv_prev = self.pv_history[time_step - 1, 0]
                 self.pv_history[time_step, 0] = sensitivity.pv
-                self.nodal_disps_sensitivity_history[time_step, 0] = sensitivity.nodal_disps
+                self.nodal_disps_sensitivity_history[time_step, 0] = sensitivity.nodal_disp
                 self.members_nodal_forces_sensitivity_history[time_step, 0] = sensitivity.members_nodal_forces
                 self.members_disps_sensitivity_history[time_step, 0] = sensitivity.members_disps
                 self.modal_loads_sensitivity_history[time_step, 0] = sensitivity.modal_loads
@@ -223,7 +223,7 @@ class Analysis:
                     load_level=self.load_level,
                     phi_x=phi_x,
                     elastic_response=elastic_nodal_disp,
-                    sensitivity=sensitivity.nodal_disps,
+                    sensitivity=sensitivity.nodal_disp,
                 )
 
                 elastoplastic_members_disps = get_elastoplastic_response(
@@ -553,7 +553,7 @@ class Analysis:
 
         sensitivity = DynamicSensitivity(
             pv=pv,
-            nodal_disps=nodal_disps_sensitivity,
+            nodal_disp=nodal_disps_sensitivity,
             members_nodal_forces=members_nodal_forces_sensitivity,
             members_disps=members_disps_sensitivity,
             modal_loads=modal_load_sensitivity,

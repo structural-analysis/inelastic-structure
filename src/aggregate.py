@@ -8,7 +8,7 @@ example_name = settings.example_name
 outputs_dir = "output/examples/"
 
 desired_responses = [
-    "nodal_disps",
+    "nodal_disp",
     "members_nodal_forces",
     "members_disps",
 ]
