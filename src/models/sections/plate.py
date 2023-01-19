@@ -37,6 +37,8 @@ class YieldSpecs:
                 [-1.2143, 0.2143, -2],
                 [0.2143, -1.2143, -2],
             ]).T / nonlinear.mp
+        elif nonlinear.yield_surface == "mises":
+            phi = get_von_mises_matrix(mp=nonlinear.mp)
         return phi
 
 
@@ -79,3 +81,30 @@ class PlateSection:
                             [0, 0, (1 - self.material.nu) / 2]])
         self.be = (self.material.e / (1 - self.material.nu ** 2)) * self.d
         self.de = (self.material.e * self.geometry.thickness ** 3) / (12 * (1 - self.material.nu ** 2)) * self.d
+
+
+def get_von_mises_matrix(mp):
+    si = np.array([-1.9, -1.7, -1.2, -1, -0.5, 0, 0.5, 1, 1.2, 1.7, 1.9])
+    m = 20
+    n = si.shape[0]  # -2 & +2 will produce only one plane each
+    p_total = m * n + 2  # total number of yield planes
+    teta = np.zeros(20)
+    pi = np.pi
+    for i in range(m):
+        teta[i] = 2 * pi * (i + 1) / m
+
+    # specifying two end planes
+    phi = np.zeros((3, p_total))
+    phi[:, 0] = np.array([-0.5, -0.5, 0]) / mp
+    phi[:, p_total - 1] = np.array([0.5, 0.5, 0]) / mp
+
+    l = 0
+    for i in range(n):
+        for j in range(m):
+            k = j + l + 1
+            phi[:, k] = np.array([
+                0.25 * (si[i] + 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
+                0.25 * (si[i] - 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
+                1.5 * np.sqrt(2) * (np.sin(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2))))]) / mp
+        l += m
+    return phi

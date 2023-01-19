@@ -11,10 +11,15 @@ def run(example_name):
     analysis = Analysis(structure_input=structure_input, loads_input=loads_input, general_info=general_info)
     responses = calculate_responses(analysis)
     desired_responses = [
+        "load_levels",
         "nodal_disps",
         "members_nodal_forces",
         "members_disps",
-        "load_levels",
+        "internal_moments",
+        "top_internal_strains",
+        "bottom_internal_strains",
+        "top_internal_stresses",
+        "bottom_internal_stresses",
     ]
     if analysis.type == "static":
         write_static_responses_to_file(

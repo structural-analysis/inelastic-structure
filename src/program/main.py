@@ -269,6 +269,7 @@ class MahiniMethod:
         # TODO: handle unbounded problem,
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
+        # print(f"{abar=}")
         abar = zero_out_small_values(abar)
         print(f"{abar=}")
         print(f"{bbar=}")
