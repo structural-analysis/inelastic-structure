@@ -90,17 +90,17 @@ def get_yield_points(selected_increments_count, selected_yield_points_count):
     increments_yield_points = []
 
     for increment in range(selected_increments_count):
-        members_forces_path = os.path.join(output_dir, example_name, f"{increment}/members_forces.csv")
-        members_forces = np.loadtxt(fname=members_forces_path, delimiter=",", ndmin=2, dtype=float)
+        members_nodal_forces_path = os.path.join(output_dir, example_name, f"{increment}/members_nodal_forces.csv")
+        members_nodal_forces = np.loadtxt(fname=members_nodal_forces_path, delimiter=",", ndmin=2, dtype=float)
 
-        yield_points_count = members_forces.shape[1]
+        yield_points_count = members_nodal_forces.shape[1]
         increment_yield_points = np.zeros((yield_components_count, yield_points_count))
 
         for member_num in range(yield_points_count):
             for member_yield_point in range(member_yield_points_count):
                 for yield_component in range(len(yield_components_dof)):
                     dof = member_yield_point * node_dofs_count + yield_component
-                    increment_yield_points[yield_component, member_num] = members_forces[dof, member_num]
+                    increment_yield_points[yield_component, member_num] = members_nodal_forces[dof, member_num]
 
     if yield_components_count == 1:
         yield_points = {

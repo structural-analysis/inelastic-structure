@@ -295,7 +295,7 @@ def get_stiffness(gauss_points):
     return k
 
 
-def get_nodal_disps():
+def get_nodal_disp():
     gauss_points = get_gauss_points()
     k = get_stiffness(gauss_points)
     kr = k[0:3, 0:3]
@@ -304,5 +304,5 @@ def get_nodal_disps():
 
 
 if __name__ == "__main__":
-    disps = get_nodal_disps()
+    disps = get_nodal_disp()
     print(disps)

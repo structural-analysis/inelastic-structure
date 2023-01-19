@@ -2,29 +2,20 @@ import numpy as np
 from dataclasses import dataclass
 
 from ..points import Node, GaussPoint
-from ..sections.plate import PlateSection
-# from .plate_elements.mkq12_b_simple_new import get_mkq12_simple_new_shape_derivatives
-# from .plate_elements.mkq12_b_complicated_new import get_mkq12_complicated_new_shape_derivatives
-# from .plate_elements.mkq12_b_complicated_negative import get_mkq12_complicated_negative_shape_derivatives
+from ..sections.plate import WallSection
 
 
 @dataclass
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
-    internal_moments: np.matrix
-    top_internal_strains: np.matrix
-    bottom_internal_strains: np.matrix
-    top_internal_stresses: np.matrix
-    bottom_internal_stresses: np.matrix
-
-
-@dataclass
-class Moment:
-    x: float
-    y: float
-    xy: float
-    mises: float
+    internal_strains: np.matrix
+    internal_stresses: np.matrix
+    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
+    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass
@@ -44,13 +35,13 @@ class Stress:
 
 
 class YieldSpecs:
-    def __init__(self, section: PlateSection, points_count: int):
+    def __init__(self, section: WallSection, points_count: int):
         self.points_count = points_count
         self.components_count = self.points_count * section.yield_specs.components_count
         self.pieces_count = self.points_count * section.yield_specs.pieces_count
 
 
-class PlateElement:
+class WallElement:
     def __init__(self, num, section, size_x, size_y, nodes: tuple[Node, Node, Node, Node]):
         self.num = num
         self.section = section
@@ -58,7 +49,7 @@ class PlateElement:
         self.size_y = size_y
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
-        self.dofs_count = 3 * self.nodes_count
+        self.dofs_count = 2 * self.nodes_count
         self.gauss_points_shape_derivatives = [self.get_shape_derivatives(gauss_point) for gauss_point in self.gauss_points]
         # self.gauss_points_shape_derivatives = [get_mkq12_simple_new_shape_derivatives(gauss_point, self.nodes) for gauss_point in self.gauss_points]
         # self.gauss_points_shape_derivatives = [get_mkq12_complicated_new_shape_derivatives(gauss_point, self.nodes) for gauss_point in self.gauss_points]
