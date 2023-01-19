@@ -60,7 +60,11 @@ class Structure:
         self.limits = input["limits"]
         self.k = self.get_stiffness()
 
-        self.reduced_k = self.apply_boundary_conditions(self.boundaries_dof, self.k)
+        self.reduced_k = self.apply_boundary_conditions(
+            row_boundaries_dof=self.boundaries_dof,
+            col_boundaries_dof=self.boundaries_dof,
+            structure_prop=self.k,
+        )
         self.kc = cho_factor(self.reduced_k)
 
         if self.is_inelastic:
@@ -122,23 +126,23 @@ class Structure:
             structure_stiffness = self._assemble_members(member, member_global_stiffness, structure_stiffness)
         return structure_stiffness
 
-    def apply_boundary_conditions(self, boundaries_dof, structure_prop):
+    def apply_boundary_conditions(self, row_boundaries_dof, col_boundaries_dof, structure_prop):
         reduced_structure_prop = structure_prop
         row_deleted_counter = 0
         col_deleted_counter = 0
-        if structure_prop.shape[0] == structure_prop.shape[1]:
-            for boundary in boundaries_dof:
+        if np.array_equal(row_boundaries_dof, col_boundaries_dof):
+            for boundary in row_boundaries_dof:
                 reduced_structure_prop = np.delete(reduced_structure_prop, boundary - row_deleted_counter, 0)
                 reduced_structure_prop = np.delete(reduced_structure_prop, boundary - col_deleted_counter, 1)
                 row_deleted_counter += 1
                 col_deleted_counter += 1
 
         else:
-            for boundary in self.mass_bounds:
+            for boundary in col_boundaries_dof:
                 reduced_structure_prop = np.delete(reduced_structure_prop, boundary - col_deleted_counter, 1)
                 col_deleted_counter += 1
 
-            for boundary in self.zero_mass_bounds:
+            for boundary in row_boundaries_dof:
                 reduced_structure_prop = np.delete(reduced_structure_prop, boundary - row_deleted_counter, 0)
                 row_deleted_counter += 1
 
@@ -341,27 +345,49 @@ class Structure:
         bound_i = 0
         mass_bound_i = 0
         zero_mass_bound_i = 0
-
+        # print(f"{zero_mass_dofs=}")
         if self.zero_mass_dofs.any():
             for dof in range(self.dofs_count):
+                # print(f"{zero_mass_dof_i=}")
+                # print(f"{dof=}")
+                # print(f"{zero_mass_dofs[zero_mass_dof_i]=}")
                 if dof == zero_mass_dofs[zero_mass_dof_i]:
+                    # print("----if dof == zero_mass_dofs[zero_mass_dof_i]")
+                    # print(f"{bound_i=}")
                     if bound_i < self.boundaries_dof.shape[0]:
+                        # print(f"{self.boundaries_dof[bound_i]=}")
                         if dof == self.boundaries_dof[bound_i]:
+                            # print(f"{mass_bound_i=}")
                             mass_bounds = np.delete(mass_bounds, bound_i - mass_bound_i, 0)
                             mass_bound_i += 1
+                            # print(f"{mass_bounds=}")
 
+                            # print(f"{zero_mass_bound_i=}")
                             zero_mass_bounds[bound_i - zero_mass_bound_i] = zero_mass_bounds[bound_i - zero_mass_bound_i] - mass_dof_i
+                            # print(f"{zero_mass_bounds=}")
 
                             bound_i += 1
+                    else:
+                        break
                     zero_mass_dof_i += 1
                 else:
-                    if dof == self.boundaries_dof[bound_i]:
-                        mass_bounds[bound_i - mass_bound_i] = mass_bounds[bound_i - mass_bound_i] - zero_mass_dof_i
+                    # print("----else")
+                    # print(f"{bound_i=}")
+                    if bound_i < self.boundaries_dof.shape[0]:
+                        # print(f"{self.boundaries_dof[bound_i]=}")
+                        if dof == self.boundaries_dof[bound_i]:
+                            # print(f"{mass_bound_i=}")
+                            # print(f"{zero_mass_dof_i=}")
+                            mass_bounds[bound_i - mass_bound_i] = mass_bounds[bound_i - mass_bound_i] - zero_mass_dof_i
 
-                        zero_mass_bounds = np.delete(zero_mass_bounds, bound_i - zero_mass_bound_i, 0)
-                        zero_mass_bound_i += 1
+                            # print(f"{mass_bounds=}")
+                            zero_mass_bounds = np.delete(zero_mass_bounds, bound_i - zero_mass_bound_i, 0)
+                            # print(f"{zero_mass_bounds=}")
+                            zero_mass_bound_i += 1
 
-                        bound_i += 1
+                            bound_i += 1
+                    else:
+                        break
                     mass_dof_i += 1
         return mass_bounds, zero_mass_bounds
 
@@ -370,10 +396,29 @@ class Structure:
 
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
-        reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
-        condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
-        reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
-        reduced_k0t = self.apply_boundary_conditions(self.boundaries_dof, k0t)
+        # reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
+        reduced_ktt = self.apply_boundary_conditions(
+            row_boundaries_dof=mass_bounds,
+            col_boundaries_dof=mass_bounds,
+            structure_prop=ktt,
+        )
+        # condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
+        condensed_m = self.apply_boundary_conditions(
+            row_boundaries_dof=mass_bounds,
+            col_boundaries_dof=mass_bounds,
+            structure_prop=mtt,
+        )
+        # reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
+        reduced_k00 = self.apply_boundary_conditions(
+            row_boundaries_dof=zero_mass_bounds,
+            col_boundaries_dof=zero_mass_bounds,
+            structure_prop=k00,
+        )
+        reduced_k0t = self.apply_boundary_conditions(
+            row_boundaries_dof=zero_mass_bounds,
+            col_boundaries_dof=mass_bounds,
+            structure_prop=k0t,
+        )
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
         condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)

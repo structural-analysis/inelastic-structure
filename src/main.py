@@ -1,6 +1,6 @@
 from src.settings import settings
 from src.analysis import Analysis
-from src.response import calculate_responses, write_responses_to_file
+from src.response import calculate_responses, write_static_responses_to_file, write_dynamic_responses_to_file
 from src.workshop import get_structure_input, get_loads_input, get_general_properties
 
 
@@ -12,16 +12,28 @@ def run(example_name):
     responses = calculate_responses(analysis)
     desired_responses = [
         "load_levels",
-        "nodal_disps",
+        "nodal_disp",
+        "members_nodal_forces",
         "members_disps",
-        "members_forces",
         "internal_moments",
         "top_internal_strains",
         "bottom_internal_strains",
         "top_internal_stresses",
         "bottom_internal_stresses",
     ]
-    write_responses_to_file(example_name, responses, desired_responses)
+    if analysis.type == "static":
+        write_static_responses_to_file(
+            example_name=example_name,
+            responses=responses,
+            desired_responses=desired_responses,
+        )
+    elif analysis.type == "dynamic":
+        write_dynamic_responses_to_file(
+            example_name=example_name,
+            responses=responses,
+            desired_responses=desired_responses,
+            time_steps=analysis.time_steps,
+        )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import numpy as np
-from .models import FPM, SlackCandidate
-from .functions import zero_out_small_values
+from src.program.models import FPM, SlackCandidate
+from src.program.functions import zero_out_small_values
 
 
 class MahiniMethod:
@@ -20,8 +20,27 @@ class MahiniMethod:
         self.c = raw_data.c
 
     def solve(self):
-        bbar = self.b
         basic_variables = self.get_initial_basic_variables()
+        # from pprint import pprint
+        if any(self.b < 0):
+            new_table = self.create_new_table()
+            negative_b_count = 1
+            for i in range(self.constraints_count):
+                if self.b[i] < 0:
+                    self.update_b_for_negative_b_row(i)
+                    basic_variables = self.update_basic_variables_for_negative_b_row(
+                        basic_variables=basic_variables,
+                        negative_b_row=i,
+                    )
+                    new_table = self.update_table_for_negative_b_row(
+                        new_table=new_table,
+                        negative_b_row=i,
+                        negative_b_count=negative_b_count,
+                    )
+                    negative_b_count += 1
+            self.table = new_table.copy()
+        bbar = self.b
+        # print(bbar)
         b_matrix_inv = np.eye(self.slack_vars_count)
         cb = np.zeros(self.slack_vars_count)
         x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
@@ -29,17 +48,37 @@ class MahiniMethod:
         fpm = FPM
         fpm.var = self.landa_var
         fpm.cost = 0
+        # pprint(b_matrix_inv)
+        # print(f"{fpm.var=}")
+        # print("table")
+        # print(self.table)
         fpm, b_matrix_inv, basic_variables, cb, will_out_row, will_out_var = self.enter_landa(fpm, b_matrix_inv, basic_variables, cb)
         landa_row = will_out_row
-
+        # np.set_printoptions(precision=4, linewidth=200, suppress=True)
+        # print(f"{will_out_row=}")
+        # print(f"{will_out_var=}")
+        # print("//////////////////////////////////////////////////////////////////////////////////")
+        # pprint(b_matrix_inv)
         while self.limits_slacks.issubset(set(basic_variables)):
             sorted_slack_candidates = self.get_sorted_slack_candidates(basic_variables, b_matrix_inv, cb)
             will_in_col = fpm.var
+            # print("***************")
+            # print(f"{will_in_col=}")
             abar = self.calculate_abar(will_in_col, b_matrix_inv)
+            # print("==================check=================")
+            # print(bbar)
+            # print(b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
+            # print(bbar)
+            # print("=================check==================")
+            # print(f"{bbar=}")
+            # print(f"{abar=}")
             will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
+            # print(f"{will_out_row=}")
+            # print(f"{will_out_var=}")
             x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
+            # print("bbar reset ", bbar)
             x_history.append(x_cumulative.copy())
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
@@ -62,6 +101,7 @@ class MahiniMethod:
                             cb=cb,
                             landa_row=landa_row,
                         )
+                        # pprint(b_matrix_inv)
                         break
                 else:
                     if self.is_will_out_var_opm(will_out_var):
@@ -74,6 +114,7 @@ class MahiniMethod:
                             cb=cb,
                             landa_row=landa_row,
                         )
+                        # pprint(b_matrix_inv)
                         break
                     else:
                         print("enter fpm")
@@ -85,11 +126,14 @@ class MahiniMethod:
                             will_in_col=will_in_col,
                             abar=abar,
                         )
+                        # pprint(b_matrix_inv)
                         break
+        # print(f"before    {basic_variables=}")
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
+        # print(f"{bbar=}")
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
+        # print("bbar reset ", bbar)
         x_history.append(x_cumulative.copy())
-
         pms_history = []
         load_level_history = []
         for x in x_history:
@@ -107,13 +151,22 @@ class MahiniMethod:
         return primary_var + self.primary_vars_count
 
     def get_primary_var(self, slack_var):
-        return slack_var - self.primary_vars_count
+        if slack_var < self.primary_vars_count + self.slack_vars_count:
+            # x variables and y variables
+            return slack_var - self.primary_vars_count
+        else:
+            # y variables from z variables
+            return slack_var - self.constraints_count
 
     def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb):
         will_in_col = fpm.var
         a = self.table[:, will_in_col]
+        print(f"{a=}")
+        print(f"{will_in_col=}")
+        print("enter landa")
         will_out_row = self.get_will_out(a, self.b)
         will_out_var = basic_variables[will_out_row]
+        # print(f"+++++++++++++++++++++++++++++++++ {self.table[:, 0]=}")
         basic_variables = self.update_basic_variables(basic_variables, will_out_row, will_in_col)
         b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, a, will_out_row)
         cb = self.update_cb(cb, will_in_col, will_out_row)
@@ -187,8 +240,10 @@ class MahiniMethod:
         return pm_var_family
 
     def calculate_abar(self, col, b_matrix_inv):
+        # print(f"{col=}")
         a = self.table[:, col]
         abar = np.dot(b_matrix_inv, a)
+        # print(f"asdasd as das d {self.table[:, 0]=}")
         return abar
 
     def calculate_bbar(self, b_matrix_inv, bbar):
@@ -203,7 +258,11 @@ class MahiniMethod:
         return cbar
 
     def update_cb(self, cb, will_in_col, will_out_row):
+        print(f"{will_in_col=}")
+        print(f"{will_out_row=}")
+        print(f"before {cb=}")
         cb[will_out_row] = self.c[will_in_col]
+        print(f"after {cb=}")
         return cb
 
     def get_will_out(self, abar, bbar, will_in_col=None, landa_row=None, basic_variables=None):
@@ -212,16 +271,19 @@ class MahiniMethod:
 
         # print(f"{abar=}")
         abar = zero_out_small_values(abar)
+        print(f"{abar=}")
+        print(f"{bbar=}")
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
         positive_abar = abar[positive_abar_indices]
         ba = bbar[positive_abar_indices] / positive_abar
+        print(f"{ba=}")
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
 
         # if will in variable is landa
+        # print(f"{sorted_zipped_ba=}")
         will_out_row = int(sorted_zipped_ba[0, 0])
-
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
             # if will in variable is plastic
@@ -293,6 +355,9 @@ class MahiniMethod:
         cbar = self.calculate_cbar(cb, b_matrix_inv)
         slack_candidates = []
         for var in basic_variables:
+            print(f"{var=}")
+            print(f"{self.landa_var=}")
+            print("==-------==")
             if var < self.landa_var:
                 slack_var = self.get_slack_var(var)
                 slack_candidate = SlackCandidate(
@@ -301,6 +366,7 @@ class MahiniMethod:
                 )
                 slack_candidates.append(slack_candidate)
         slack_candidates.sort(key=lambda y: y.cost)
+        print(f"{cbar=}")
         return slack_candidates
 
     def reset(self, basic_variables, x_cumulative, bbar):
@@ -351,3 +417,35 @@ class MahiniMethod:
             will_out_yield_point = self.get_softening_var_yield_point(primary_will_out_var)
 
         return will_out_yield_point
+
+    def update_table_for_negative_b_row(self, new_table, negative_b_row, negative_b_count):
+        new_table[negative_b_row, :] = - new_table[negative_b_row, :]
+        new_table[negative_b_row, self.primary_vars_count + negative_b_count] = 1
+        return new_table
+
+    def update_b_for_negative_b_row(self, negative_b_row):
+        self.b[negative_b_row] = - self.b[negative_b_row]
+
+    def update_basic_variables_for_negative_b_row(self, basic_variables, negative_b_row):
+        basic_variables[negative_b_row] = int(basic_variables[negative_b_row] + self.constraints_count)
+        return basic_variables
+
+    def create_new_table(self):
+        negative_b_count = np.count_nonzero(self.b < 0)
+        new_table = np.array(
+            np.zeros((self.constraints_count, self.table.shape[1] + negative_b_count))
+        )
+        print(f"{self.table.shape=}")
+        print(f"{new_table.shape=}")
+        print(f"{negative_b_count=}")
+        print(f"{new_table[:, :-negative_b_count].shape=}")
+        new_table[:, :-negative_b_count] = self.table
+        return new_table
+
+    def calculate_initial_dbar(self, table, negative_b_count):
+        dbar = np.zeros(self.total_vars_count + negative_b_count)
+        dbar = table.sum(axis=0)
+        return dbar
+
+    def calculate_dbar(self, d, table, sigma):
+        pass
