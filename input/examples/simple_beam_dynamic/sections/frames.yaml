@@ -8,10 +8,10 @@ rect:
     ix: 2666.6667e-8
     iy: 0
   nonlinear:
-    is_direct_capacity: false
+    is_direct_capacity: true
     has_axial_yield: false
     zp: 4.0e-4
     abar0: 0.15
     ap: 0
-    mp: 0
+    mp: 96000
   softening: null

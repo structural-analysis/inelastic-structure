@@ -50,7 +50,7 @@ class Analysis:
             self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
             sensitivity = self.get_sensitivity()
             self.pv = sensitivity.pv
-            self.members_forces_sensitivity = sensitivity.members_nodal_forces
+            self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
             self.members_disps_sensitivity = sensitivity.members_disps
             self.nodal_disps_sensitivity = sensitivity.nodal_disp
             self.dv = self.get_nodal_disp_limits_sensitivity_rows()
@@ -124,11 +124,12 @@ class Analysis:
             # self.elastic_nodal_disp_history = np.zeros((time_steps, structure.dofs_count, 1))
             self.elastic_nodal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.elastic_members_disps_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.elastic_members_forces_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.elastic_members_nodal_forces_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.nodal_disps_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.members_forces_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.members_nodal_forces_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.members_disps_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.modal_loads_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            self.plastic_vars_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.a2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.b2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.p0_history = np.zeros((time_steps, 1), dtype=object)
@@ -145,6 +146,7 @@ class Analysis:
             self.constraints_force = np.matrix(np.zeros((plastic_vars_count, 1)))
             self.constraints_force_prev = np.matrix(np.zeros((plastic_vars_count, 1)))
             self.plastic_multipliers_prev = np.matrix(np.zeros((vars_count.plastic_vars_count, 1)))
+            self.plastic_multipliers_prev_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             # self.p0_history = np.zeros((time_steps, structure.yield_specs.components_count, 1))
             # self.d0_history = np.zeros((time_steps, structure.limits["disp_limits"].shape[0], 1))
             # self.pv_history = np.zeros((time_steps, structure.yield_specs.components_count, structure.yield_specs.components_count))
@@ -169,7 +171,7 @@ class Analysis:
                 self.elastic_members_disps_history[time_step, 0] = elastic_members_disps
 
                 internal_responses = self.get_internal_responses(elastic_members_disps)
-                self.elastic_members_forces_history[time_step, 0] = internal_responses.members_nodal_forces
+                self.elastic_members_nodal_forces_history[time_step, 0] = internal_responses.members_nodal_forces
                 # with open("section4-elastic-force.txt", "a") as f:
                 #     f.write(f"{internal_forces['members_forces'][1][0, 0][5, 0]}\n")
                 self.p0 = internal_responses.p0
@@ -184,7 +186,7 @@ class Analysis:
                 self.pv_prev = self.pv_history[time_step - 1, 0]
                 self.pv_history[time_step, 0] = sensitivity.pv
                 self.nodal_disps_sensitivity_history[time_step, 0] = sensitivity.nodal_disps
-                self.members_forces_sensitivity_history[time_step, 0] = sensitivity.members_nodal_forces
+                self.members_nodal_forces_sensitivity_history[time_step, 0] = sensitivity.members_nodal_forces
                 self.members_disps_sensitivity_history[time_step, 0] = sensitivity.members_disps
                 self.modal_loads_sensitivity_history[time_step, 0] = sensitivity.modal_loads
                 self.a2_sensitivity_history[time_step, 0] = sensitivity.a2s
@@ -195,10 +197,12 @@ class Analysis:
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
                 self.plastic_vars = mahini_method.solve()
+                self.plastic_vars_history[time_step, 0] = self.plastic_vars
                 self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]
                 self.load_level = self.plastic_vars["load_level_history"][-1]
-                print(f"{self.delta_plastic_multipliers=}")
-                print(f"{self.plastic_multipliers_prev=}")
+                self.plastic_multipliers_prev_history[time_step, 0] = self.plastic_multipliers_prev
+                # print(f"{self.delta_plastic_multipliers=}")
+                # print(f"{self.plastic_multipliers_prev=}")
                 self.plastic_multipliers = self.delta_plastic_multipliers + self.plastic_multipliers_prev
 
                 self.plastic_multipliers_prev = self.plastic_multipliers
@@ -251,11 +255,9 @@ class Analysis:
                 self.a_duhamel[time_step, 0] = elastoplastic_a2s
                 self.b_duhamel[time_step, 0] = elastoplastic_b2s
                 self.modal_loads[time_step, 0] = elastoplastic_modal_loads
-                print(f"{elastoplastic_members_nodal_forces=}")
+                print(f"{elastoplastic_members_nodal_forces[1, 0]=}")
                 print("///////////////////////////////////////////////////////")
-                # if time_step == 10:
-                #     import time
-                #     time.sleep(50000000)
+
     @property
     def type(self):
         if self.general_info.get("dynamic_analysis") and self.general_info["dynamic_analysis"]["enabled"]:
@@ -331,7 +333,7 @@ class Analysis:
         # fv: equivalent global force vector for a yield component's udef
         members = structure.members.list
         pv = np.matrix(np.zeros((structure.yield_specs.components_count, structure.yield_specs.components_count)))
-        members_forces_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_nodal_forces_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         nodal_disps_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.components_count), dtype=object))
         members_disps_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         pv_column = 0
@@ -356,7 +358,7 @@ class Analysis:
                     affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
-                    members_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
+                    members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
                     current_affected_member_ycns = current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count
@@ -365,7 +367,7 @@ class Analysis:
         sensitivity = StaticSensitivity(
             pv=pv,
             nodal_disp=nodal_disps_sensitivity,
-            members_nodal_forces=members_forces_sensitivity,
+            members_nodal_forces=members_nodal_forces_sensitivity,
             members_disps=members_disps_sensitivity,
         )
         return sensitivity
@@ -476,7 +478,7 @@ class Analysis:
         )))
         pv_column = 0
 
-        members_forces_sensitivity = np.matrix(np.zeros((
+        members_nodal_forces_sensitivity = np.matrix(np.zeros((
             structure.members.num, structure.yield_specs.components_count), dtype=object
         ))
         members_disps_sensitivity = np.matrix(np.zeros((
@@ -537,7 +539,7 @@ class Analysis:
                     affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
-                    members_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
+                    members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
                     current_affected_member_ycns = current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count
@@ -546,7 +548,7 @@ class Analysis:
         sensitivity = DynamicSensitivity(
             pv=pv,
             nodal_disps=nodal_disps_sensitivity,
-            members_nodal_forces=members_forces_sensitivity,
+            members_nodal_forces=members_nodal_forces_sensitivity,
             members_disps=members_disps_sensitivity,
             modal_loads=modal_load_sensitivity,
             a2s=a2_sensitivity,

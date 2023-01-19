@@ -34,7 +34,6 @@ class RawData:
 
         if analysis.type == "dynamic":
             self.update_b_for_dynamic_analysis(analysis)
-            self.update_table_for_dynamic_analysis()
 
         self.landa_var = self.plastic_vars_count + self.softening_vars_count
         self.landa_bar_var = 2 * self.landa_var + 1
@@ -78,6 +77,7 @@ class RawData:
         table[0:constraints_count, 0:primary_vars_count] = a_matrix
 
         # Assigning diagonal arrays of slack variables.
+        # TODO: use np.eye instead
         j = primary_vars_count
         for i in range(constraints_count):
             table[i, j] = 1.0
@@ -113,24 +113,7 @@ class RawData:
                 self.phi.T * analysis.pv_prev * self.phi * analysis.plastic_multipliers_prev
             ).flatten()
         )
-        print(f"{self.b=}")
-
-    def update_table_for_dynamic_analysis(self):
-        if any(self.b < 0):
-            # negative_b_count = np.count_nonzero(self.b < 0)
-            # new_table = np.matrix(
-            #     np.zeros((self.constraints_count, self.primary_vars_count + negative_b_count))
-            # )
-            # new_table[:, :-negative_b_count] = self.table
-            # negative_b_counter = 1
-            for i in range(self.constraints_count):
-                if self.b[i] < 0:
-                    # new_table[i, :] = - new_table[i, :]
-                    self.table[i, :] = - self.table[i, :]
-                    self.b[i] = - self.b[i]
-                    # new_table[i, self.primary_vars_count + negative_b_counter] = 1
-                    # negative_b_counter += 1
-                    # self.table = new_table.copy()
+        # print(f"{self.b=}")
 
 
 class VarsCount:
