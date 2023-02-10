@@ -121,3 +121,10 @@ def load_condensation(force, ku0, boundaries):
     phat = ptr + np.dot(np.transpose(ku0), p0r)
 
     return phat, p0r
+
+
+def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity):
+    scaled_elastic_response = np.matrix(np.dot(load_level, elastic_response))
+    plastic_response = sensitivity * phi_x
+    elastoplastic_response = scaled_elastic_response + plastic_response
+    return elastoplastic_response

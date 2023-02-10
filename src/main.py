@@ -10,6 +10,7 @@ def run(example_name):
     general_info = get_general_properties(example_name)
     analysis = Analysis(structure_input=structure_input, loads_input=loads_input, general_info=general_info)
     responses = calculate_responses(analysis)
+    structure_type = "inelastic" if analysis.structure.is_inelastic else "elastic"
     desired_responses = [
         "load_levels",
         "nodal_disp",
@@ -30,6 +31,7 @@ def run(example_name):
     elif analysis.type == "dynamic":
         write_dynamic_responses_to_file(
             example_name=example_name,
+            structure_type=structure_type,
             responses=responses,
             desired_responses=desired_responses,
             time_steps=analysis.time_steps,

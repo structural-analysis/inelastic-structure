@@ -14,14 +14,14 @@ desired_responses = [
 ]
 
 
-def aggregate_dynamic_responses(example_name):
-    example_path = os.path.join(outputs_dir, example_name, "increments")
-    time_steps = len(get_inner_folders(example_path)) + 1
+def aggregate_dynamic_responses(structure_type_path):
+    increments_path = os.path.join(structure_type_path, "increments")
+    time_steps = len(get_inner_folders(increments_path)) + 1
     time_step_list = [str(time_step) for time_step in range(1, time_steps)]
-    responses = initialize_responses()
+    responses = initialize_responses(increments_path)
 
     for time_step in time_step_list:
-        time_step_path = os.path.join(example_path, time_step)
+        time_step_path = os.path.join(increments_path, time_step)
         increments = get_inner_folders(time_step_path)
         final_increment = max([int(increment) for increment in increments])
 
@@ -45,12 +45,11 @@ def get_inner_folders(path):
     return dirs_list
 
 
-def initialize_responses():
-    example_path = os.path.join(outputs_dir, example_name)
+def initialize_responses(increments_path):
     responses = {}
     for response in desired_responses:
         responses[response] = {}
-        time_step_path = os.path.join(example_path, "increments", "1")
+        time_step_path = os.path.join(increments_path, "1")
         increments = get_inner_folders(time_step_path)
         final_increment = max([int(increment) for increment in increments])
         response_path = os.path.join(time_step_path, str(final_increment), response)
@@ -61,9 +60,8 @@ def initialize_responses():
     return responses
 
 
-def write_responses(responses):
-    example_path = os.path.join(outputs_dir, example_name)
-    aggregate_path = os.path.join(example_path, "aggregatation")
+def write_responses(responses, structure_type_path):
+    aggregate_path = os.path.join(structure_type_path, "aggregatation")
     for response in responses:
         response_path = os.path.join(aggregate_path, response)
         for element in responses[response]:
@@ -75,6 +73,18 @@ def write_responses(responses):
                 np.savetxt(fname=dof_path, X=dof_response, delimiter=",")
 
 
+def get_structure_types():
+    structure_types = []
+    if os.path.isdir(os.path.join(outputs_dir, example_name, "elastic")):
+        structure_types.append("elastic")
+    if os.path.isdir(os.path.join(outputs_dir, example_name, "inelastic")):
+        structure_types.append("inelastic")
+    return structure_types
+
+
 if __name__ == "__main__":
-    responses = aggregate_dynamic_responses(example_name)
-    write_responses(responses)
+    structure_types = get_structure_types()
+    for structure_type in structure_types:
+        structure_type_path = os.path.join(outputs_dir, example_name, structure_type)
+        responses = aggregate_dynamic_responses(structure_type_path)
+        write_responses(responses, structure_type_path)

@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "onesided_plate_elastic_1mesh_52"
+    example_name: str = "2story_dynamic"
     computational_zero = 1e-10
     isclose_tolerance = 1e-7
     examples_to_test = [
