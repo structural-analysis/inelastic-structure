@@ -130,6 +130,8 @@ class Analysis:
                 self.plastic_multipliers_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
 
             for time_step in range(1, time_steps):
+                if time_step == 56:
+                    input()
                 print(f"{time_step=}")
                 print(f"{self.time[time_step]=}")
                 self.total_load = loads.get_total_load(structure, loads, time_step)
@@ -178,7 +180,7 @@ class Analysis:
                     self.load_level_prev = self.load_level
                     raw_data = RawData(self)
                     mahini_method = MahiniMethod(raw_data)
-                    self.plastic_vars = mahini_method.solve()
+                    self.plastic_vars = mahini_method.solve_dynamic()
                     self.plastic_vars_history[time_step, 0] = self.plastic_vars
                     self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]
                     self.load_level = self.plastic_vars["load_level_history"][-1]
@@ -237,6 +239,7 @@ class Analysis:
                     self.a_duhamel[time_step, 0] = elastoplastic_a2s
                     self.b_duhamel[time_step, 0] = elastoplastic_b2s
                     self.modal_loads[time_step, 0] = elastoplastic_modal_loads
+                    print(f"{elastoplastic_members_nodal_forces[0, 0]=}")
                     print(f"{elastoplastic_members_nodal_forces[1, 0]=}")
                     print("///////////////////////////////////////////////////////")
 

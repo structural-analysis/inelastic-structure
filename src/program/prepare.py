@@ -73,6 +73,9 @@ class RawData:
 
         a_matrix = np.array(raw_a)
         columns_count = primary_vars_count + self.slack_vars_count
+        print(f"{columns_count=}")
+        print(f"{primary_vars_count=}")
+        print(f"{self.slack_vars_count=}")
         table = np.zeros((constraints_count, columns_count))
         table[0:constraints_count, 0:primary_vars_count] = a_matrix
 

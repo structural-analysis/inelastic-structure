@@ -57,13 +57,22 @@ class MahiniMethod:
         # print(f"{fpm.var=}")
         # print("table")
         # print(self.table)
-        fpm, b_matrix_inv, basic_variables, cb, db, will_out_row, will_out_var = self.enter_landa_dynamic(
-            fpm=fpm,
-            b_matrix_inv=b_matrix_inv,
-            basic_variables=basic_variables,
-            cb=cb,
-            db=db,
-        )
+        if self.is_two_phase:
+            fpm, b_matrix_inv, basic_variables, cb, db, will_out_row, will_out_var = self.enter_landa_dynamic(
+                fpm=fpm,
+                b_matrix_inv=b_matrix_inv,
+                basic_variables=basic_variables,
+                cb=cb,
+                db=db,
+            )
+        else:
+            fpm, b_matrix_inv, basic_variables, cb, will_out_row, will_out_var = self.enter_landa(
+                fpm=fpm,
+                b_matrix_inv=b_matrix_inv,
+                basic_variables=basic_variables,
+                cb=cb,
+            )
+
         landa_row = will_out_row
         # np.set_printoptions(precision=4, linewidth=200, suppress=True)
         # print(f"{will_out_row=}")
@@ -142,15 +151,25 @@ class MahiniMethod:
                         break
                     else:
                         print("enter fpm")
-                        basic_variables, b_matrix_inv, cb, db, fpm = self.enter_fpm_dynamic(
-                            basic_variables=basic_variables,
-                            b_matrix_inv=b_matrix_inv,
-                            cb=cb,
-                            db=db,
-                            will_out_row=will_out_row,
-                            will_in_col=will_in_col,
-                            abar=abar,
-                        )
+                        if self.is_two_phase:
+                            basic_variables, b_matrix_inv, cb, db, fpm = self.enter_fpm_dynamic(
+                                basic_variables=basic_variables,
+                                b_matrix_inv=b_matrix_inv,
+                                cb=cb,
+                                db=db,
+                                will_out_row=will_out_row,
+                                will_in_col=will_in_col,
+                                abar=abar,
+                            )
+                        else:
+                            basic_variables, b_matrix_inv, cb, fpm = self.enter_fpm(
+                                basic_variables=basic_variables,
+                                b_matrix_inv=b_matrix_inv,
+                                cb=cb,
+                                will_out_row=will_out_row,
+                                will_in_col=will_in_col,
+                                abar=abar,
+                            )
                         # pprint(b_matrix_inv)
                         break
         # print(f"before    {basic_variables=}")
@@ -427,48 +446,48 @@ class MahiniMethod:
 
         return basic_variables, b_matrix_inv, cb, db, landa_row
 
-    def unload_dynamic(self, pm_var, basic_variables, b_matrix_inv, db, landa_row):
-        # TODO: should handle if third pivot column is a y not x. possible bifurcation.
-        # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
-        # TODO: check line 60 of unload and line 265 in mclp of mahini code
-        # (probable usage: in case when unload is last step)
-        pm_var_family = self.get_pm_var_family(pm_var)
-        for primary_var in pm_var_family:
-            if primary_var in basic_variables:
-                exiting_row = self.get_var_row(primary_var, basic_variables)
+    # def unload_dynamic(self, pm_var, basic_variables, b_matrix_inv, db, landa_row):
+    #     # TODO: should handle if third pivot column is a y not x. possible bifurcation.
+    #     # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
+    #     # TODO: check line 60 of unload and line 265 in mclp of mahini code
+    #     # (probable usage: in case when unload is last step)
+    #     pm_var_family = self.get_pm_var_family(pm_var)
+    #     for primary_var in pm_var_family:
+    #         if primary_var in basic_variables:
+    #             exiting_row = self.get_var_row(primary_var, basic_variables)
 
-                unloading_pivot_elements = [
-                    {
-                        "row": exiting_row,
-                        "column": self.get_slack_var(exiting_row),
-                    },
-                    {
-                        "row": primary_var,
-                        "column": self.get_slack_var(primary_var),
-                    },
-                    {
-                        "row": exiting_row,
-                        "column": basic_variables[primary_var],
-                    },
-                ]
-                for element in unloading_pivot_elements:
-                    abar = self.calculate_abar(element["column"], b_matrix_inv)
-                    b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
-                    db = self.update_db(
-                        cb=db,
-                        will_in_col=element["column"],
-                        will_out_row=element["row"]
-                    )
-                    basic_variables = self.update_basic_variables(
-                        basic_variables=basic_variables,
-                        will_out_row=element["row"],
-                        will_in_col=element["column"]
-                    )
+    #             unloading_pivot_elements = [
+    #                 {
+    #                     "row": exiting_row,
+    #                     "column": self.get_slack_var(exiting_row),
+    #                 },
+    #                 {
+    #                     "row": primary_var,
+    #                     "column": self.get_slack_var(primary_var),
+    #                 },
+    #                 {
+    #                     "row": exiting_row,
+    #                     "column": basic_variables[primary_var],
+    #                 },
+    #             ]
+    #             for element in unloading_pivot_elements:
+    #                 abar = self.calculate_abar(element["column"], b_matrix_inv)
+    #                 b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+    #                 db = self.update_db(
+    #                     cb=db,
+    #                     will_in_col=element["column"],
+    #                     will_out_row=element["row"]
+    #                 )
+    #                 basic_variables = self.update_basic_variables(
+    #                     basic_variables=basic_variables,
+    #                     will_out_row=element["row"],
+    #                     will_in_col=element["column"]
+    #                 )
 
-                    if element["column"] == self.landa_var:
-                        landa_row = element["row"]
+    #                 if element["column"] == self.landa_var:
+    #                     landa_row = element["row"]
 
-        return basic_variables, b_matrix_inv, db, landa_row
+    #     return basic_variables, b_matrix_inv, db, landa_row
 
     def unload(self, pm_var, basic_variables, b_matrix_inv, cb, landa_row):
         # TODO: should handle if third pivot column is a y not x. possible bifurcation.
@@ -568,20 +587,15 @@ class MahiniMethod:
         # TODO: handle unbounded problem,
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
-        # print(f"{abar=}")
         abar = zero_out_small_values(abar)
-        print(f"{abar=}")
-        print(f"{bbar=}")
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
         positive_abar = abar[positive_abar_indices]
         ba = bbar[positive_abar_indices] / positive_abar
-        print(f"{ba=}")
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
 
         # if will in variable is landa
-        # print(f"{sorted_zipped_ba=}")
         will_out_row = int(sorted_zipped_ba[0, 0])
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
@@ -592,6 +606,7 @@ class MahiniMethod:
                     will_out_row = int(sorted_zipped_ba[0, 1])
 
             # if will in variable is softening
+            # TODO: این بازه متغیرهای زد را هم در بر می گیرد و باید محدوده دقیق تعیین شود
             else:
                 will_out_row = int(sorted_zipped_ba[0, 0])
                 # when we reach load or disp limit:
@@ -648,6 +663,17 @@ class MahiniMethod:
         fpm = FPM
         fpm.var = will_out_row
         fpm.cost = cbar[will_out_row]
+        return fpm
+
+    def update_fpm_dynamic(self, basic_variables, will_out_row, cbar):
+        fpm = FPM
+        if basic_variables[will_out_row] > self.total_vars_count:
+            related_y_var = will_out_row + self.primary_vars_count
+            fpm.var = related_y_var
+            fpm.cost = cbar[related_y_var]
+        else:
+            fpm.var = will_out_row
+            fpm.cost = cbar[will_out_row]
         return fpm
 
     def get_sorted_slack_candidates(self, basic_variables, b_matrix_inv, cb):
@@ -755,7 +781,8 @@ class MahiniMethod:
         new_table[:, :-self.negative_b_count] = self.table
         return new_table
 
-    def calculate_initial_d(self, table):
+    def calculate_initial_d(self):
         d = np.zeros(self.total_vars_count + self.negative_b_count)
-        d[:self.total_vars_count] = table.sum(axis=0)
+        print(f"{self.table[:self.total_vars_count].shape=}")
+        d[:self.total_vars_count] = self.table[:, :self.total_vars_count].sum(axis=0)
         return d
