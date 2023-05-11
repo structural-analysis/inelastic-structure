@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from src.functions import get_elastoplastic_response
-# from src.analysis import Analysis
+
 
 outputs_dir = "output/examples/"
 
@@ -101,9 +101,6 @@ def calculate_static_responses(analysis):
             "top_internal_stresses": top_internal_stresses,
             "bottom_internal_stresses": bottom_internal_stresses,
         }
-
-    # if analysis.type == "dynamic":
-    #     members_nodal_forces = np.zeros([increments_num, structure.members.num], dtype=object)
 
     return responses
 
@@ -263,7 +260,6 @@ def write_response_to_file(example_name, response, response_name):
         os.makedirs(response_dir, exist_ok=True)
         for i in range(response.shape[1]):
             dir = os.path.join(response_dir, f"{str(i)}.csv")
-            print(f"{response[increment, i]=}")
             np.savetxt(fname=dir, X=np.array(response[increment, i]), delimiter=",")
 
 

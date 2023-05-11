@@ -87,41 +87,12 @@ class Loads:
 
     def apply_static_condensation(self, structure: Structure, load):
         pt, p0 = self.get_zero_and_nonzero_mass_load(structure, load)
-
         mass_bounds = structure.mass_bounds
         zero_mass_bounds = structure.zero_mass_bounds
         reduced_pt = self.apply_boundary_conditions(mass_bounds, pt)
         reduced_p0 = self.apply_boundary_conditions(zero_mass_bounds, p0)
-        condensed_load = reduced_pt + np.dot(np.transpose(structure.ku0), reduced_p0)
+        condensed_load = reduced_pt - np.dot(np.transpose(structure.reduced_k0t), np.dot(structure.reduced_k00_inv, reduced_p0))
         return condensed_load, reduced_p0
 
     def get_modal_load(self, load, modes):
         return np.dot(np.transpose(modes), load)
-
-    # def displacement_unrestrained(U, JTR):
-    #     i_restraint = 0
-    #     i_free = 0
-    #     size_of_U_nonrestraint = U.shape[0]+JTR.shape[0]
-    #     U_nonrestraint = np.zeros((size_of_U_nonrestraint, 1))
-    #     for i in range(size_of_U_nonrestraint):
-    #         if i == 3*JTR[i_restraint, 0]+JTR[i_restraint, 1]:
-    #             U_nonrestraint[i, 0] = 0
-    #             i_restraint += 1
-    #         else:
-    #             U_nonrestraint[i, 0] = U[i_free, 0]
-    #             i_free += 1
-    #     return U_nonrestraint
-
-    # def non_condensed_displacement(Ut, U0):
-    #     size_of_U = Ut.shape[0]+U0.shape[0]
-    #     U = np.zeros((size_of_U, 1))
-    #     i_U0 = 0
-    #     i_Ut = 0
-    #     for i in range(size_of_U):
-    #         if i % 3 == 2:
-    #             U[i, 0] = U0[i_U0, 0]
-    #             i_U0 += 1
-    #         else:
-    #             U[i, 0] = Ut[i_Ut, 0]
-    #             i_Ut += 1
-    #     return U

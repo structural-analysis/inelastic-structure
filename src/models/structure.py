@@ -59,7 +59,6 @@ class Structure:
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
-
         self.reduced_k = self.apply_boundary_conditions(
             row_boundaries_dof=self.boundaries_dof,
             col_boundaries_dof=self.boundaries_dof,
@@ -86,7 +85,14 @@ class Structure:
             self.ku0 = condensation_params["ku0"]
             self.reduced_k00_inv = condensation_params["reduced_k00_inv"]
             self.reduced_k00 = condensation_params["reduced_k00"]
+            self.reduced_k0t = condensation_params["reduced_k0t"]
             self.wns, self.wds, self.modes = self.compute_modes_props()
+            self.c = self.get_rayleigh_damping(
+                damping_ratio=self.damping,
+                wns=self.wns,
+                m=self.condensed_m,
+                k=self.condensed_k,
+            )
 
     @property
     def is_inelastic(self):
@@ -345,44 +351,26 @@ class Structure:
         bound_i = 0
         mass_bound_i = 0
         zero_mass_bound_i = 0
-        # print(f"{zero_mass_dofs=}")
         if self.zero_mass_dofs.any():
             for dof in range(self.dofs_count):
-                # print(f"{zero_mass_dof_i=}")
-                # print(f"{dof=}")
-                # print(f"{zero_mass_dofs[zero_mass_dof_i]=}")
                 if dof == zero_mass_dofs[zero_mass_dof_i]:
-                    # print("----if dof == zero_mass_dofs[zero_mass_dof_i]")
-                    # print(f"{bound_i=}")
                     if bound_i < self.boundaries_dof.shape[0]:
-                        # print(f"{self.boundaries_dof[bound_i]=}")
                         if dof == self.boundaries_dof[bound_i]:
-                            # print(f"{mass_bound_i=}")
                             mass_bounds = np.delete(mass_bounds, bound_i - mass_bound_i, 0)
                             mass_bound_i += 1
-                            # print(f"{mass_bounds=}")
 
-                            # print(f"{zero_mass_bound_i=}")
                             zero_mass_bounds[bound_i - zero_mass_bound_i] = zero_mass_bounds[bound_i - zero_mass_bound_i] - mass_dof_i
-                            # print(f"{zero_mass_bounds=}")
 
                             bound_i += 1
                     else:
                         break
                     zero_mass_dof_i += 1
                 else:
-                    # print("----else")
-                    # print(f"{bound_i=}")
                     if bound_i < self.boundaries_dof.shape[0]:
-                        # print(f"{self.boundaries_dof[bound_i]=}")
                         if dof == self.boundaries_dof[bound_i]:
-                            # print(f"{mass_bound_i=}")
-                            # print(f"{zero_mass_dof_i=}")
                             mass_bounds[bound_i - mass_bound_i] = mass_bounds[bound_i - mass_bound_i] - zero_mass_dof_i
 
-                            # print(f"{mass_bounds=}")
                             zero_mass_bounds = np.delete(zero_mass_bounds, bound_i - zero_mass_bound_i, 0)
-                            # print(f"{zero_mass_bounds=}")
                             zero_mass_bound_i += 1
 
                             bound_i += 1
@@ -393,7 +381,6 @@ class Structure:
 
     def apply_static_condensation(self):
         mtt, ktt, k00, k0t = self.get_zero_and_nonzero_mass_props()
-
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
         # reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
@@ -428,6 +415,7 @@ class Structure:
             "ku0": ku0,
             "reduced_k00_inv": reduced_k00_inv,
             "reduced_k00": reduced_k00,
+            "reduced_k0t": reduced_k0t,
         }
         return condensation_params
 
@@ -463,10 +451,20 @@ class Structure:
 
     def compute_modes_props(self):
         damping = self.damping
-        eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False)
+        eigvals, modes = eigh(self.condensed_k, self.condensed_m, eigvals_only=False, lower=False)
         wn = np.sqrt(eigvals)
         wd = np.sqrt(1 - damping ** 2) * wn
+        print(f"{eigvals=}")
+        print(f"{wn=}")
         return wn, wd, modes
+
+    def get_rayleigh_damping(self, damping_ratio, wns, m, k):
+        wn0 = wns[0]
+        wn1 = wns[1]
+        beta = 2 * damping_ratio / (wn0 + wn1)
+        alpha = wn0 * wn1 * beta
+        c = alpha * m + beta * k
+        return c
 
     def undo_disp_boundary_condition(self, disp, boundaries_dof):
         free_i = 0

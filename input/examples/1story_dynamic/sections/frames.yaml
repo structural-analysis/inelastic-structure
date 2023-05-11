@@ -13,5 +13,5 @@ rect:
     zp: 4.0e-4
     abar0: 0.15
     ap: 0
-    mp: 9600000
+    mp: 96000
   softening: null

@@ -1,4 +1,5 @@
 import numpy as np
+import enum
 from dataclasses import dataclass
 from scipy.linalg import cho_solve
 
@@ -39,6 +40,11 @@ class DynamicSensitivity:
     b2s: np.matrix
 
 
+class DynamicAnalysisMethod(enum.Enum):
+    NEWMARK = "newmark"
+    DUHAMEL = "duhamel"
+
+
 class Analysis:
     def __init__(self, structure_input, loads_input, general_info):
         self.structure = Structure(structure_input)
@@ -71,37 +77,63 @@ class Analysis:
                 self.plastic_vars = mahini_method.solve()
 
         elif self.type == "dynamic":
+            dynamic_analysis_method = DynamicAnalysisMethod.DUHAMEL
             self.damping = self.general_info["dynamic_analysis"]["damping"]
             structure = self.structure
             loads = self.loads
-            modes = np.matrix(structure.modes)
-            modes_count = modes.shape[1]
-            self.m_modal = structure.get_modal_property(structure.condensed_m, modes)
-            self.k_modal = structure.get_modal_property(structure.condensed_k, modes)
-
             time_steps = loads.dynamic[0].magnitude.shape[0]
             self.time_steps = time_steps
             self.time = loads.dynamic[0].time
+            dt = self.time[1][0, 0] - self.time[0][0, 0]
+            if dynamic_analysis_method == DynamicAnalysisMethod.DUHAMEL:
+                modes = np.matrix(structure.modes)
+                modes_count = modes.shape[1]
+                self.m_modal = structure.get_modal_property(structure.condensed_m, modes)
+                self.k_modal = structure.get_modal_property(structure.condensed_k, modes)
 
-            self.modal_loads = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            modal_load = np.matrix(np.zeros((modes_count, 1)))
-            modal_loads = np.matrix(np.zeros((1, 1)), dtype=object)
-            modal_loads[0, 0] = modal_load
-            self.modal_loads[0, 0] = modal_loads
-            a_duhamel = np.matrix(np.zeros((modes_count, 1)))
-            a_duhamels = np.matrix(np.zeros((1, 1)), dtype=object)
-            self.a_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            a_duhamels[0, 0] = a_duhamel
-            self.a_duhamel[0, 0] = a_duhamels
+                self.modal_loads = np.matrix(np.zeros((time_steps, 1), dtype=object))
+                modal_load = np.matrix(np.zeros((modes_count, 1)))
+                modal_loads = np.matrix(np.zeros((1, 1)), dtype=object)
+                modal_loads[0, 0] = modal_load
+                self.modal_loads[0, 0] = modal_loads
+                a_duhamel = np.matrix(np.zeros((modes_count, 1)))
+                a_duhamels = np.matrix(np.zeros((1, 1)), dtype=object)
+                self.a_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
+                a_duhamels[0, 0] = a_duhamel
+                self.a_duhamel[0, 0] = a_duhamels
 
-            b_duhamel = np.matrix(np.zeros((modes_count, 1)))
-            b_duhamels = np.matrix(np.zeros((1, 1)), dtype=object)
-            self.b_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            b_duhamels[0, 0] = b_duhamel
-            self.b_duhamel[0, 0] = b_duhamels
+                b_duhamel = np.matrix(np.zeros((modes_count, 1)))
+                b_duhamels = np.matrix(np.zeros((1, 1)), dtype=object)
+                self.b_duhamel = np.matrix(np.zeros((time_steps, 1), dtype=object))
+                b_duhamels[0, 0] = b_duhamel
+                self.b_duhamel[0, 0] = b_duhamels
+                self.modal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
 
-            self.modal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+            elif dynamic_analysis_method == DynamicAnalysisMethod.NEWMARK:
+                
+                dense_disp = np.matrix(np.zeros((structure.condensed_m.shape[0], 1)))
 
+                self.dense_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+                self.dense_disp_history[0, 0] = dense_disp
+
+                dense_velcoc = np.matrix(np.zeros((structure.condensed_m.shape[0], 1)))
+                self.dense_veloc_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+                self.dense_veloc_history[0, 0] = dense_velcoc
+
+                self.dense_accel_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
+
+                condense_load = np.matrix(np.zeros((structure.condensed_m.shape[0], 1)))
+
+                gamma = 0.5
+                beta = 1 / 6
+                self.dense_accel_history[0, 0] = self.get_initial_accel(
+                    condense_load,
+                    self.dense_disp_history[0, 0],
+                    self.dense_veloc_history[0, 0],
+                )
+                a1, a2, a3, inv_k_hat = self.get_newmark_props(gamma, beta, dt)
+
+            self.total_load = np.zeros((structure.dofs_count, 1))
             self.elastic_nodal_disp_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.elastic_members_disps_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.elastic_members_nodal_forces_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
@@ -131,29 +163,43 @@ class Analysis:
 
             for time_step in range(1, time_steps):
                 print(f"{time_step=}")
-                print(f"{self.time[time_step]=}")
+                print(f"{self.time[time_step][0, 0]=}")
                 self.total_load = loads.get_total_load(structure, loads, time_step)
-                elastic_a2s, elastic_b2s, elastic_modal_loads, elastic_nodal_disp = self.get_dynamic_nodal_disp(
-                    time_step=time_step,
-                    modes=modes,
-                    previous_modal_loads=self.modal_loads[time_step - 1, 0],
-                    total_load=self.total_load,
-                    a1s=self.a_duhamel[time_step - 1, 0],
-                    b1s=self.b_duhamel[time_step - 1, 0],
-                )
+                if dynamic_analysis_method == DynamicAnalysisMethod.NEWMARK:
+                    elastic_nodal_disp, dense_disp, dense_veloc, dense_accel = self.get_dynamic_nodal_disp_newmark(
+                        gamma=gamma,
+                        beta=beta,
+                        dt=dt,
+                        a1=a1,
+                        a2=a2,
+                        a3=a3,
+                        inv_k_hat=inv_k_hat,
+                        total_load=self.total_load,
+                        u_prev=self.dense_disp_history[time_step - 1, 0],
+                        v_prev=self.dense_veloc_history[time_step - 1, 0],
+                        a_prev=self.dense_accel_history[time_step - 1, 0],
+                    )
+                    self.dense_disp_history[time_step, 0] = dense_disp
+                    self.dense_veloc_history[time_step, 0] = dense_veloc
+                    self.dense_accel_history[time_step, 0] = dense_accel
+                elif dynamic_analysis_method == DynamicAnalysisMethod.DUHAMEL:
+                    elastic_a2s, elastic_b2s, elastic_modal_loads, elastic_nodal_disp = self.get_dynamic_nodal_disp(
+                        time_step=time_step,
+                        modes=modes,
+                        previous_modal_loads=self.modal_loads[time_step - 1, 0],
+                        total_load=self.total_load,
+                        a1s=self.a_duhamel[time_step - 1, 0],
+                        b1s=self.b_duhamel[time_step - 1, 0],
+                    )
 
-                self.a_duhamel[time_step, 0] = elastic_a2s
-                self.b_duhamel[time_step, 0] = elastic_b2s
-                self.modal_loads[time_step, 0] = elastic_modal_loads
-
+                    self.a_duhamel[time_step, 0] = elastic_a2s
+                    self.b_duhamel[time_step, 0] = elastic_b2s
+                    self.modal_loads[time_step, 0] = elastic_modal_loads
                 self.elastic_nodal_disp_history[time_step, 0] = elastic_nodal_disp
                 elastic_members_disps = self.get_members_disps(elastic_nodal_disp[0, 0])
                 self.elastic_members_disps_history[time_step, 0] = elastic_members_disps
-
                 internal_responses = self.get_internal_responses(elastic_members_disps)
                 self.elastic_members_nodal_forces_history[time_step, 0] = internal_responses.members_nodal_forces
-                # with open("section4-elastic-force.txt", "a") as f:
-                #     f.write(f"{internal_forces['members_nodal_forces'][1][0, 0][5, 0]}\n")
 
                 if self.structure.is_inelastic:
                     self.p0 = internal_responses.p0
@@ -389,14 +435,14 @@ class Analysis:
     def get_i_duhamel(self, t1, t2, wn, wd):
         damping = self.damping
         wd = np.sqrt(1 - damping ** 2) * wn
-        i11 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
-        i12 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
-        i1 = i11 - i12
-        i21 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t2) - wd * np.cos(wd * t2))
-        i22 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t1) - wd * np.cos(wd * t1))
-        i2 = i21 - i22
-        i3 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i21 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i11 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i22 + ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i12)
-        i4 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i11 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i21 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i12 - ((wd) / ((damping * wn) ** 2 + wd ** 2)) * i22)
+        i12 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
+        i11 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
+        i1 = i12 - i11
+        i22 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t2) - wd * np.cos(wd * t2))
+        i21 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t1) - wd * np.cos(wd * t1))
+        i2 = i22 - i21
+        i3 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i22 + (wd / ((damping * wn) ** 2 + wd ** 2)) * i12 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i21 + (wd / ((damping * wn) ** 2 + wd ** 2)) * i11)
+        i4 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i12 - (wd / ((damping * wn) ** 2 + wd ** 2)) * i22 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i11 - (wd / ((damping * wn) ** 2 + wd ** 2)) * i21)
         return i1, i2, i3, i4
 
     def get_abx_duhamel(self, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
@@ -461,13 +507,41 @@ class Analysis:
         self.modal_disp_history[time_step, 0] = modal_disps
         ut = np.dot(modes, modal_disps[0, 0])
         u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
-
         unrestrianed_ut = structure.undo_disp_boundary_condition(ut, structure.mass_bounds)
         unrestrianed_u0 = structure.undo_disp_boundary_condition(u0, structure.zero_mass_bounds)
 
         disp = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
         nodal_disp[0, 0] = disp
         return a2s, b2s, modal_loads, nodal_disp
+
+    def get_initial_accel(self, p0, u0, v0):
+        a0 = np.dot(np.linalg.inv(self.structure.condensed_m), (p0 - np.dot(self.structure.c, v0) - np.dot(self.structure.condensed_k, u0)))
+        return a0
+
+    def get_newmark_props(self, gamma, beta, dt):
+        # gamma = 0.5
+        # beta = 1 / 6
+        structure = self.structure
+        a1 = structure.condensed_m / (beta * dt **2) + gamma * structure.c / (beta * dt)
+        a2 = structure.condensed_m / (beta * dt) + structure.c * (gamma / beta - 1)
+        a3 = structure.condensed_m * (1 / (2 * beta) - 1) + structure.c * dt * (gamma / (2 * beta) - 1)
+        k_hat = structure.condensed_k + a1
+        inv_k_hat = np.linalg.inv(k_hat)
+        return a1, a2, a3, inv_k_hat
+
+    def get_dynamic_nodal_disp_newmark(self, gamma, beta, dt, a1, a2, a3, inv_k_hat, total_load, u_prev, v_prev, a_prev):
+        nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
+        condense_load, reduced_p0 = self.loads.apply_static_condensation(self.structure, total_load)
+        phat = condense_load + np.dot(a1, u_prev) + np.dot(a2, v_prev) + np.dot(a3, a_prev)
+        dense_disp = np.dot(inv_k_hat, phat)
+        dense_veloc = gamma / (beta * dt) * (dense_disp - u_prev) + (1 - gamma / beta) * v_prev + dt * (1 - gamma / (2 * beta)) * a_prev
+        dense_accel = 1 / (beta * dt ** 2) * (dense_disp - u_prev) - 1 / (beta * dt) * v_prev - (1 / (2 * beta) - 1) * a_prev
+        u0 = np.dot(self.structure.reduced_k00_inv, reduced_p0) - np.dot(self.structure.reduced_k00_inv, np.dot(self.structure.reduced_k0t, dense_disp))
+        unrestrianed_ut = self.structure.undo_disp_boundary_condition(dense_disp, self.structure.mass_bounds)
+        unrestrianed_u0 = self.structure.undo_disp_boundary_condition(u0, self.structure.zero_mass_bounds)
+        disp = self.structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
+        nodal_disp[0, 0] = disp
+        return nodal_disp, dense_disp, dense_veloc, dense_accel
 
     def get_dynamic_sensitivity(self, modes, time_step):
         structure = self.structure
