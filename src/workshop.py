@@ -10,6 +10,7 @@ from src.models.sections.plate import PlateSection
 from src.models.members.frame import FrameMember2D, Mass
 from src.models.members.plate import PlateMember
 from src.models.loads import Dynamic, Joint
+from src.settings import settings
 
 examples_dir = "input/examples/"
 general_file = "general.yaml"
@@ -26,7 +27,7 @@ load_limit_file = "limits/load.csv"
 disp_limits_file = "limits/disp.csv"
 dynamic_loads_dir = "loads/dynamic/"
 joint_loads_file = "loads/static/joint_loads.csv"
-
+output_dir = "output/examples/"
 
 def get_general_properties(example_name):
     general_file_path = os.path.join(examples_dir, example_name, general_file)
@@ -96,9 +97,18 @@ def create_frame_sections(example_name):
     try:
         with open(frame_sections_path, "r") as path:
             frame_sections_dict = yaml.safe_load(path)
-            for key, value in frame_sections_dict.items():
-                frame_sections[key] = FrameSection(input=value)
-            return frame_sections
+
+        nonlinear_capacity_dir = f"{output_dir}/{settings.example_name}/nonlinear_capacity"
+        if not os.path.exists(nonlinear_capacity_dir):
+            os.makedirs(nonlinear_capacity_dir)
+
+        for key, value in frame_sections_dict.items():
+            frame_sections[key] = FrameSection(input=value)
+            with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
+                ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
+                ff.write(f"2,mp,{frame_sections[key].nonlinear.mp}\n")
+
+        return frame_sections
     except FileNotFoundError:
         logging.warning("frame sections input file not found")
         return {}

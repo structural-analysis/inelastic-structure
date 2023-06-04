@@ -6,8 +6,7 @@ from src.visualization.get_data import (
     get_yield_points,
     get_yield_surface,
     get_yield_components_data,
-    selected_increments_count,
-    selected_yield_points_count,
+    selected_increments,
 )
 
 examples_dir = "input/examples/"
@@ -36,13 +35,13 @@ def draw_yield_points(ax, yield_points):
     z_points = yield_points.get("z")
     points_labels = yield_points.get("label")
     if not z_points:
-        for i in range(len(points_labels)):
+        for i, point_label in enumerate(points_labels):
             ax.scatter(x_points[i], y_points[i], color='red', s=10)
-            ax.text(x_points[i], y_points[i], s=f"{i}", size=10, color='k')
+            ax.text(x_points[i], y_points[i], s=f"{point_label}", size=10, color='k')
     else:
-        for i in range(len(points_labels)):
+        for i, point_label in range(len(points_labels)):
             ax.scatter(x_points[i], y_points[i], z_points[i], color='red', s=10)
-            ax.text(x_points[i], y_points[i], z_points[i], s=f"{i}", size=10, color='k')
+            ax.text(x_points[i], y_points[i], z_points[i], s=f"{point_label}", size=10, color='k')
 
 
 def draw_yield_condition(ax, yield_points, yield_surface):
@@ -85,33 +84,33 @@ def add_diagram_to_figure(
     return ax
 
 
-def generate_increments_yield_surfaces(increments_count, yield_components_count, yield_components, increments_yield_points, yield_surface):
+def generate_increments_yield_surfaces(selected_increments, yield_components_count, yield_components, increments_yield_points, yield_surface):
+    increments_count = len(selected_increments)
     fig = plt.figure(figsize=plt.figaspect(0.5))
     maximum_diagram_in_row = 4
     figure_grid_size = calculate_figure_grid_size(increments_count, maximum_diagram_in_row)
+
     dimension = f"{yield_components_count}d"
     # dimension = "3d"
-    for increment in range(increments_count):
-        x_position = increment // maximum_diagram_in_row
-        y_position = increment % figure_grid_size[1]
+    for i, increment in enumerate(selected_increments):
+        x_position = i // maximum_diagram_in_row
+        y_position = i % figure_grid_size[1]
         position = (x_position, y_position)
         ax = add_diagram_to_figure(fig, figure_grid_size, position, dimension)
-        draw_yield_condition(ax, increments_yield_points[increment], yield_surface)
+        draw_yield_condition(ax, increments_yield_points[i], yield_surface)
         edit_plot_labes(yield_components)
         ax.set_title(f"Increment {increment}", fontsize=10)
     plt.tight_layout(h_pad=1)
     plt.show()
 
 
-
-
-increments_yield_points = get_yield_points(selected_increments_count, selected_yield_points_count)
+increments_yield_points = get_yield_points()
 yield_components_data = get_yield_components_data()
 yield_components_count = yield_components_data.get("yield_components_count")
 yield_components = yield_components_data.get("yield_components")
 yield_surface = get_yield_surface()
-increments_count = len(increments_yield_points)
-generate_increments_yield_surfaces(increments_count, yield_components_count, yield_components, increments_yield_points, yield_surface)
+
+generate_increments_yield_surfaces(selected_increments, yield_components_count, yield_components, increments_yield_points, yield_surface)
 
 
 plt.show()
