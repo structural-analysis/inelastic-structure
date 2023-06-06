@@ -13,6 +13,7 @@ class Settings(BaseSettings):
         "tripod_corner",
         "tripod_unload",
         "simple_beam_dynamic",
+        "simple_beam_dynamic_linear",
         "1story_dynamic",
         "2story_dynamic",
         "torre_dynamic",
