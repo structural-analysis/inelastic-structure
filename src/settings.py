@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "3story_softening"
+    example_name: str = "simple_beam_dynamic_linear"
     computational_zero = 1e-10
     isclose_tolerance = 1e-7
     examples_to_test = [
