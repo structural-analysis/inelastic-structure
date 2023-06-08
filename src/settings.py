@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "simple_beam"
+    example_name: str = "simple_beam_dynamic_nonlinear_1phase"
     computational_zero = 1e-10
     isclose_tolerance = 1e-7
     examples_to_test = [
@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         "tripod_unload",
         "simple_beam_dynamic",
         "simple_beam_dynamic_linear",
+        "simple_beam_dynamic_nonlinear_1phase",
         "1story_dynamic",
         "2story_dynamic",
         "torre_dynamic",

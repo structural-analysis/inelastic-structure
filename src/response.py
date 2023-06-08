@@ -140,7 +140,7 @@ def calculate_dynamic_responses(analysis):
             for i in range(increments_count):
                 pms = pms_history[i]
                 load_level = load_level_history[i]
-                plastic_multipliers = pms + plastic_multipliers_history[time_step, 0]
+                plastic_multipliers = pms + plastic_multipliers_history[time_step - 1, 0]
                 phi_x = phi * plastic_multipliers
 
                 load_levels[i, 0] = np.matrix([[load_level]])

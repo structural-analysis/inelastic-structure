@@ -228,8 +228,6 @@ class Analysis:
                     self.plastic_vars_history[time_step, 0] = self.plastic_vars
                     self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]
                     self.load_level = self.plastic_vars["load_level_history"][-1]
-                    # print(f"{self.delta_plastic_multipliers=}")
-                    # print(f"{self.plastic_multipliers_prev=}")
                     self.plastic_multipliers = self.delta_plastic_multipliers + self.plastic_multipliers_prev
                     self.plastic_multipliers_history[time_step, 0] = self.plastic_multipliers
 
@@ -283,7 +281,7 @@ class Analysis:
                     self.a_duhamel[time_step, 0] = elastoplastic_a2s
                     self.b_duhamel[time_step, 0] = elastoplastic_b2s
                     self.modal_loads[time_step, 0] = elastoplastic_modal_loads
-                    # print(f"{elastoplastic_members_nodal_forces[0, 0]=}")
+                    print(f"{elastoplastic_members_nodal_forces[0, 0]=}")
                     print(f"{elastoplastic_members_nodal_forces[1, 0]=}")
                     print("///////////////////////////////////////////////////////")
 

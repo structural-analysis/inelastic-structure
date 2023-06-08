@@ -108,13 +108,13 @@ class MahiniMethod:
             # TODO: ZERO OUT ABAR HERE AND IF UNBOUNDED END THE COMPUTATION
             print(f"{abar=}")
             abar = zero_out_small_values(abar)
-            print(f"{abar=}")
-            if not any(abar > 0):
-                print("unbounded")
-                input()
-                break
-            print("not unbounded")
-            input()
+            # print(f"{abar=}")
+            # if not any(abar > 0):
+            #     print("unbounded")
+            #     input()
+            #     break
+            # print("not unbounded")
+            # input()
             will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             # print(f"{will_out_row=}")
