@@ -1,0 +1,3 @@
+section,start_node,end_node,ends_fixity
+rect,0,1,fix_fix
+rect,1,2,fix_fix
