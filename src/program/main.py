@@ -106,9 +106,7 @@ class MahiniMethod:
             # print(b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
             # TODO: ZERO OUT ABAR HERE AND IF UNBOUNDED END THE COMPUTATION
-            print(f"{abar=}")
             abar = zero_out_small_values(abar)
-            # print(f"{abar=}")
             # if not any(abar > 0):
             #     print("unbounded")
             #     input()
@@ -117,8 +115,6 @@ class MahiniMethod:
             # input()
             will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
-            # print(f"{will_out_row=}")
-            # print(f"{will_out_var=}")
             x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
             # print("bbar reset ", bbar)
             x_history.append(x_cumulative.copy())
@@ -616,8 +612,6 @@ class MahiniMethod:
         # TODO: handle unbounded problem,
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
-        # print(f"{abar=}")
-        # print(f"{bbar=}")
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
         positive_abar = abar[positive_abar_indices]
         ba = bbar[positive_abar_indices] / positive_abar
