@@ -8,7 +8,7 @@ example_name = settings.example_name
 
 def find_subdirs(path):
     subdirs = os.listdir(path)
-    subdirs_int = sorted([int(subdir) for subdir in subdirs])
+    subdirs_int = sorted([int(subdir) for subdir in subdirs if subdir.isdigit()])
     return subdirs_int
 
 
@@ -36,7 +36,7 @@ member_yield_points_count = 2
 node_dofs_count = 3
 
 if increments_array[0] == "all":
-    selected_increments = find_subdirs(output_increments_path)
+    selected_increments = find_subdirs(f"{output_increments_path}")
 else:
     selected_increments = [int(inc) for inc in increments_array]
 
