@@ -1,0 +1,7 @@
+structure_dim: 2d
+inelastic:
+  enabled: false
+  include_softening: false
+dynamic_analysis:
+  enabled: true
+  damping: 0.05

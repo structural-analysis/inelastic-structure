@@ -1,0 +1,4 @@
+section,start_node,end_node,ends_fixity
+rect,0,1,hinge_hinge
+rect,1,2,hinge_hinge
+rect,2,1,hinge_hinge

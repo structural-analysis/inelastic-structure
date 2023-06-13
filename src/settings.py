@@ -2,24 +2,24 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "torre_static_elastic"
+    example_name: str = "3story_softening"
     computational_zero = 1e-10
     isclose_tolerance = 1e-7
     examples_to_test = [
         "simple_beam_static_elastic",
         "simple_beam_static_inelastic",
         "torre_static_elastic",
-        "3story_perfect",
-        "3story_softening",
-        "skew_beams",
+        "skew_beams_static_elastic",
         "tripod_corner",
         "tripod_unload",
-        "simple_beam_dynamic",
-        "simple_beam_dynamic_linear",
-        "simple_beam_dynamic_nonlinear_1phase",
-        "1story_dynamic",
-        "2story_dynamic",
-        "torre_dynamic",
+        "3story_static_elastic",
+        "3story_static_inelastic_perfect",
+        "3story_static_inelastic_softening",
+        "torre_dynamic_elastic",
+        "simple_beam_dynamic_elastic",
+        "1story_dynamic_elastic",
+        "2story_dynamic_elastic",
+        "simple_beam_dynamic_inelastic_1phase",
     ]
 
 

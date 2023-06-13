@@ -1,0 +1,9 @@
+section,start_node,end_node,ends_fixity
+sec1,0,2,fix_fix
+sec1,1,3,fix_fix
+sec1,2,4,fix_fix
+sec1,3,5,fix_fix
+sec1,2,3,fix_fix
+sec1,4,5,fix_fix
+sec1,0,3,hinge_hinge
+sec1,4,3,hinge_hinge
