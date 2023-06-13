@@ -54,6 +54,8 @@ class FrameMember2D:
         return l
 
     def _stiffness(self):
+        # Reference for stiffness formula:
+        # Bathe K. J., Finite Element Procedures, 1996, page 151.
         l = self.l
         a = self.section.geometry.a
         i = self.section.geometry.ix
@@ -114,6 +116,9 @@ class FrameMember2D:
         return m
 
     def _transform_matrix(self):
+        # Reference for transformation formula:
+        # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 28
+        # Note: the transformation matrix in Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 is not correct
         a = self.start
         b = self.end
         l = self.l
