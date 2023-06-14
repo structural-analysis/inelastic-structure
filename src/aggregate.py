@@ -82,9 +82,13 @@ def get_structure_types():
     return structure_types
 
 
-if __name__ == "__main__":
+def aggregate_responses():
     structure_types = get_structure_types()
     for structure_type in structure_types:
         structure_type_path = os.path.join(outputs_dir, example_name, structure_type)
         responses = aggregate_dynamic_responses(structure_type_path)
         write_responses(responses, structure_type_path)
+
+
+if __name__ == "__main__":
+    aggregate_responses()

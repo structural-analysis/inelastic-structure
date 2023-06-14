@@ -1,7 +1,8 @@
 from src.settings import settings
 from src.analysis import Analysis
-from src.response import calculate_responses, write_static_responses_to_file, write_dynamic_responses_to_file
+from src.aggregate import aggregate_responses
 from src.workshop import get_structure_input, get_loads_input, get_general_properties
+from src.response import calculate_responses, write_static_responses_to_file, write_dynamic_responses_to_file
 
 
 def run(example_name):
@@ -36,6 +37,7 @@ def run(example_name):
             desired_responses=desired_responses,
             time_steps=analysis.time_steps,
         )
+        aggregate_responses()
 
 
 if __name__ == "__main__":
