@@ -1,17 +1,10 @@
-import enum
-import numpy as np
 import os
+import yaml
+import numpy as np
 
 from src.settings import settings
+
 example_name = settings.example_name
-
-
-def find_subdirs(path):
-    subdirs = os.listdir(path)
-    subdirs_int = sorted([int(subdir) for subdir in subdirs if subdir.isdigit()])
-    return subdirs_int
-
-
 examples_dir = "input/examples/"
 output_dir = "output/examples/"
 
@@ -30,21 +23,51 @@ yield_surface_array = np.loadtxt(fname=yield_surface_path, skiprows=1, delimiter
 frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
 # yield_data_array = np.loadtxt(fname=yield_data_path, usecols=range(6), delimiter=",", ndmin=2, dtype=float)
 
+
+def find_subdirs(path):
+    subdirs = os.listdir(path)
+    subdirs_int = sorted([int(subdir) for subdir in subdirs if subdir.isdigit()])
+    return subdirs_int
+
+
+def get_analysis_type():
+    general_file_path = os.path.join(examples_dir, example_name, "general.yaml")
+    with open(general_file_path, "r") as file_path:
+        general_properties = yaml.safe_load(file_path)
+    if dynamic_analysis := general_properties.get("dynamic_analysis"):
+        if dynamic_analysis.get("enabled"):
+            analysis_type = "dynamic"
+        else:
+            analysis_type = "static"
+    else:
+        analysis_type = "static"
+    return analysis_type
+
+
+analysis_type = get_analysis_type()
+
 members_count = frames_array.shape[0]
 
 member_yield_points_count = 2
 node_dofs_count = 3
 
-if increments_array[0] == "all":
-    selected_increments = find_subdirs(f"{output_increments_path}")
-else:
-    selected_increments = [int(inc) for inc in increments_array]
+if analysis_type == "static":
+    if increments_array[0] == "all":
+        selected_increments = find_subdirs(f"{output_increments_path}")
+    else:
+        selected_increments = [int(inc) for inc in increments_array]
 
-if yield_points_array[0] == "all":
-    selected_yield_points = [i for i in range(members_count * member_yield_points_count)]
-else:
-    selected_yield_points = [int(inc) for inc in yield_points_array]
+    if yield_points_array[0] == "all":
+        selected_yield_points = [i for i in range(members_count * member_yield_points_count)]
+    else:
+        selected_yield_points = [int(inc) for inc in yield_points_array]
+    selected_figs = selected_increments
 
+elif analysis_type == "dynamic":
+    time_steps_path = os.path.join(output_dir, example_name, "inelastic", "increments")
+    selected_time_steps = find_subdirs(time_steps_path)
+    selected_yield_point = 7
+    selected_figs = selected_time_steps
 
 def get_yield_components_data():
     yield_components_count = int(yield_surface_array[0])
@@ -85,7 +108,7 @@ def get_yield_components_data():
     return yield_components_data
 
 
-def get_yield_points():
+def get_static_yield_points():
     capacities = get_capacities()
     yield_components_data = get_yield_components_data()
     yield_components_count = yield_components_data.get("yield_components_count")
@@ -136,8 +159,51 @@ def get_yield_points():
     return increments_yield_points
 
 
+def get_dynamic_yield_points():
+    capacities = get_capacities()
+    yield_components_data = get_yield_components_data()
+    yield_components_count = yield_components_data.get("yield_components_count")
+    yield_components_dof = yield_components_data.get("yield_components_dof")
+
+    time_steps_incs = []
+    for time_step in selected_time_steps:
+        time_step_path = os.path.join(output_dir, example_name, "inelastic", "increments", str(time_step))
+        incs = find_subdirs(time_step_path)
+        time_step_incs_state = np.zeros((yield_components_count, len(incs)))
+        for inc in incs:
+            members_nodal_forces_path = os.path.join(time_step_path, f"{inc}/members_nodal_forces")
+            member = selected_yield_point // member_yield_points_count
+            member_nodal_forces = np.loadtxt(fname=f"{members_nodal_forces_path}/{member}.csv", delimiter=",", ndmin=1, dtype=float)
+            member_yield_point = selected_yield_point % member_yield_points_count
+            for i, yield_component in enumerate(yield_components_dof):
+                member_dof = member_yield_point * node_dofs_count + yield_component                
+                time_step_incs_state[i, inc] = member_nodal_forces[member_dof] / capacities[member][yield_component]["value"]
+
+            if yield_components_count == 1:
+                incs_state = {
+                    "x": time_step_incs_state[0, :],
+                    "label": incs,
+                }
+            elif yield_components_count == 2:
+                incs_state = {
+                    "x": time_step_incs_state[0, :],
+                    "y": time_step_incs_state[1, :],
+                    "label": incs,
+                }
+            elif yield_components_count == 3:
+                incs_state = {
+                    "x": time_step_incs_state[0, :],
+                    "y": time_step_incs_state[1, :],
+                    "z": time_step_incs_state[2, :],
+                    "label": incs,
+                }
+
+            time_steps_incs.append(incs_state)
+    return time_steps_incs
+
+
 def get_yield_surface():
-    np_surface = [-1, -0.77, 0.77, 1, 0.77, -0.77, -1]
+    np_surface = [-1, -0.15, 0.15, 1, 0.15, -0.15, -1]
     mp_surface = [0, 1, 1, 0, -1, -1, 0]
     yield_surface = {
         "x": np_surface,

@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 
 from src.settings import settings
 from src.visualization.get_data import (
-    get_yield_points,
+    get_dynamic_yield_points,
+    get_static_yield_points,
     get_yield_surface,
     get_yield_components_data,
-    selected_increments,
+    selected_figs,
+    analysis_type,
 )
 
 examples_dir = "input/examples/"
@@ -58,7 +60,7 @@ def draw_yield_condition(ax, yield_points, yield_surface):
 def edit_plot_labes(yield_components):
     plt.xlabel(yield_components.get("x"))
     plt.ylabel(yield_components.get("y"))
-    plt.title('Yield Surface')
+    # plt.title('Yield Surface')
 
 
 def calculate_figure_grid_size(total_diagrams_count, maximum_diagram_in_row):
@@ -99,18 +101,18 @@ def generate_increments_yield_surfaces(selected_increments, yield_components_cou
         ax = add_diagram_to_figure(fig, figure_grid_size, position, dimension)
         draw_yield_condition(ax, increments_yield_points[i], yield_surface)
         edit_plot_labes(yield_components)
-        ax.set_title(f"Increment {increment}", fontsize=10)
+        # ax.set_title(f"Increment {increment}", fontsize=10)
     plt.tight_layout(h_pad=1)
     plt.show()
 
 
-increments_yield_points = get_yield_points()
+increments_yield_points = get_static_yield_points() if analysis_type == "static" else get_dynamic_yield_points()
 yield_components_data = get_yield_components_data()
 yield_components_count = yield_components_data.get("yield_components_count")
 yield_components = yield_components_data.get("yield_components")
 yield_surface = get_yield_surface()
 
-generate_increments_yield_surfaces(selected_increments, yield_components_count, yield_components, increments_yield_points, yield_surface)
+generate_increments_yield_surfaces(selected_figs, yield_components_count, yield_components, increments_yield_points, yield_surface)
 
 
 plt.show()
