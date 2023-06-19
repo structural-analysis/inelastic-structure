@@ -98,7 +98,7 @@ def create_frame_sections(example_name):
         with open(frame_sections_path, "r") as path:
             frame_sections_dict = yaml.safe_load(path)
 
-        nonlinear_capacity_dir = f"{output_dir}/{settings.example_name}/nonlinear_capacity"
+        nonlinear_capacity_dir = f"{output_dir}/{example_name}/nonlinear_capacity"
         if not os.path.exists(nonlinear_capacity_dir):
             os.makedirs(nonlinear_capacity_dir)
 

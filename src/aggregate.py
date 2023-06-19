@@ -1,10 +1,7 @@
 import os
 import numpy as np
 
-from src.settings import settings
 
-
-example_name = settings.example_name
 outputs_dir = "output/examples/"
 
 desired_responses = [
@@ -73,7 +70,7 @@ def write_responses(responses, structure_type_path):
                 np.savetxt(fname=dof_path, X=dof_response, delimiter=",")
 
 
-def get_structure_types():
+def get_structure_types(example_name):
     structure_types = []
     if os.path.isdir(os.path.join(outputs_dir, example_name, "elastic")):
         structure_types.append("elastic")
@@ -82,13 +79,9 @@ def get_structure_types():
     return structure_types
 
 
-def aggregate_responses():
-    structure_types = get_structure_types()
+def aggregate_responses(example_name):
+    structure_types = get_structure_types(example_name)
     for structure_type in structure_types:
         structure_type_path = os.path.join(outputs_dir, example_name, structure_type)
         responses = aggregate_dynamic_responses(structure_type_path)
         write_responses(responses, structure_type_path)
-
-
-if __name__ == "__main__":
-    aggregate_responses()

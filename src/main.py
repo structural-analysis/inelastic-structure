@@ -1,3 +1,4 @@
+import shutil
 from src.settings import settings
 from src.analysis import Analysis
 from src.aggregate import aggregate_responses
@@ -6,6 +7,8 @@ from src.response import calculate_responses, write_static_responses_to_file, wr
 
 
 def run(example_name):
+    example_path = f"output/examples/{example_name}"
+    shutil.rmtree(example_path, ignore_errors=True)
     structure_input = get_structure_input(example_name)
     loads_input = get_loads_input(example_name)
     general_info = get_general_properties(example_name)
@@ -37,7 +40,7 @@ def run(example_name):
             desired_responses=desired_responses,
             time_steps=analysis.time_steps,
         )
-        aggregate_responses()
+        aggregate_responses(example_name)
 
 
 if __name__ == "__main__":
