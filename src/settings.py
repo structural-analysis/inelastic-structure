@@ -21,6 +21,7 @@ class Settings(BaseSettings):
         "2story_dynamic_elastic",
         "simple_beam_dynamic_inelastic_1phase",
         "1story_dynamic_inelastic_ll1.0_ap400k",
+        "2story_dynamic_inelastic",
     ]
 
 
