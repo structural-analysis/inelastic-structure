@@ -1,3 +1,0 @@
-joint_number,dof_of_load(0:dz|1:rx|2:ry),load_magnitude
-0,0,-1
-2,0,-1
