@@ -1,0 +1,13 @@
+section,start_node,end_node,ends_fixity
+rect,0,3,fix_fix
+rect,1,4,fix_fix
+rect,2,6,fix_fix
+rect,3,4,fix_fix
+rect,4,5,fix_fix
+rect,5,6,fix_fix
+rect,3,7,fix_fix
+rect,4,8,fix_fix
+rect,6,10,fix_fix
+rect,7,8,fix_fix
+rect,8,9,fix_fix
+rect,9,10,fix_fix

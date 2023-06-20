@@ -66,7 +66,7 @@ if analysis_type == "static":
 elif analysis_type == "dynamic":
     time_steps_path = os.path.join(output_dir, example_name, "inelastic", "increments")
     selected_time_steps = find_subdirs(time_steps_path)
-    selected_yield_point = 7
+    selected_yield_point = 15
     selected_figs = selected_time_steps
 
 def get_yield_components_data():
