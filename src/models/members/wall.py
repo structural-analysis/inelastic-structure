@@ -241,3 +241,24 @@ class WallMember:
             bottom_internal_stresses=bottom_internal_stresses,
         )
         return response
+
+    def get_nodal_forces_from_unit_distortions(self):
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
+        base_component_num = 0
+        for element in self.elements.list:
+            g0 = element.nodes[0].num
+            g1 = element.nodes[1].num
+            g2 = element.nodes[2].num
+            g3 = element.nodes[3].num
+
+            element_global_dofs = np.array([3 * g0, 3 * g0 + 1, 3 * g0 + 2,
+                                            3 * g1, 3 * g1 + 1, 3 * g1 + 2,
+                                            3 * g2, 3 * g2 + 1, 3 * g2 + 2,
+                                            3 * g3, 3 * g3 + 1, 3 * g3 + 2
+                                            ])
+
+            for i in range(element.yield_specs.components_count):
+                for j in range(element.dofs_count):
+                    nodal_forces[element_global_dofs[j], base_component_num + i] = element.udefs[j, i]
+            base_component_num += element.yield_specs.components_count
+        return nodal_forces
