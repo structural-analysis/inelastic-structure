@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from ..points import Node, GaussPoint
-from ..sections.plate import WallSection
+from ..sections.wall import WallSection
 
 
 @dataclass
@@ -43,14 +43,13 @@ class YieldSpecs:
 
 class WallMember:
     # calculations is based on four gauss points
-    def __init__(self, section: WallSection, nodes: tuple[Node, Node, Node, Node]):
+    def __init__(self, section: WallSection, initial_nodes: tuple[Node, Node, Node, Node]):
         self.section = section
-        self.nodes = nodes
+        self.nodes = initial_nodes
         self.nodes_count = len(self.nodes)
         self.dofs_count = 2 * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
-        self.gauss_points_shape_derivatives = [self.get_shape_derivatives(gauss_point) for gauss_point in self.gauss_points]
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None
@@ -67,115 +66,76 @@ class WallMember:
         ]
         return gauss_points
 
-    def get_shape_functions(self, gauss_point):
+    def get_gauss_point_shape_functions(self, gauss_point):
         r = gauss_point.r
         s = gauss_point.s
-        ax = (self.size_x / 2)
-        ay = (self.size_y / 2)
-        n = np.matrix([1 / 8 * (1 - r) * (1 - s) * (2 - r - s - r ** 2 - s ** 2),
-                       1 / 8 * (1 - r) * (1 - s) * (+ay * (1 - s ** 2)),
-                       1 / 8 * (1 - r) * (1 - s) * (-ax * (1 - r ** 2)),
-                       1 / 8 * (1 + r) * (1 - s) * (2 + r - s - r ** 2 - s ** 2),
-                       1 / 8 * (1 + r) * (1 - s) * (+ay * (1 - s ** 2)),
-                       1 / 8 * (1 + r) * (1 - s) * (+ax * (1 - r ** 2)),
-                       1 / 8 * (1 + r) * (1 + s) * (2 + r + s - r ** 2 - s ** 2),
-                       1 / 8 * (1 + r) * (1 + s) * (-ay * (1 - s ** 2)),
-                       1 / 8 * (1 + r) * (1 + s) * (+ax * (1 - r ** 2)),
-                       1 / 8 * (1 - r) * (1 + s) * (2 - r + s - r ** 2 - s ** 2),
-                       1 / 8 * (1 - r) * (1 + s) * (-ay * (1 - s ** 2)),
-                       1 / 8 * (1 - r) * (1 + s) * (-ax * (1 - r ** 2))
+        n = np.matrix([0.25 * (1 - r) * (1 - s),
+                       0.25 * (1 + r) * (1 - s),
+                       0.25 * (1 + r) * (1 + s),
+                       0.25 * (1 - r) * (1 + s),
                        ])
         return n
 
-    def get_shape_derivatives(self, gauss_point):
+    def get_gauss_point_shape_derivatives(self, gauss_point):
         r = gauss_point.r
         s = gauss_point.s
-        ax = (self.size_x / 2)
-        ay = (self.size_y / 2)
-        b = np.matrix([[((0.125 - 0.125 * r) * (2 * s - 2) - 0.125 * (1 - s) * (-2 * r - 1) + (-2 * r - 1) * (0.125 * s - 0.125)) / ax ** 2,
-                        0,
-                        (-0.5 * ax * r * (1 - s) + 2 * ax * (0.125 - 0.125 * r) * (1 - s)) / ax ** 2,
-                        ((0.125 - 0.125 * s) * (1 - 2 * r) + 0.125 * (1 - 2 * r) * (1 - s) + (0.125 * r + 0.125) * (2 * s - 2)) / ax ** 2,
-                        0,
-                        (-0.5 * ax * r * (1 - s) - 2 * ax * (1 - s) * (0.125 * r + 0.125)) / ax ** 2,
-                        ((1 - 2 * r) * (0.125 * s + 0.125) + 0.125 * (1 - 2 * r) * (s + 1) + (0.125 * r + 0.125) * (-2 * s - 2)) / ax ** 2,
-                        0,
-                        (-0.5 * ax * r * (s + 1) - 2 * ax * (0.125 * r + 0.125) * (s + 1)) / ax ** 2,
-                        ((0.125 - 0.125 * r) * (-2 * s - 2) + (-2 * r - 1) * (-0.125 * s - 0.125) - 0.125 * (-2 * r - 1) * (s + 1)) / ax ** 2,
-                        0,
-                        (-0.5 * ax * r * (s + 1) + 2 * ax * (0.125 - 0.125 * r) * (s + 1)) / ax ** 2],
-                       [((0.125 - 0.125 * r) * (2 * s - 2) + (0.125 - 0.125 * r) * (2 * s + 1) + (0.125 * r - 0.125) * (-2 * s - 1)) / ay ** 2,
-                        (4 * ay * s * (0.125 - 0.125 * r) - 2 * ay * (0.125 - 0.125 * r) * (1 - s)) / ay ** 2,
-                        0,
-                        ((-0.125 * r - 0.125) * (-2 * s - 1) + (0.125 * r + 0.125) * (2 * s - 2) + (0.125 * r + 0.125) * (2 * s + 1)) / ay ** 2,
-                        (4 * ay * s * (0.125 * r + 0.125) - 2 * ay * (1 - s) * (0.125 * r + 0.125)) / ay ** 2,
-                        0,
-                        (2 * (1 - 2 * s) * (0.125 * r + 0.125) + (0.125 * r + 0.125) * (-2 * s - 2)) / ay ** 2,
-                        (4 * ay * s * (0.125 * r + 0.125) + 2 * ay * (0.125 * r + 0.125) * (s + 1)) / ay ** 2,
-                        0,
-                        (2 * (0.125 - 0.125 * r) * (1 - 2 * s) + (0.125 - 0.125 * r) * (-2 * s - 2)) / ay ** 2,
-                        (4 * ay * s * (0.125 - 0.125 * r) + 2 * ay * (0.125 - 0.125 * r) * (s + 1)) / ay ** 2,
-                        0],
-                       [2 * (-0.125 * r ** 2 - 0.125 * r - 0.125 * s ** 2 - 0.125 * s + (0.125 - 0.125 * r) * (2 * r + 1) + (-2 * s - 1) * (0.125 * s - 0.125) + 0.25) / (ax * ay),
-                        2 * (0.25 * ay * s * (1 - s) + 0.125 * ay * (1 - s ** 2)) / (ax * ay),
-                        2 * (-2 * ax * r * (0.125 - 0.125 * r) - 0.125 * ax * (1 - r ** 2)) / (ax * ay),
-                        2 * (0.125 * r ** 2 - 0.125 * r + 0.125 * s ** 2 + 0.125 * s + (0.125 - 0.125 * s) * (-2 * s - 1) + (0.125 * r + 0.125) * (2 * r - 1) - 0.25) / (ax * ay),
-                        2 * (-0.25 * ay * s * (1 - s) - 0.125 * ay * (1 - s ** 2)) / (ax * ay),
-                        2 * (2 * ax * r * (0.125 * r + 0.125) - 0.125 * ax * (1 - r ** 2)) / (ax * ay),
-                        2 * (-0.125 * r ** 2 + 0.125 * r - 0.125 * s ** 2 + 0.125 * s + (1 - 2 * r) * (0.125 * r + 0.125) + (1 - 2 * s) * (0.125 * s + 0.125) + 0.25) / (ax * ay),
-                        2 * (0.25 * ay * s * (s + 1) - 0.125 * ay * (1 - s ** 2)) / (ax * ay),
-                        2 * (-2 * ax * r * (0.125 * r + 0.125) + 0.125 * ax * (1 - r ** 2)) / (ax * ay),
-                        2 * (0.125 * r ** 2 + 0.125 * r + 0.125 * s ** 2 - 0.125 * s + (0.125 - 0.125 * r) * (-2 * r - 1) + (1 - 2 * s) * (-0.125 * s - 0.125) - 0.25) / (ax * ay),
-                        2 * (-0.25 * ay * s * (s + 1) + 0.125 * ay * (1 - s ** 2)) / (ax * ay),
-                        2 * (2 * ax * r * (0.125 - 0.125 * r) + 0.125 * ax * (1 - r ** 2)) / (ax * ay)]])
+        nodes = self.nodes
+        x0 = nodes[0].x
+        x1 = nodes[1].x
+        x2 = nodes[2].x
+        x3 = nodes[3].x
+        y0 = nodes[0].y
+        y1 = nodes[1].y
+        y2 = nodes[2].y
+        y3 = nodes[3].y
+        b = np.matrix([[1.0*((r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) -
+                        y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0], [0, 1.0*(-(r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1)
+                        + y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r -
+                        1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))], [1.0*(-(r - 1)*(x0*(s
+                        - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r
+                        - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1)
+                        - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1)
+                        - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s
+                        + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r +
+                        1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))]])
         return b
 
-    def get_stiffness_integrand(self, gauss_point_b):
-        ki = gauss_point_b.T * self.section.de * gauss_point_b
-        return ki
+    def get_det(self, gauss_point):
+        r = gauss_point.r
+        s = gauss_point.s
+        nodes = self.nodes
+        x0 = nodes[0].x
+        x1 = nodes[1].x
+        x2 = nodes[2].x
+        x3 = nodes[3].x
+        y0 = nodes[0].y
+        y1 = nodes[1].y
+        y2 = nodes[2].y
+        y3 = nodes[3].y
+        det = -(0.25 * x0 * (r - 1) + 0.25 * x1 * (-r - 1) + 0.25 * x2 * (r + 1) + 0.25 * x3 * (1 - r)) * (0.25 * y0 * (s - 1) + 0.25 * y1 * (1 - s) + 0.25 * y2 * (s + 1) + 0.25 * y3 * (-s - 1)) + (0.25 * x0 * (s - 1) + 0.25 * x1 * (1 - s) + 0.25 * x2 * (s + 1) + 0.25 * x3 * (-s - 1)) * (0.25 * y0 * (r - 1) + 0.25 * y1 * (-r - 1) + 0.25 * y2 * (r + 1) + 0.25 * y3 * (1 - r))
+        return det
 
     def get_stiffness(self):
-        ax = (self.size_x / 2)
-        ay = (self.size_y / 2)
-        det = (ax * ay)
-        kin = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
-        for gauss_point_b in self.gauss_points_shape_derivatives:
-            kin += self.get_stiffness_integrand(gauss_point_b)
-        k = kin * det
+        k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        for gauss_point in self.gauss_points:
+            gauss_point_b = self.get_gauss_point_shape_derivatives(gauss_point)
+            gauss_point_det = self.get_det(gauss_point)
+            gauss_point_k = gauss_point_b.T * self.section.ce * gauss_point_b * gauss_point_det * self.section.geometry.thickness
+            k += gauss_point_k
         return k
 
     def get_transform(self):
         return np.matrix(np.eye(self.dofs_count))
 
-    def get_top_gauss_point_strains(self, gauss_point_b, nodal_disp):
+    def get_gauss_point_strain(self, gauss_point_b, nodal_disp):
         e = -(self.section.geometry.thickness / 2) * gauss_point_b * nodal_disp
         mises = np.sqrt(e[0, 0] ** 2 + e[1, 0] ** 2 - e[0, 0] * e[1, 0] + 3 * e[2, 0] ** 2)
         return Strain(x=e[0, 0], y=e[1, 0], xy=e[2, 0], mises=mises)
 
-    def get_bottom_gauss_point_strains(self, gauss_point_b, nodal_disp):
-        e = (self.section.geometry.thickness / 2) * gauss_point_b * nodal_disp
-        mises = np.sqrt(e[0, 0] ** 2 + e[1, 0] ** 2 - e[0, 0] * e[1, 0] + 3 * e[2, 0] ** 2)
-        return Strain(x=e[0, 0], y=e[1, 0], xy=e[2, 0], mises=mises)
-
-    def get_top_gauss_point_stresses(self, gauss_point_b, nodal_disp):
+    def get_gauss_point_stress(self, gauss_point_b, nodal_disp):
         s = -(self.section.geometry.thickness / 2) * self.section.be * gauss_point_b * nodal_disp
         mises = np.sqrt(s[0, 0] ** 2 + s[1, 0] ** 2 - s[0, 0] * s[1, 0] + 3 * s[2, 0] ** 2)
         return Stress(x=s[0, 0], y=s[1, 0], xy=s[2, 0], mises=mises)
-
-    def get_bottom_gauss_point_stresses(self, gauss_point_b, nodal_disp):
-        s = (self.section.geometry.thickness / 2) * self.section.be * gauss_point_b * nodal_disp
-        mises = np.sqrt(s[0, 0] ** 2 + s[1, 0] ** 2 - s[0, 0] * s[1, 0] + 3 * s[2, 0] ** 2)
-        return Stress(x=s[0, 0], y=s[1, 0], xy=s[2, 0], mises=mises)
-
-    def get_yield_components_force(self, nodal_disp):
-        yield_components_force = np.matrix(np.zeros((self.yield_specs.components_count, 1)))
-        i = 0
-        for gauss_point_b in self.gauss_points_shape_derivatives:
-            yield_components_force[i, 0] = self.get_gauss_point_moments(gauss_point_b, nodal_disp).x
-            yield_components_force[i + 1, 0] = self.get_gauss_point_moments(gauss_point_b, nodal_disp).y
-            yield_components_force[i + 2, 0] = self.get_gauss_point_moments(gauss_point_b, nodal_disp).xy
-            i += 3
-        return yield_components_force
 
     def get_unit_curvature(self, gauss_point_component_num):
         curvature = np.matrix(np.zeros((3, 1)))
