@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from ..points import Node, GaussPoint
+from ..points import Node, NaturalPoint
 from ..sections.plate import PlateSection
 # from .plate_elements.mkq12_b_simple_new import get_mkq12_simple_new_shape_derivatives
 # from .plate_elements.mkq12_b_complicated_new import get_mkq12_complicated_new_shape_derivatives
@@ -17,8 +17,8 @@ class Response:
     bottom_internal_strains: np.matrix
     top_internal_stresses: np.matrix
     bottom_internal_stresses: np.matrix
-    internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass
@@ -77,10 +77,10 @@ class PlateElement:
     @property
     def gauss_points(self):
         gauss_points = [
-            GaussPoint(r=-0.57735, s=-0.57735),
-            GaussPoint(r=+0.57735, s=-0.57735),
-            GaussPoint(r=+0.57735, s=+0.57735),
-            GaussPoint(r=-0.57735, s=+0.57735),
+            NaturalPoint(r=-0.57735, s=-0.57735),
+            NaturalPoint(r=+0.57735, s=-0.57735),
+            NaturalPoint(r=+0.57735, s=+0.57735),
+            NaturalPoint(r=-0.57735, s=+0.57735),
         ]
         return gauss_points
 

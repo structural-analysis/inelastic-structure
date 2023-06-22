@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from functools import lru_cache
-from ..points import Node, GaussPoint
+from ..points import Node, NaturalPoint
 from ..sections.wall import WallSection
 
 
@@ -9,8 +9,8 @@ from ..sections.wall import WallSection
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
-    internal_strains: np.matrix
-    internal_stresses: np.matrix
+    nodal_strains: np.matrix
+    nodal_stresses: np.matrix
     internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
     top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
@@ -57,16 +57,26 @@ class WallMember:
     @property
     def gauss_points(self):
         gauss_points = [
-            GaussPoint(r=-0.57735, s=-0.57735),
-            GaussPoint(r=+0.57735, s=-0.57735),
-            GaussPoint(r=+0.57735, s=+0.57735),
-            GaussPoint(r=-0.57735, s=+0.57735),
+            NaturalPoint(r=-0.57735, s=-0.57735),
+            NaturalPoint(r=+0.57735, s=-0.57735),
+            NaturalPoint(r=+0.57735, s=+0.57735),
+            NaturalPoint(r=-0.57735, s=+0.57735),
         ]
         return gauss_points
 
-    def get_gauss_point_shape_functions(self, gauss_point):
-        r = gauss_point.r
-        s = gauss_point.s
+    @property
+    def natural_nodes(self):
+        natural_nodes = [
+            NaturalPoint(r=-1, s=-1),
+            NaturalPoint(r=+1, s=-1),
+            NaturalPoint(r=+1, s=+1),
+            NaturalPoint(r=-1, s=+1),
+        ]
+        return natural_nodes
+
+    def get_natural_point_shape_functions(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
         n = np.matrix([0.25 * (1 - r) * (1 - s),
                        0.25 * (1 + r) * (1 - s),
                        0.25 * (1 + r) * (1 + s),
@@ -75,9 +85,9 @@ class WallMember:
         return n
 
     @lru_cache
-    def get_gauss_point_shape_derivatives(self, gauss_point):
-        r = gauss_point.r
-        s = gauss_point.s
+    def get_natural_point_shape_derivatives(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
         nodes = self.nodes
         x0 = nodes[0].x
         x1 = nodes[1].x
@@ -99,9 +109,9 @@ class WallMember:
                         1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))]])
         return b
 
-    def get_det(self, gauss_point):
-        r = gauss_point.r
-        s = gauss_point.s
+    def get_jacobian_det(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
         nodes = self.nodes
         x0 = nodes[0].x
         x1 = nodes[1].x
@@ -111,14 +121,14 @@ class WallMember:
         y1 = nodes[1].y
         y2 = nodes[2].y
         y3 = nodes[3].y
-        det = -(0.25 * x0 * (r - 1) + 0.25 * x1 * (-r - 1) + 0.25 * x2 * (r + 1) + 0.25 * x3 * (1 - r)) * (0.25 * y0 * (s - 1) + 0.25 * y1 * (1 - s) + 0.25 * y2 * (s + 1) + 0.25 * y3 * (-s - 1)) + (0.25 * x0 * (s - 1) + 0.25 * x1 * (1 - s) + 0.25 * x2 * (s + 1) + 0.25 * x3 * (-s - 1)) * (0.25 * y0 * (r - 1) + 0.25 * y1 * (-r - 1) + 0.25 * y2 * (r + 1) + 0.25 * y3 * (1 - r))
-        return det
+        jacobian_det = -(0.25 * x0 * (r - 1) + 0.25 * x1 * (-r - 1) + 0.25 * x2 * (r + 1) + 0.25 * x3 * (1 - r)) * (0.25 * y0 * (s - 1) + 0.25 * y1 * (1 - s) + 0.25 * y2 * (s + 1) + 0.25 * y3 * (-s - 1)) + (0.25 * x0 * (s - 1) + 0.25 * x1 * (1 - s) + 0.25 * x2 * (s + 1) + 0.25 * x3 * (-s - 1)) * (0.25 * y0 * (r - 1) + 0.25 * y1 * (-r - 1) + 0.25 * y2 * (r + 1) + 0.25 * y3 * (1 - r))
+        return jacobian_det
 
     def get_stiffness(self):
         k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for gauss_point in self.gauss_points:
-            gauss_point_b = self.get_gauss_point_shape_derivatives(gauss_point)
-            gauss_point_det = self.get_det(gauss_point)
+            gauss_point_b = self.get_natural_point_shape_derivatives(gauss_point)
+            gauss_point_det = self.get_jacobian_det(gauss_point)
             gauss_point_k = gauss_point_b.T * self.section.ce * gauss_point_b * gauss_point_det * self.section.geometry.thickness
             k += gauss_point_k
         return k
@@ -126,43 +136,43 @@ class WallMember:
     def get_transform(self):
         return np.matrix(np.eye(self.dofs_count))
 
-    def get_gauss_point_strain(self, gauss_point, nodal_disp):
-        gauss_point_b = self.get_gauss_point_shape_derivatives(gauss_point)
-        e = gauss_point_b * nodal_disp
+    def get_natural_point_strain(self, natural_point, nodal_disp):
+        natural_point_b = self.get_natural_point_shape_derivatives(natural_point)
+        e = natural_point_b * nodal_disp
         return Strain(x=e[0, 0], y=e[1, 0], xy=e[2, 0])
 
-    def get_gauss_point_stress(self, gauss_point, nodal_disp):
-        gauss_point_b = self.get_gauss_point_shape_derivatives(gauss_point)
-        s = self.section.ce * gauss_point_b * nodal_disp
+    def get_natural_point_stress(self, natural_point, nodal_disp):
+        natural_point_b = self.get_natural_point_shape_derivatives(natural_point)
+        s = self.section.ce * natural_point_b * nodal_disp
         return Stress(x=s[0, 0], y=s[1, 0], xy=s[2, 0])
 
-    def get_strains(self, nodal_disp):
-        internal_strains = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
+    def get_nodal_strains(self, nodal_disp):
+        nodal_strains = np.matrix(np.zeros((3 * self.nodes_count, 1)))
         i = 0
-        for gauss_point in self.gauss_points:
-            internal_strains[i, 0] = self.get_gauss_point_strain(gauss_point, nodal_disp).x
-            internal_strains[i + 1, 0] = self.get_gauss_point_strain(gauss_point, nodal_disp).y
-            internal_strains[i + 2, 0] = self.get_gauss_point_strain(gauss_point, nodal_disp).xy
+        for natural_node in self.natural_nodes:
+            nodal_strains[i, 0] = self.get_natural_point_strain(natural_node, nodal_disp).x
+            nodal_strains[i + 1, 0] = self.get_natural_point_strain(natural_node, nodal_disp).y
+            nodal_strains[i + 2, 0] = self.get_natural_point_strain(natural_node, nodal_disp).xy
             i += 3
-        return internal_strains
+        return nodal_strains
 
-    def get_stresses(self, nodal_disp):
-        internal_stresses = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
+    def get_nodal_stresses(self, nodal_disp):
+        nodal_stresses = np.matrix(np.zeros((3 * self.nodes_count, 1)))
         i = 0
-        for gauss_point in self.gauss_points:
-            internal_stresses[i, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).x
-            internal_stresses[i + 1, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).y
-            internal_stresses[i + 2, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).xy
+        for natural_node in self.natural_nodes:
+            nodal_stresses[i, 0] = self.get_natural_point_stress(natural_node, nodal_disp).x
+            nodal_stresses[i + 1, 0] = self.get_natural_point_stress(natural_node, nodal_disp).y
+            nodal_stresses[i + 2, 0] = self.get_natural_point_stress(natural_node, nodal_disp).xy
             i += 3
-        return internal_stresses
+        return nodal_stresses
 
     def get_yield_components_force(self, nodal_disp):
         yield_components_force = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
         i = 0
         for gauss_point in self.gauss_points:
-            yield_components_force[i, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).x
-            yield_components_force[i + 1, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).y
-            yield_components_force[i + 2, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).xy
+            yield_components_force[i, 0] = self.get_natural_point_stress(gauss_point, nodal_disp).x
+            yield_components_force[i + 1, 0] = self.get_natural_point_stress(gauss_point, nodal_disp).y
+            yield_components_force[i + 2, 0] = self.get_natural_point_stress(gauss_point, nodal_disp).xy
             i += 3
         return yield_components_force
 
@@ -174,7 +184,7 @@ class WallMember:
     # for element with linear variation of stress
     def get_nodal_force_from_unit_distortion(self, gauss_point, gauss_point_component_num):
         distortion = self.get_unit_distortion(gauss_point_component_num)
-        gauss_point_b = self.get_gauss_point_shape_derivatives(gauss_point)
+        gauss_point_b = self.get_natural_point_shape_derivatives(gauss_point)
         f = gauss_point_b.T * self.section.ce * distortion # may need det
         # NOTE: forces are internal, so we must use negative sign:
         return -f
@@ -200,7 +210,7 @@ class WallMember:
         response = Response(
             nodal_force=nodal_force,
             yield_components_force=self.get_yield_components_force(nodal_disp),
-            internal_strains = self.get_strains(nodal_disp),
-            internal_stresses = self.get_stresses(nodal_disp),
+            nodal_strains = self.get_nodal_strains(nodal_disp),
+            nodal_stresses = self.get_nodal_stresses(nodal_disp),
         )
         return response

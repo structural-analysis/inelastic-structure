@@ -75,8 +75,8 @@ def calculate_static_responses(analysis):
         nodal_disp = np.zeros([1, 1], dtype=object)
         members_disps = np.zeros([1, structure.members.num], dtype=object)
         members_nodal_forces = np.zeros([1, structure.members.num], dtype=object)
-        internal_strains = np.zeros([1, structure.members.num], dtype=object)
-        internal_stresses = np.zeros([1, structure.members.num], dtype=object)
+        nodal_strains = np.zeros([1, structure.members.num], dtype=object)
+        nodal_stresses = np.zeros([1, structure.members.num], dtype=object)
         internal_moments = np.zeros([1, structure.members.num], dtype=object)
         top_internal_strains = np.zeros([1, structure.members.num], dtype=object)
         bottom_internal_strains = np.zeros([1, structure.members.num], dtype=object)
@@ -87,8 +87,8 @@ def calculate_static_responses(analysis):
         for i in range(structure.members.num):
             members_disps[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_disps[i, 0]
             members_nodal_forces[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces[i, 0]
-            internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_internal_strains[i, 0]
-            internal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_internal_stresses[i, 0]
+            nodal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_strains[i, 0]
+            nodal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_stresses[i, 0]
             internal_moments[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments[i, 0]
             top_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_strains[i, 0]
             bottom_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_strains[i, 0]
@@ -99,8 +99,8 @@ def calculate_static_responses(analysis):
             "nodal_disp": nodal_disp,
             "members_disps": members_disps,
             "members_nodal_forces": members_nodal_forces,
-            "internal_strains": internal_strains,
-            "internal_stresses": internal_stresses,
+            "nodal_strains": nodal_strains,
+            "nodal_stresses": nodal_stresses,
             "internal_moments": internal_moments,
             "top_internal_strains": top_internal_strains,
             "bottom_internal_strains": bottom_internal_strains,
