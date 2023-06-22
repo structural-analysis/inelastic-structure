@@ -59,13 +59,11 @@ class Structure:
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
-        print(f"{self.k=}")
         self.reduced_k = self.apply_boundary_conditions(
             row_boundaries_dof=self.boundaries_dof,
             col_boundaries_dof=self.boundaries_dof,
             structure_prop=self.k,
         )
-        print(f"{self.reduced_k=}")
         self.kc = cho_factor(self.reduced_k)
 
         if self.is_inelastic:

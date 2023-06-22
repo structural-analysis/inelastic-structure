@@ -349,7 +349,6 @@ def get_structure_input(example_name):
         "distributed": [],
         "dynamic": dynamic_loads,
     }
-
     input = {
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
