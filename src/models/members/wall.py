@@ -9,8 +9,8 @@ from ..sections.wall import WallSection
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
-    internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    internal_strains: np.matrix
+    internal_stresses: np.matrix
     internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
     top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
@@ -156,6 +156,16 @@ class WallMember:
             i += 3
         return internal_stresses
 
+    def get_yield_components_force(self, nodal_disp):
+        yield_components_force = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
+        i = 0
+        for gauss_point in self.gauss_points:
+            yield_components_force[i, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).x
+            yield_components_force[i + 1, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).y
+            yield_components_force[i + 2, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).xy
+            i += 3
+        return yield_components_force
+
     def get_unit_distortion(self, gauss_point_component_num):
         distortion = np.matrix(np.zeros((3, 1)))
         distortion[gauss_point_component_num, 0] = 1
@@ -189,7 +199,7 @@ class WallMember:
 
         response = Response(
             nodal_force=nodal_force,
-            yield_components_force=self.get_stresses(nodal_disp),
+            yield_components_force=self.get_yield_components_force(nodal_disp),
             internal_strains = self.get_strains(nodal_disp),
             internal_stresses = self.get_stresses(nodal_disp),
         )

@@ -14,6 +14,8 @@ from src.functions import get_elastoplastic_response
 class InternalResponses:
     p0: np.matrix
     members_nodal_forces: np.matrix
+    members_internal_strains: np.matrix
+    members_internal_stresses: np.matrix
     members_internal_moments: np.matrix
     members_top_internal_strains: np.matrix
     members_bottom_internal_strains: np.matrix
@@ -57,6 +59,8 @@ class Analysis:
             self.elastic_members_disps = self.get_members_disps(self.elastic_nodal_disp[0, 0])
             internal_responses = self.get_internal_responses(self.elastic_members_disps)
             self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
+            self.elastic_members_internal_strains = internal_responses.members_internal_strains
+            self.elastic_members_internal_stresses = internal_responses.members_internal_stresses
             self.elastic_members_internal_moments = internal_responses.members_internal_moments
             self.elastic_members_top_internal_strains = internal_responses.members_top_internal_strains
             self.elastic_members_bottom_internal_strains = internal_responses.members_bottom_internal_strains
@@ -331,6 +335,8 @@ class Analysis:
         structure = self.structure
         # calculate p0
         members_nodal_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_internal_stresses = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_internal_moments = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_top_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_bottom_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
@@ -346,6 +352,8 @@ class Analysis:
             base_p0_row = base_p0_row + member.yield_specs.components_count
 
             members_nodal_forces[i, 0] = member_response.nodal_force
+            members_internal_strains[i, 0] = member_response.internal_strains
+            members_internal_stresses[i, 0] = member_response.internal_stresses
             members_internal_moments[i, 0] = member_response.internal_moments
             members_top_internal_strains[i, 0] = member_response.top_internal_strains
             members_bottom_internal_strains[i, 0] = member_response.bottom_internal_strains
@@ -355,6 +363,8 @@ class Analysis:
         return InternalResponses(
             p0=p0,
             members_nodal_forces=members_nodal_forces,
+            members_internal_strains=members_internal_strains,
+            members_internal_stresses=members_internal_stresses,
             members_internal_moments=members_internal_moments,
             members_top_internal_strains=members_top_internal_strains,
             members_bottom_internal_strains=members_bottom_internal_strains,

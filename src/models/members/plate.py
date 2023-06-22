@@ -17,6 +17,8 @@ class Response:
     bottom_internal_strains: np.matrix
     top_internal_stresses: np.matrix
     bottom_internal_stresses: np.matrix
+    internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass
