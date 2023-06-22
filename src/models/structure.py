@@ -48,7 +48,7 @@ class Structure:
         self.members = Members(members_list=input["members"])
         self.nodes = self.get_nodes()
         self.nodes_count = len(self.nodes)
-        self.node_dofs_count = 3 if self.dim.lower() == "2d" else 3
+        self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.yield_specs = self.members.yield_specs
@@ -59,11 +59,13 @@ class Structure:
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
+        print(f"{self.k=}")
         self.reduced_k = self.apply_boundary_conditions(
             row_boundaries_dof=self.boundaries_dof,
             col_boundaries_dof=self.boundaries_dof,
             structure_prop=self.k,
         )
+        print(f"{self.reduced_k=}")
         self.kc = cho_factor(self.reduced_k)
 
         if self.is_inelastic:

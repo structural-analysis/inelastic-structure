@@ -54,7 +54,7 @@ class WallMember:
         self.t = self.get_transform()
         self.m = None
         # udef: unit distorsions equivalent forces
-        self.udefs = self.get_nodal_forces_from_unit_distortions()
+        # self.udefs = self.get_nodal_forces_from_unit_distortions()
 
     @property
     def gauss_points(self):
