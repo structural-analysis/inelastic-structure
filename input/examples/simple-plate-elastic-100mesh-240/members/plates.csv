@@ -1,2 +1,2 @@
-section,nodes,meshx,meshy
-thinplate,0123,10,10
+num,section,nodes
+0,thinplate,0-1-2-3

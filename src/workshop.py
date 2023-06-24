@@ -183,13 +183,20 @@ def create_frame2d_members(example_name, nodes, general_properties):
 
     if frame_sections:
         for i in range(frames_array.shape[0]):
-            frame_section = frame_sections[frames_array[i, 0]]
+            member_num = int(frames_array[i, 0])
+            frame_section = frame_sections[frames_array[i, 1]]
+            member_nodes = frames_array[i, 2]
+            split_nodes = member_nodes.split("-")
             frame_members.append(
                 FrameMember2D(
-                    nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
-                    ends_fixity=frames_array[i, 3],
+                    num=member_num,
                     section=frame_section,
-                    mass=Mass(magnitude=frame_masses.get(i)) if frame_masses.get(i) else None
+                    nodes=(
+                        nodes[int(split_nodes[0])],
+                        nodes[int(split_nodes[1])],
+                    ),
+                    mass=Mass(magnitude=frame_masses.get(i)) if frame_masses.get(i) else None,
+                    ends_fixity=frames_array[i, 3],
                 )
             )
     return frame_members
