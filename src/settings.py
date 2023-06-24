@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-1element-elastic"
+    example_name: str = "wall-9element-elastic"
     computational_zero = 1e-10
     isclose_tolerance = 1e-7
     examples_to_test = [
@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         "1story-dynamic-inelastic-ll1.0-ap400k",
         "2story-dynamic-inelastic",
         "wall-1element-elastic",
+        "wall-9element-elastic",
     ]
 
 

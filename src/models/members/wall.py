@@ -41,7 +41,8 @@ class YieldSpecs:
 
 class WallMember:
     # calculations is based on four gauss points
-    def __init__(self, section: WallSection, initial_nodes: tuple[Node, Node, Node, Node]):
+    def __init__(self, num: int, section: WallSection, initial_nodes: tuple[Node, Node, Node, Node]):
+        self.num = num
         self.section = section
         self.nodes = initial_nodes
         self.nodes_count = len(self.nodes)

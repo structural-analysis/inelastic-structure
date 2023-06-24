@@ -230,22 +230,26 @@ def create_wall_members(example_name, nodes):
     wall_members = []
 
     try:
-        walls_array = np.loadtxt(fname=wall_members_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+        walls_array = np.loadtxt(fname=wall_members_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     except FileNotFoundError:
         logging.warning("wall members input file not found")
         return []
 
     if wall_sections:
         for i in range(walls_array.shape[0]):
-            wall_section = wall_sections[walls_array[i, 0]]
+            member_num = int(walls_array[i, 0])
+            wall_section = wall_sections[walls_array[i, 1]]
+            member_nodes = walls_array[i, 2]
+            split_nodes = member_nodes.split("-")
             wall_members.append(
                 WallMember(
+                    num=member_num,
                     section=wall_section,
                     initial_nodes=(
-                        nodes[int(walls_array[i, 1][0])],
-                        nodes[int(walls_array[i, 1][1])],
-                        nodes[int(walls_array[i, 1][2])],
-                        nodes[int(walls_array[i, 1][3])],
+                        nodes[int(split_nodes[0])],
+                        nodes[int(split_nodes[1])],
+                        nodes[int(split_nodes[2])],
+                        nodes[int(split_nodes[3])],
                     ),
                 )
             )
