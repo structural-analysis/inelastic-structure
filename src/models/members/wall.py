@@ -74,6 +74,7 @@ class WallMember:
         ]
         return natural_nodes
 
+    # REF: Cook (2002), p230.
     def get_extrapolated_natural_point(self, natural_point):
         return NaturalPoint(
             r = np.sqrt(3) * natural_point.r,
