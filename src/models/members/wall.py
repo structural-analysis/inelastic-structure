@@ -78,8 +78,8 @@ class WallMember:
     # REF: Cook (2002), p230.
     def get_extrapolated_natural_point(self, natural_point):
         return NaturalPoint(
-            r = np.sqrt(3) * natural_point.r,
-            s = np.sqrt(3) * natural_point.s,
+            r=np.sqrt(3) * natural_point.r,
+            s=np.sqrt(3) * natural_point.s,
         )
 
     def get_shape_functions(self, natural_point):
@@ -220,10 +220,12 @@ class WallMember:
         return distortion
 
     # for element with linear variation of stress
+    # REF: Cook (2002), p228.
     def get_nodal_force_from_unit_distortion(self, gauss_point, gauss_point_component_num):
-        distortion = self.get_unit_distortion(gauss_point_component_num)
         gauss_point_b = self.get_natural_point_shape_derivatives(gauss_point)
-        f = gauss_point_b.T * self.section.ce * distortion # may need det
+        distortion = self.get_unit_distortion(gauss_point_component_num)
+        jacobian_det = self.get_jacobian_det(gauss_point)
+        f = gauss_point_b.T * self.section.ce * distortion * jacobian_det * self.section.geometry.thickness
         # NOTE: forces are internal, so we must use negative sign:
         return -f
 
