@@ -14,19 +14,21 @@ class Geometry:
 
 
 class Nonlinear:
-    def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
-        self.mp = 0.25 * geometry.thickness ** 2 * material.sy
+    def __init__(self, material: Material, input_nonlinear):
+        self.sy = material.sy
         self.yield_surface = input_nonlinear["yield_surface"]
 
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
-        self.phi = self.create_phi(nonlinear)
+        self.sy = nonlinear.sy
+        self.yield_surface = nonlinear.yield_surface
         self.components_count = 3
         self.pieces_count = self.phi.shape[1]
 
-    def create_phi(self, nonlinear):
-        if nonlinear.yield_surface == "simple":
+    @property
+    def phi(self):
+        if self.yield_surface == "simple":
             phi = np.array([
                 [1.2143, -0.2143, 2],
                 [-0.2143, 1.2143, 2],
@@ -36,9 +38,9 @@ class YieldSpecs:
                 [-0.2143, 1.2143, -2],
                 [-1.2143, 0.2143, -2],
                 [0.2143, -1.2143, -2],
-            ]).T / nonlinear.mp
-        elif nonlinear.yield_surface == "mises":
-            phi = get_von_mises_matrix(mp=nonlinear.mp)
+            ]).T / self.sy
+        elif self.yield_surface == "mises":
+            phi = get_von_mises_matrix(sy=self.sy)
         return phi
 
 
@@ -73,7 +75,7 @@ class WallSection:
     def __init__(self, input: dict):
         self.material = Material(input["material"])
         self.geometry = Geometry(input["geometry"])
-        self.nonlinear = Nonlinear(self.material, self.geometry, input["nonlinear"])
+        self.nonlinear = Nonlinear(self.material, input["nonlinear"])
         self.yield_specs = YieldSpecs(self.nonlinear)
         self.softening = Softening(self.yield_specs, input["softening"])
         self.c = np.matrix([[1, self.material.nu, 0],
@@ -82,7 +84,7 @@ class WallSection:
         self.ce = (self.material.e / (1 - self.material.nu ** 2)) * self.c
 
 
-def get_von_mises_matrix(mp):
+def get_von_mises_matrix(sy):
     si = np.array([-1.9, -1.7, -1.2, -1, -0.5, 0, 0.5, 1, 1.2, 1.7, 1.9])
     m = 20
     n = si.shape[0]  # -2 & +2 will produce only one plane each
@@ -94,8 +96,8 @@ def get_von_mises_matrix(mp):
 
     # specifying two end planes
     phi = np.zeros((3, p_total))
-    phi[:, 0] = np.array([-0.5, -0.5, 0]) / mp
-    phi[:, p_total - 1] = np.array([0.5, 0.5, 0]) / mp
+    phi[:, 0] = np.array([-0.5, -0.5, 0]) / sy
+    phi[:, p_total - 1] = np.array([0.5, 0.5, 0]) / sy
 
     l = 0
     for i in range(n):
@@ -104,6 +106,6 @@ def get_von_mises_matrix(mp):
             phi[:, k] = np.array([
                 0.25 * (si[i] + 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
                 0.25 * (si[i] - 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
-                1.5 * np.sqrt(2) * (np.sin(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2))))]) / mp
+                1.5 * np.sqrt(2) * (np.sin(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2))))]) / sy
         l += m
     return phi
