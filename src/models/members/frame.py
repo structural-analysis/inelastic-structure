@@ -172,7 +172,7 @@ class FrameMember2D:
 
 
 class FrameMember3D:
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, mass: Mass = None):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, roll_angle: float, mass: Mass = None):
         self.nodes = nodes
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
@@ -181,6 +181,7 @@ class FrameMember3D:
         self.yield_specs = YieldSpecs(self.section)
         self.start = nodes[0]
         self.end = nodes[1]
+        self.roll_angle = roll_angle
         self.l = self._length()
         self.mass = mass if mass else None
         self.m = self._mass() if mass else None
@@ -193,53 +194,87 @@ class FrameMember3D:
     def _length(self):
         a = self.start
         b = self.end
-        l = np.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
+        l = np.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2 + (b.z - a.z) ** 2)
         return l
 
     def _stiffness(self):
         # Reference for stiffness formula:
         # Bathe K. J., Finite Element Procedures, 1996, page 151.
+        # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 193
+        # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 464
+
         l = self.l
         a = self.section.geometry.a
-        i = self.section.geometry.ix
+        ix = self.section.geometry.ix
+        iy = self.section.geometry.iy
+        iz = self.section.geometry.iz
         e = self.section.material.e
+        g = self.section.material.g
         ends_fixity = self.ends_fixity
 
         if (ends_fixity == "fix_fix"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0), 0.0, -12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0)],
-                [0.0, -6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l), 0.0, 6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l)],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0), 0.0, 12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0)],
-                [0.0, -6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l), 0.0, 6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l)]])
+                [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
+                [0, 12 * e * iz / (l ** 3), 0, 0, 0, 6 * e * iz / (l ** 2), 0, -12 * e * iz / (l ** 3), 0, 0, 0, 6 * e * iz / (l ** 2)],
+                [0, 0, 12 * e * iy / (l ** 3), 0, -6 * e * iy / (l ** 2), 0, 0, 0, -12 * e * iy / (l ** 3), 0, -6 * e * iy / (l ** 2), 0],
+                [0, 0, 0, g * ix / l, 0, 0, 0, 0, 0, -g * ix / l, 0, 0],
+                [0, 0, -6 * e * iy / (l ** 2), 0, 4 * e * iy / l, 0, 0, 0, 6 * e * iy / (l ** 2), 0, 2 * e * iy / l, 0],
+                [0, 6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l],
+                [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
+                [0, -12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2), 0, 12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2)],
+                [0, 0, -12 * e * iy / (l ** 3), 0, 6 * e * i2 / (l ** 2), 0, 0, 0, 12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0],
+                [0, 0, 0, - g * ix / l, 0, 0, 0, 0, 0, g * ix / l, 0, 0],
+                [0, 0, -6 * e * iy / (l ** 2), 0, 2 * e * iy / l, 0, 0, 0, 6 * e * iy / (l ** 2), 0, 4 * e * iy / l, 0],
+                [0, 6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l]
+            ])
 
         elif (ends_fixity == "hinge_fix"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), 0.0, 0.0, -3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0)],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), 0.0, 0.0, 3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0)],
-                [0.0, -3.0 * e * i / (l ** 2.0), 0.0, 0.0, 3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l)]])
+                [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
+                [0, 3 * e * iz / (l ** 3), 0, 0, 0, 0, 0, -3 * e * iz / (l ** 3), 0, 0, 0, 3 * e * iz / (l ** 2)],
+                [0, 0, 3 * e * iy / (l ** 3), 0, 0, 0, 0, 0, -3 * e * iy / (l ** 3), 0, -3 * e * iy / (l ** 2), 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
+                [0, -3 * e * iz / (l ** 3), 0, 0, 0, 0, 0, 3 * e * iz / (l ** 3), 0, 0, 0, -3 * e * iz / (l ** 2)],
+                [0, 0, -3 * e * iy / (l ** 3), 0, 0, 0, 0, 0, 3 * e * iy / (l ** 3), 0, 3 * e * iy / (l ** 2), 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, -3 * e * iy / (l ** 2), 0, 0, 0, 0, 0, 3 * e * iy / (l ** 2), 0, 3 * e * iy / l, 0],
+                [0, 3 * e * iz / (l ** 2), 0, 0, 0, 0, 0, -3 * e * iz / (l ** 2), 0, 0, 0, 3 * e * iz / l]
+            ])
 
         elif (ends_fixity == "fix_hinge"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0), 0.0, -3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, -3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l), 0.0, 3.0 * e * i / (l ** 2.0), 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0), 0.0, 3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+                [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
+                [0, 3 * e * iz / (l ** 3), 0, 0, 0, 3 * e * iz / (l ** 2), 0, -3 * e * iz / (l ** 3), 0, 0, 0, 0],
+                [0, 0, 3 * e * iy / (l ** 3), 0, -3 * e * iy / (l ** 2), 0, 0, 0, -3 * e * iy / (l ** 3), 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, -3 * e * iy / (l ** 2), 0, 3 * e * iy / l, 0, 0, 0, 3 * e * iy / (l ** 2), 0, 0, 0],
+                [0, 3 * e * iz / (l ** 2), 0, 0, 0, 3 * e * iz / l, 0, -3 * e * iz / (l ** 2), 0, 0, 0, 0],
+                [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
+                [0, -3 * e * iz / (l ** 3), 0, 0, 0, -3 * e * iz / (l ** 2), 0, 3 * e * iz / (l ** 3), 0, 0, 0, 0],
+                [0, 0, -3 * e * iy / (l ** 3), 0, 3 * e * iy / (l ** 2), 0, 0, 0, 3 * e * iy / (l ** 3), 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ])
 
         elif (ends_fixity == "hinge_hinge"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+                [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ])
 
         return k
 
@@ -260,18 +295,24 @@ class FrameMember3D:
 
     def _transform_matrix(self):
         # Reference for transformation formula:
-        # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 28
-        # Note: the transformation matrix in Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 is not correct
+        # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 476
+        si = self.roll_angle
         a = self.start
         b = self.end
         l = self.l
-        t = np.matrix([
-            [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
-            [-(b.y - a.y) / l, (b.x - a.x) / l, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, (b.x - a.x) / l, (b.y - a.y) / l, 0.0],
-            [0.0, 0.0, 0.0, -(b.y - a.y) / l, (b.x - a.x) / l, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
+        rxx = (b.x - a.x) / l
+        rxy = (b.y - a.y) / l
+        rxz = (b.z - a.z) / l
+        r = np.matrix([
+            [rxx, rxy, rxz],
+            [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2)],
+            [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2)]
+        ])
+        t = np.matrix(np.zeros((12, 12)))
+        t[0:3, 0:3] = r
+        t[3:6, 3:6] = r
+        t[6:9, 6:9] = r
+        t[9:12, 9:12] = r
         return t
 
     def get_response(self, nodal_disp, fixed_force=None):
