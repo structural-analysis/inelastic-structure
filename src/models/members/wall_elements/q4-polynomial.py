@@ -57,9 +57,16 @@ def get_c(natural_nodes, node_dof_count):
     for i, natural_node in enumerate(natural_nodes):
         r = natural_node.r
         s = natural_node.s
-        c[i * node_dof_count, :] = np.matrix([1, r, r * s, s, s ** 2, s ** 2 * s, r * s ** 2, s ** 2])
-        c[i * node_dof_count + 1, :] = np.matrix([1, r, r * s, s, s ** 2, s ** 2 * s, r * s ** 2, s ** 2])
-    return 
+        c[i * node_dof_count, :] = np.matrix([1, r, r * s, s, r ** 2, r ** 2 * s, r * s ** 2, s ** 2])
+        c[i * node_dof_count + 1, :] = np.matrix([1, r, r * s, s, r ** 2, r ** 2 * s, r * s ** 2, s ** 2])
+    return c
+
+
+def get_p(natural_node):
+    r = natural_node.r
+    s = natural_node.s
+    return np.matrix([1, r, r * s, s, r ** 2, r ** 2 * s, r * s ** 2, s ** 2])
+
 
 def get_nbar(r, s):
     nbar = [
