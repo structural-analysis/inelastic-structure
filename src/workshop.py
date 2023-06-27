@@ -13,7 +13,6 @@ from src.models.members.frame import FrameMember2D, Mass
 from src.models.members.plate import PlateMember
 from src.models.members.wall import WallMember
 from src.models.loads import Dynamic, Joint
-from src.settings import settings
 
 examples_dir = "input/examples/"
 general_file = "general.yaml"
@@ -237,7 +236,7 @@ def create_wall_members(example_name, nodes):
     wall_members = []
 
     try:
-        walls_array = np.loadtxt(fname=wall_members_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+        walls_array = np.loadtxt(fname=wall_members_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
     except FileNotFoundError:
         logging.warning("wall members input file not found")
         return []
@@ -246,18 +245,16 @@ def create_wall_members(example_name, nodes):
         for i in range(walls_array.shape[0]):
             member_num = int(walls_array[i, 0])
             wall_section = wall_sections[walls_array[i, 1]]
-            member_nodes = walls_array[i, 2]
+            element_type = walls_array[i, 2].upper()
+            member_nodes = walls_array[i, 3]
             split_nodes = member_nodes.split("-")
+            final_nodes = [int(split_node) for split_node in split_nodes]
             wall_members.append(
                 WallMember(
                     num=member_num,
                     section=wall_section,
-                    initial_nodes=(
-                        nodes[int(split_nodes[0])],
-                        nodes[int(split_nodes[1])],
-                        nodes[int(split_nodes[2])],
-                        nodes[int(split_nodes[3])],
-                    ),
+                    element_type=element_type,
+                    nodes=tuple(final_nodes)
                 )
             )
     return wall_members

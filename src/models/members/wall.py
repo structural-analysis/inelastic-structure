@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 from dataclasses import dataclass
 from functools import lru_cache
 from ..points import Node, NaturalPoint
@@ -32,6 +33,25 @@ class Stress:
     xy: float
 
 
+class NaturalNodes(Enum):
+    Q4 = [
+        NaturalPoint(r=-1, s=-1),
+        NaturalPoint(r=+1, s=-1),
+        NaturalPoint(r=+1, s=+1),
+        NaturalPoint(r=-1, s=+1),
+    ]
+    Q8 = [
+        NaturalPoint(r=-1, s=-1),
+        NaturalPoint(r=0, s=-1),
+        NaturalPoint(r=1, s=-1),
+        NaturalPoint(r=1, s=0),
+        NaturalPoint(r=1, s=1),
+        NaturalPoint(r=0, s=1),
+        NaturalPoint(r=-1, s=1),
+        NaturalPoint(r=-1, s=0),
+    ]
+
+
 class YieldSpecs:
     def __init__(self, section: WallSection, points_count: int):
         self.points_count = points_count
@@ -41,10 +61,11 @@ class YieldSpecs:
 
 class WallMember:
     # calculations is based on four gauss points
-    def __init__(self, num: int, section: WallSection, initial_nodes: tuple[Node, Node, Node, Node]):
+    def __init__(self, num: int, section: WallSection, element_type: str, nodes: tuple[Node, Node, Node, Node]):
         self.num = num
         self.section = section
-        self.nodes = initial_nodes
+        self.element_type = element_type
+        self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.dofs_count = 2 * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
@@ -67,13 +88,7 @@ class WallMember:
 
     @property
     def natural_nodes(self):
-        natural_nodes = [
-            NaturalPoint(r=-1, s=-1),
-            NaturalPoint(r=+1, s=-1),
-            NaturalPoint(r=+1, s=+1),
-            NaturalPoint(r=-1, s=+1),
-        ]
-        return natural_nodes
+        return NaturalNodes[self.element_type]
 
     # REF: Cook (2002), p230.
     def get_extrapolated_natural_point(self, natural_point):
