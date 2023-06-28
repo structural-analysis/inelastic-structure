@@ -1,2 +1,2 @@
-num,section,nodes
-0,wall,0-1-2-3
+num,section,element_type,nodes
+0,wall,Q4,0-1-2-3

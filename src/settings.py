@@ -23,6 +23,7 @@ class Settings(BaseSettings):
         "1story-dynamic-inelastic-ll1.0-ap400k",
         "2story-dynamic-inelastic",
         "wall-1element-elastic",
+        "wall-1element-elastic-q8r",
         "wall-9element-elastic",
     ]
 
