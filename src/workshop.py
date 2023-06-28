@@ -248,7 +248,7 @@ def create_wall_members(example_name, nodes):
             element_type = walls_array[i, 2].upper()
             member_nodes = walls_array[i, 3]
             split_nodes = member_nodes.split("-")
-            final_nodes = [int(split_node) for split_node in split_nodes]
+            final_nodes = [nodes[int(split_node)] for split_node in split_nodes]
             wall_members.append(
                 WallMember(
                     num=member_num,

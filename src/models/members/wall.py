@@ -47,8 +47,6 @@ class WallMember:
         self.section = section
         self.element_type = element_type # Q4, Q4R, Q8, Q8R
         self.nodes = nodes
-        print(f"{self.nodes=}")
-        print(f"{type(self.nodes)=}")
         self.nodes_count = len(self.nodes)
         self.dofs_count = 2 * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
@@ -122,17 +120,18 @@ class WallMember:
             extrapolated_point = None
         return extrapolated_point
 
-    def get_shape_functions(self, natural_point):
+    def get_extrapolation_shape_functions(self, natural_point):
         r = natural_point.r
         s = natural_point.s
-        if self.element_type in ("Q4", "Q4R"):
+        if self.element_type in ("Q4", "Q8R"):
             n = np.matrix([
                 0.25 * (1 - r) * (1 - s),
                 0.25 * (1 + r) * (1 - s),
                 0.25 * (1 + r) * (1 + s),
                 0.25 * (1 - r) * (1 + s),
             ])
-        elif self.element_type in ("Q8", "Q8R"):
+        elif self.element_type in ("Q8"):
+            # TODO: correct shape functions for Q8 and Q4R gauss points
             n1 = 0.5 * (1 - r ** 2) * (1 - s)
             n3 = 0.5 * (1 + r) * (1 - s ** 2)
             n5 = 0.5 * (1 - r ** 2) * (1 + s)
@@ -245,14 +244,14 @@ class WallMember:
 
     def get_natural_point_strain(self, natural_point, nodal_disp):
         extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
-        shape_functions = self.get_shape_functions(extrapolated_natural_point)
+        shape_functions = self.get_extrapolation_shape_functions(extrapolated_natural_point)
         gauss_points_strains = self.get_gauss_points_strains(nodal_disp)
         strain = np.dot(gauss_points_strains.T, shape_functions.T)
         return Strain(x=strain[0, 0], y=strain[1, 0], xy=strain[2, 0])
 
     def get_natural_point_stress(self, natural_point, nodal_disp):
         extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
-        shape_functions = self.get_shape_functions(extrapolated_natural_point)
+        shape_functions = self.get_extrapolation_shape_functions(extrapolated_natural_point)
         gauss_points_stresses = self.get_gauss_points_stresses(nodal_disp)
         stress = np.dot(gauss_points_stresses.T, shape_functions.T)
         return Stress(x=stress[0, 0], y=stress[1, 0], xy=stress[2, 0])
@@ -303,8 +302,9 @@ class WallMember:
     def get_nodal_force_from_unit_distortion(self, gauss_point, gauss_point_component_num):
         gauss_point_b = self.get_shape_derivatives(gauss_point)
         distortion = self.get_unit_distortion(gauss_point_component_num)
-        jacobian_det = self.get_jacobian_det(gauss_point)
-        f = gauss_point_b.T * self.section.ce * distortion * jacobian_det * self.section.geometry.thickness
+        j = self.get_jacobian(gauss_point)
+        j_det = np.linalg.det(j)
+        f = gauss_point_b.T * self.section.ce * distortion * j_det * self.section.geometry.thickness
         # NOTE: forces are internal, so we must use negative sign:
         return -f
 
