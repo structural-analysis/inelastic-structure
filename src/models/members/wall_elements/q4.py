@@ -1,6 +1,6 @@
 import numpy as np
-import sympy as sp
-from sympy import symbols as syms
+
+# Reference: Finite Element Analysis - Theory and Programming by Krishnamoorthy (p242)
 
 
 class Node:
@@ -41,121 +41,55 @@ def get_gauss_points():
     return gauss_points
 
 
-def get_nbar(r, s):
-    nbar = [
+def get_n(r, s):
+    n = [
         0.25 * (1 - r) * (1 - s),
         0.25 * (1 + r) * (1 - s),
         0.25 * (1 + r) * (1 + s),
         0.25 * (1 - r) * (1 + s),
     ]
-    return nbar
+    return n
 
 
-def calculate_jacobian():
-    r, s = syms('r s')
-    x0, x1, x2, x3, y0, y1, y2, y3 = syms('x0 x1 x2 x3 y0 y1 y2 y3')
-    nbars = get_nbar(r, s)
-    # rx/rr
-    j0 = sp.diff(nbars[0], r) * x0 + sp.diff(nbars[1], r) * x1 + sp.diff(nbars[2], r) * x2 + sp.diff(nbars[3], r) * x3
-    # ry/rr
-    j1 = sp.diff(nbars[0], r) * y0 + sp.diff(nbars[1], r) * y1 + sp.diff(nbars[2], r) * y2 + sp.diff(nbars[3], r) * y3
-    # rx/rs
-    j2 = sp.diff(nbars[0], s) * x0 + sp.diff(nbars[1], s) * x1 + sp.diff(nbars[2], s) * x2 + sp.diff(nbars[3], s) * x3
-    # ry/rs
-    j3 = sp.diff(nbars[0], s) * y0 + sp.diff(nbars[1], s) * y1 + sp.diff(nbars[2], s) * y2 + sp.diff(nbars[3], s) * y3
-    return j0, j1, j2, j3
-
-
-def get_jacobian():
-    r, s = syms('r s')
-    x0, x1, x2, x3, y0, y1, y2, y3 = syms('x0 x1 x2 x3 y0 y1 y2 y3')
-    # rx/rr
-    j0 = 0.25 * (x0 * (s - 1) + x1 * (-s + 1) + x2 * (s + 1) + x3 * (-s - 1))
-    # ry/rr
-    j1 = 0.25 * (y0 * (s - 1) + y1 * (-s + 1) + y2 * (s + 1) + y3 * (-s - 1))
-    # rx/rs
-    j2 = 0.25 * (x0 * (r - 1) + x1 * (-r - 1) + x2 * (r + 1) + x3 * (-r + 1))
-    # ry/rs
-    j3 = 0.25 * (y0 * (r - 1) + y1 * (-r - 1) + y2 * (r + 1) + y3 * (-r + 1))
-    return j0, j1, j2, j3
-
-
-def calculate_det():
-    j0, j1, j2, j3 = get_jacobian()
-    return j0 * j3 - j1 * j2
-
-
-def get_det(gauss_point, nodes):
+def get_jacobian(gauss_point, nodes):
     r = gauss_point.r
     s = gauss_point.s
-    x0 = nodes[0].x
-    x1 = nodes[1].x
-    x2 = nodes[2].x
-    x3 = nodes[3].x
 
-    y0 = nodes[0].y
-    y1 = nodes[1].y
-    y2 = nodes[2].y
-    y3 = nodes[3].y
-    det = -(0.25 * x0 * (r - 1) + 0.25 * x1 * (-r - 1) + 0.25 * x2 * (r + 1) + 0.25 * x3 * (1 - r)) * (0.25 * y0 * (s - 1) + 0.25 * y1 * (1 - s) + 0.25 * y2 * (s + 1) + 0.25 * y3 * (-s - 1)) + (0.25 * x0 * (s - 1) + 0.25 * x1 * (1 - s) + 0.25 * x2 * (s + 1) + 0.25 * x3 * (-s - 1)) * (0.25 * y0 * (r - 1) + 0.25 * y1 * (-r - 1) + 0.25 * y2 * (r + 1) + 0.25 * y3 * (1 - r))
-    return det
-
-
-def calculate_shape_derivatives():
-    r, s = syms('r s')
-    n0 = 0.25 * (1 - r) * (1 - s)
-    n1 = 0.25 * (1 + r) * (1 - s)
-    n2 = 0.25 * (1 + r) * (1 + s)
-    n3 = 0.25 * (1 - r) * (1 + s)
-
-    j0, j1, j2, j3 = get_jacobian()
-    jinv = (1 / (j0 * j3 - j1 * j2)) * np.matrix([
-        [j3, -j1],
-        [-j2, j0],
+    j_left = 0.25 * np.matrix([
+        [-(1 - s), (1 - s), (1 + s), -(1 + s)],
+        [-(1 - r), -(1 + r), (1 + r), (1 - r)],
     ])
 
-    u_derivatives = sp.zeros(2, 8)
-    v_derivatives = sp.zeros(2, 8)
-    b = sp.zeros(3, 8)
+    j_right = np.matrix([
+        [nodes[0].x, nodes[0].y],
+        [nodes[1].x, nodes[1].y],
+        [nodes[2].x, nodes[2].y],
+        [nodes[3].x, nodes[3].y],
+    ])
 
-    u_derivatives[0, :] = np.array([[sp.diff(n0, r), 0, sp.diff(n1, r), 0, sp.diff(n2, r), 0, sp.diff(n3, r), 0]])
-    u_derivatives[1, :] = np.array([[sp.diff(n0, s), 0, sp.diff(n1, s), 0, sp.diff(n2, s), 0, sp.diff(n3, s), 0]])
-
-    v_derivatives[0, :] = np.array([[0, sp.diff(n0, r), 0, sp.diff(n1, r), 0, sp.diff(n2, r), 0, sp.diff(n3, r)]])
-    v_derivatives[1, :] = np.array([[0, sp.diff(n0, s), 0, sp.diff(n1, s), 0, sp.diff(n2, s), 0, sp.diff(n3, s)]])
-
-    u_derivatives = np.dot(jinv, u_derivatives)
-    v_derivatives = np.dot(jinv, v_derivatives)
-
-    b[0, :] = u_derivatives[0, :]
-    b[1, :] = v_derivatives[1, :]
-    b[2, :] = u_derivatives[1, :] + v_derivatives[0, :]
-
-    return sp.simplify(b)
+    return np.dot(j_left, j_right)
 
 
-def get_gauss_point_shape_derivatives(gauss_point, nodes):
+def get_jacob_det(j):
+    return np.linalg.det(j)
+
+
+def get_b(gauss_point, j):
     r = gauss_point.r
     s = gauss_point.s
-    x0 = nodes[0].x
-    x1 = nodes[1].x
-    x2 = nodes[2].x
-    x3 = nodes[3].x
-
-    y0 = nodes[0].y
-    y1 = nodes[1].y
-    y2 = nodes[2].y
-    y3 = nodes[3].y
-    return np.matrix([[1.0*((r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) -
-y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0], [0, 1.0*(-(r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1)
-+ y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r -
-1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*(-(r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 0, 1.0*((r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))], [1.0*(-(r - 1)*(x0*(s
-- 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r
-- 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1)
-- y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s - 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1)
-- x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s
-+ 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s - 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r + 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) + (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r + 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*((r - 1)*(x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1)) - (s + 1)*(x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1))), 1.0*(-(r - 1)*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) + (s + 1)*(y0*(r - 1) - y1*(r + 1) + y2*(r +
-1) - y3*(r - 1)))/((x0*(r - 1) - x1*(r + 1) + x2*(r + 1) - x3*(r - 1))*(y0*(s - 1) - y1*(s - 1) + y2*(s + 1) - y3*(s + 1)) - (x0*(s - 1) - x1*(s - 1) + x2*(s + 1) - x3*(s + 1))*(y0*(r - 1) - y1*(r + 1) + y2*(r + 1) - y3*(r - 1)))]])
+    b = np.matrix(np.zeros((3, 8)))
+    du = 0.25 * np.linalg.inv(j) * np.matrix([
+        [-(1 - s), 0, (1 - s), 0, (1 + s), 0, -(1 + s), 0],
+        [-(1 - r), 0, -(1 + r), 0, 1 + r, 0, 1 - r, 0],
+    ])
+    dv = 0.25 * np.linalg.inv(j) * np.matrix([
+        [0, -(1 - s), 0, (1 - s), 0, (1 + s), 0, -(1 + s)],
+        [0, -(1 - r), 0, -(1 + r), 0, 1 + r, 0, 1 - r],
+    ])
+    b[0, :] = du[0, :]
+    b[1, :] = dv[1, :]
+    b[2, :] = du[1, :] + dv[0, :]
+    return b
 
 
 def get_stiffness(gauss_points, nodes, thickness):
@@ -167,9 +101,10 @@ def get_stiffness(gauss_points, nodes, thickness):
                    [0, 0, (1 - nu) / 2]])
     ce = (e / (1 - nu ** 2)) * c
     for gauss_point in gauss_points:
-        gauss_point_b = get_gauss_point_shape_derivatives(gauss_point, nodes)
-        gauss_point_det = get_det(gauss_point, nodes)
-        gauss_point_k = gauss_point_b.T * ce * gauss_point_b * gauss_point_det * thickness
+        j = get_jacobian(gauss_point, nodes)
+        b = get_b(gauss_point, j)
+        det_j = get_jacob_det(j)
+        gauss_point_k = b.T * ce * b * det_j * thickness
         k += gauss_point_k
     return k
 
@@ -189,6 +124,7 @@ def get_nodal_disp():
     kr = k[4:8, 4:8]
     fr = np.matrix([[fx, fy, 0, 0]]).T
     return np.linalg.inv(kr) * fr
+
 
 if __name__ == "__main__":
     disp = get_nodal_disp()
