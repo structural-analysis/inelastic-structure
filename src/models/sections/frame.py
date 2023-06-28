@@ -6,6 +6,7 @@ class Material:
         self.e = input_material["e"]
         self.sy = input_material["sy"]
         self.nu = input_material["nu"]
+        self.g = input_material.get("g", 0)
 
 
 class Geometry:
@@ -13,6 +14,7 @@ class Geometry:
         self.a = input_geometry["a"]
         self.ix = input_geometry["ix"]
         self.iy = input_geometry["iy"]
+        self.iz = input_geometry.get("iz", 0)
 
 
 class Nonlinear:

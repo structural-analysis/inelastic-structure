@@ -181,7 +181,7 @@ class FrameMember3D:
         self.yield_specs = YieldSpecs(self.section)
         self.start = nodes[0]
         self.end = nodes[1]
-        self.roll_angle = roll_angle
+        self.roll_angle = np.deg2rad(roll_angle)
         self.l = self._length()
         self.mass = mass if mass else None
         self.m = self._mass() if mass else None
@@ -222,7 +222,7 @@ class FrameMember3D:
                 [0, 6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l],
                 [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
                 [0, -12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2), 0, 12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2)],
-                [0, 0, -12 * e * iy / (l ** 3), 0, 6 * e * i2 / (l ** 2), 0, 0, 0, 12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0],
+                [0, 0, -12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0, 0, 0, 12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0],
                 [0, 0, 0, - g * ix / l, 0, 0, 0, 0, 0, g * ix / l, 0, 0],
                 [0, 0, -6 * e * iy / (l ** 2), 0, 2 * e * iy / l, 0, 0, 0, 6 * e * iy / (l ** 2), 0, 4 * e * iy / l, 0],
                 [0, 6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l]
