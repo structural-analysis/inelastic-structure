@@ -25,6 +25,7 @@ class Settings(BaseSettings):
         "wall-1element-elastic",
         "wall-1element-elastic-q8r",
         "wall-9element-elastic",
+        "wall-4element-elastic-q8r",
     ]
 
 
