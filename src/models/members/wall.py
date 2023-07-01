@@ -1,8 +1,7 @@
 import numpy as np
-from enum import Enum
 from dataclasses import dataclass
 from functools import lru_cache
-from ..points import Node, NaturalPoint, GaussPoint
+from ..points import NaturalPoint, GaussPoint
 from ..sections.wall import WallSection
 
 
@@ -45,7 +44,7 @@ class WallMember:
     def __init__(self, num: int, section: WallSection, element_type: str, nodes: tuple):
         self.num = num
         self.section = section
-        self.element_type = element_type # Q4, Q4R, Q8, Q8R
+        self.element_type = element_type  # Q4, Q4R, Q8, Q8R
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.dofs_count = 2 * self.nodes_count
@@ -113,8 +112,8 @@ class WallMember:
             extrapolated_point = None
         elif self.element_type in ("Q4", "Q8R"):
             extrapolated_point = NaturalPoint(
-                    r=np.sqrt(3) * natural_point.r,
-                    s=np.sqrt(3) * natural_point.s,
+                r=np.sqrt(3) * natural_point.r,
+                s=np.sqrt(3) * natural_point.s,
             )
         if self.element_type == "Q8":
             extrapolated_point = None
@@ -329,7 +328,7 @@ class WallMember:
         response = Response(
             nodal_force=nodal_force,
             yield_components_force=self.get_yield_components_force(nodal_disp),
-            nodal_strains = self.get_nodal_strains(nodal_disp),
-            nodal_stresses = self.get_nodal_stresses(nodal_disp),
+            nodal_strains=self.get_nodal_strains(nodal_disp),
+            nodal_stresses=self.get_nodal_stresses(nodal_disp),
         )
         return response
