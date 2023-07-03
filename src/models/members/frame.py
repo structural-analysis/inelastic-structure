@@ -58,7 +58,7 @@ class FrameMember2D:
         # Bathe K. J., Finite Element Procedures, 1996, page 151.
         l = self.l
         a = self.section.geometry.a
-        i = self.section.geometry.ix
+        i = self.section.geometry.iz
         e = self.section.material.e
         ends_fixity = self.ends_fixity
 
@@ -205,7 +205,7 @@ class FrameMember3D:
 
         l = self.l
         a = self.section.geometry.a
-        ix = self.section.geometry.ix
+        j = self.section.geometry.j
         iy = self.section.geometry.iy
         iz = self.section.geometry.iz
         e = self.section.material.e
@@ -217,13 +217,13 @@ class FrameMember3D:
                 [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
                 [0, 12 * e * iz / (l ** 3), 0, 0, 0, 6 * e * iz / (l ** 2), 0, -12 * e * iz / (l ** 3), 0, 0, 0, 6 * e * iz / (l ** 2)],
                 [0, 0, 12 * e * iy / (l ** 3), 0, -6 * e * iy / (l ** 2), 0, 0, 0, -12 * e * iy / (l ** 3), 0, -6 * e * iy / (l ** 2), 0],
-                [0, 0, 0, g * ix / l, 0, 0, 0, 0, 0, -g * ix / l, 0, 0],
+                [0, 0, 0, g * j / l, 0, 0, 0, 0, 0, -g * j / l, 0, 0],
                 [0, 0, -6 * e * iy / (l ** 2), 0, 4 * e * iy / l, 0, 0, 0, 6 * e * iy / (l ** 2), 0, 2 * e * iy / l, 0],
                 [0, 6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l],
                 [-e * a / l, 0, 0, 0, 0, 0, e * a / l, 0, 0, 0, 0, 0],
                 [0, -12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2), 0, 12 * e * iz / (l ** 3), 0, 0, 0, -6 * e * iz / (l ** 2)],
                 [0, 0, -12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0, 0, 0, 12 * e * iy / (l ** 3), 0, 6 * e * iy / (l ** 2), 0],
-                [0, 0, 0, - g * ix / l, 0, 0, 0, 0, 0, g * ix / l, 0, 0],
+                [0, 0, 0, - g * j / l, 0, 0, 0, 0, 0, g * j / l, 0, 0],
                 [0, 0, -6 * e * iy / (l ** 2), 0, 2 * e * iy / l, 0, 0, 0, 6 * e * iy / (l ** 2), 0, 4 * e * iy / l, 0],
                 [0, 6 * e * iz / (l ** 2), 0, 0, 0, 2 * e * iz / l, 0, -6 * e * iz / (l ** 2), 0, 0, 0, 4 * e * iz / l]
             ])

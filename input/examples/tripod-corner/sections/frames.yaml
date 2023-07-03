@@ -5,7 +5,7 @@ beam1:
     nu: 0.3
   geometry:
     a: 1.1e-2
-    ix: 1.10916666667e-3
+    iz: 1.10916666667e-3
     iy: 0
   nonlinear:
     is_direct_capacity: false

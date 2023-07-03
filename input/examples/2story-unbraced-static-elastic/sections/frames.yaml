@@ -5,7 +5,7 @@ sec1:
     nu: 0.3
   geometry:
     a: 16.0e-4
-    ix: 540.0e-8
+    iz: 540.0e-8
     iy: 0
   nonlinear:
     is_direct_capacity: true

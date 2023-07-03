@@ -12,9 +12,9 @@ class Material:
 class Geometry:
     def __init__(self, input_geometry):
         self.a = input_geometry["a"]
-        self.ix = input_geometry["ix"]
+        self.j = input_geometry.get("j", 0)
         self.iy = input_geometry["iy"]
-        self.iz = input_geometry.get("iz", 0)
+        self.iz = input_geometry["iz"]
 
 
 class Nonlinear:
