@@ -18,10 +18,10 @@ def run(example_name):
     desired_responses = [
         "load_levels",
         "nodal_disp",
-        "members_nodal_forces",
         "members_disps",
-        "nodal_strains",
-        "nodal_stresses",
+        "members_nodal_forces",
+        "members_nodal_strains",
+        "members_nodal_stresses",
         # "top_internal_strains",
         # "bottom_internal_strains",
         # "top_internal_stresses",

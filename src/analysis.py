@@ -29,6 +29,8 @@ class StaticSensitivity:
     nodal_disp: np.matrix
     members_nodal_forces: np.matrix
     members_disps: np.matrix
+    members_nodal_strains: np.matrix
+    members_nodal_stresses: np.matrix
 
 
 @dataclass
@@ -72,9 +74,11 @@ class Analysis:
                 self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
                 sensitivity = self.get_sensitivity()
                 self.pv = sensitivity.pv
-                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
-                self.members_disps_sensitivity = sensitivity.members_disps
                 self.nodal_disp_sensitivity = sensitivity.nodal_disp
+                self.members_disps_sensitivity = sensitivity.members_disps
+                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
+                self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
+                self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
@@ -392,6 +396,8 @@ class Analysis:
         members_nodal_forces_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         nodal_disp_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.components_count), dtype=object))
         members_disps_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_nodal_strains_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_nodal_stresses_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         pv_column = 0
 
         for member_num, member in enumerate(members):
@@ -415,10 +421,15 @@ class Analysis:
                     affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
-                    # FIXME: GENERALIZE PLEASE
-                    if member_num == affected_member_num:
-                        usef = structure.members.list[affected_member_num].usefs.T[comp_num]
-                        affected_member_yield_components_force -= usef.T
+                    if member.__class__.__name__ in ["WallMember", "PlateMember"]:
+                        # FIXME: GENERALIZE PLEASE
+                        if member_num == affected_member_num:
+                            usef = structure.members.list[affected_member_num].usefs.T[comp_num]
+                            affected_member_yield_components_force -= usef.T
+                        affected_member_nodal_strains = affected_member_response.nodal_strains
+                        affected_member_nodal_stresses = affected_member_response.nodal_stresses
+                        members_nodal_strains_sensitivity[affected_member_num, pv_column] = affected_member_nodal_strains
+                        members_nodal_stresses_sensitivity[affected_member_num, pv_column] = affected_member_nodal_stresses
                     members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
@@ -430,6 +441,8 @@ class Analysis:
             nodal_disp=nodal_disp_sensitivity,
             members_nodal_forces=members_nodal_forces_sensitivity,
             members_disps=members_disps_sensitivity,
+            members_nodal_strains=members_nodal_strains_sensitivity,
+            members_nodal_stresses=members_nodal_stresses_sensitivity,
         )
         return sensitivity
 
