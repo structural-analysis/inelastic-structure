@@ -395,7 +395,8 @@ class Analysis:
         pv_column = 0
 
         for member_num, member in enumerate(members):
-            for force in member.udefs.T:
+            # FIXME: GENERALIZE PLEASE
+            for comp_num, force in enumerate(member.udefs.T):
                 fv = np.matrix(np.zeros((structure.dofs_count, 1)))
                 global_force = member.t.T * force.T
                 local_node_base_dof = 0
@@ -414,6 +415,10 @@ class Analysis:
                     affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
+                    # FIXME: GENERALIZE PLEASE
+                    if member_num == affected_member_num:
+                        usef = structure.members.list[affected_member_num].usefs.T[comp_num]
+                        affected_member_yield_components_force -= usef.T
                     members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force

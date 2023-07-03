@@ -54,7 +54,9 @@ class WallMember:
         self.t = self.get_transform()
         self.m = None
         # udef: unit distorsions equivalent forces
-        self.udefs = self.get_nodal_forces_from_unit_distortions()
+        # usef: unit distorsions equivalent stresses
+        # FIXME: GENERALIZE PLEASE
+        self.udefs, self.usefs = self.get_nodal_forces_from_unit_distortions()
 
     @property
     def gauss_points(self):
@@ -214,6 +216,7 @@ class WallMember:
             b = self.get_shape_derivatives(gauss_point)
             j = self.get_jacobian(gauss_point)
             j_det = np.linalg.det(j)
+            # gauss_point_k = gauss_point.weight * b.T * self.section.ce * b * j_det * self.section.geometry.thickness * self.section.geometry.thickness * self.section.geometry.thickness
             gauss_point_k = gauss_point.weight * b.T * self.section.ce * b * j_det * self.section.geometry.thickness
             k += gauss_point_k
         return k
@@ -303,18 +306,22 @@ class WallMember:
         distortion = self.get_unit_distortion(gauss_point_component_num)
         j = self.get_jacobian(gauss_point)
         j_det = np.linalg.det(j)
-        f = gauss_point_b.T * self.section.ce * distortion * j_det * self.section.geometry.thickness
-        # NOTE: forces are internal, so we must use negative sign:
-        return -f
+        f = gauss_point_b.T * self.section.ce * distortion * self.section.geometry.thickness * self.section.geometry.thickness
+        # f = gauss_point_b.T * self.section.ce * distortion
+        s = self.section.ce * distortion * self.section.geometry.thickness / j_det
+        # s = self.section.ce * distortion
+        return f, s
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
+        gauss_points_stresses = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.components_count)))
         component_base_num = 0
         for gauss_point in self.gauss_points:
             for j in range(3):
-                nodal_forces[:, component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)
+                nodal_forces[:, component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)[0]
+                gauss_points_stresses[component_base_num:(component_base_num + 3), component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)[1]
             component_base_num += 3
-        return nodal_forces
+        return nodal_forces, gauss_points_stresses
 
     def get_response(self, nodal_disp, fixed_force=None):
         if fixed_force is None:

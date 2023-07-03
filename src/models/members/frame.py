@@ -46,7 +46,6 @@ class FrameMember2D:
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces
         self.udefs = self.get_nodal_forces_from_unit_distortions()
-        # print(f"{self.udefs=}")
 
     def _length(self):
         a = self.nodes[0]
