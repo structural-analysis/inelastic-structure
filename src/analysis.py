@@ -414,11 +414,26 @@ class Analysis:
 
                 affected_structure_disp = self.get_nodal_disp(fv)
                 nodal_disp_sensitivity[0, pv_column] = affected_structure_disp[0, 0]
+                # TODO: it is good if any member has a disp vector (and disps matrix from sensitivity) property which is filled after analysis.
+                # then we can iterate only on members instead of members count.
+                # each member also has a num property and no need to get their position in the list.
+                # there is another shortcut to do a clean way. create a AffectedMember class with num, disp, disps properties
+                # which it's objects are created after analysis.
                 affected_member_disps = self.get_members_disps(affected_structure_disp[0, 0])
                 current_affected_member_ycns = 0
                 for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
-                    fixed_force = -force.T if member_num == affected_member_num else None
-                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
+                    fixed_force_shape = (structure.members.list[affected_member_num].dofs_count, 1)
+                    fixed_force = -force.T if member_num == affected_member_num else np.matrix(np.zeros((fixed_force_shape)))
+                    if structure.members.list[affected_member_num].__class__.__name__ in ["WallMember", "PlateMember"]:
+                        # NOTE: yield_specs.components_count has different meanings in different members.
+                        fixed_stress_shape = (structure.members.list[affected_member_num].yield_specs.components_count, 1)
+                        if member_num == affected_member_num:
+                            fixed_stress = -structure.members.list[affected_member_num].usefs.T[comp_num].T
+                        else:
+                            fixed_stress = np.matrix(np.zeros((fixed_stress_shape)))
+                    else:
+                        fixed_stress = None
+                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force, fixed_stress)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
                     if member.__class__.__name__ in ["WallMember", "PlateMember"]:

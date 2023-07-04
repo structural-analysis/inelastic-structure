@@ -131,7 +131,7 @@ class FrameMember2D:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
-    def get_response(self, nodal_disp, fixed_force=None):
+    def get_response(self, nodal_disp, fixed_force=None, fixed_stress=None):
         # nodal_disp: numpy matrix
         if fixed_force is None:
             fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
