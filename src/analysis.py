@@ -14,6 +14,8 @@ from src.functions import get_elastoplastic_response
 class InternalResponses:
     p0: np.matrix
     members_nodal_forces: np.matrix
+    members_nodal_strains: np.matrix
+    members_nodal_stresses: np.matrix
     members_internal_moments: np.matrix
     members_top_internal_strains: np.matrix
     members_bottom_internal_strains: np.matrix
@@ -27,6 +29,8 @@ class StaticSensitivity:
     nodal_disp: np.matrix
     members_nodal_forces: np.matrix
     members_disps: np.matrix
+    members_nodal_strains: np.matrix
+    members_nodal_stresses: np.matrix
 
 
 @dataclass
@@ -57,6 +61,8 @@ class Analysis:
             self.elastic_members_disps = self.get_members_disps(self.elastic_nodal_disp[0, 0])
             internal_responses = self.get_internal_responses(self.elastic_members_disps)
             self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
+            self.elastic_members_nodal_strains = internal_responses.members_nodal_strains
+            self.elastic_members_nodal_stresses = internal_responses.members_nodal_stresses
             self.elastic_members_internal_moments = internal_responses.members_internal_moments
             self.elastic_members_top_internal_strains = internal_responses.members_top_internal_strains
             self.elastic_members_bottom_internal_strains = internal_responses.members_bottom_internal_strains
@@ -68,9 +74,11 @@ class Analysis:
                 self.d0 = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
                 sensitivity = self.get_sensitivity()
                 self.pv = sensitivity.pv
-                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
-                self.members_disps_sensitivity = sensitivity.members_disps
                 self.nodal_disp_sensitivity = sensitivity.nodal_disp
+                self.members_disps_sensitivity = sensitivity.members_disps
+                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
+                self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
+                self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
@@ -331,6 +339,8 @@ class Analysis:
         structure = self.structure
         # calculate p0
         members_nodal_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_nodal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_nodal_stresses = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_internal_moments = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_top_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_bottom_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
@@ -345,7 +355,17 @@ class Analysis:
             p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = yield_components_force
             base_p0_row = base_p0_row + member.yield_specs.components_count
 
+            # TODO: we can clean and simplify appending member response to members_{responses}
+            # each member should contain only its responses, not zero response of other elements.
+            # but in members_{responses}, instead of appending with i (member num in structure.members.list),
+            # we should attach with member.num, and if one member has not some response it will not appended.
+            # we can use a dataclass like: 
+            # MemberResponse:
+            # member: object
+            # response: Response
             members_nodal_forces[i, 0] = member_response.nodal_force
+            members_nodal_strains[i, 0] = member_response.nodal_strains
+            members_nodal_stresses[i, 0] = member_response.nodal_stresses
             members_internal_moments[i, 0] = member_response.internal_moments
             members_top_internal_strains[i, 0] = member_response.top_internal_strains
             members_bottom_internal_strains[i, 0] = member_response.bottom_internal_strains
@@ -355,6 +375,8 @@ class Analysis:
         return InternalResponses(
             p0=p0,
             members_nodal_forces=members_nodal_forces,
+            members_nodal_strains=members_nodal_strains,
+            members_nodal_stresses=members_nodal_stresses,
             members_internal_moments=members_internal_moments,
             members_top_internal_strains=members_top_internal_strains,
             members_bottom_internal_strains=members_bottom_internal_strains,
@@ -382,10 +404,13 @@ class Analysis:
         members_nodal_forces_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         nodal_disp_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.components_count), dtype=object))
         members_disps_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_nodal_strains_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
+        members_nodal_stresses_sensitivity = np.matrix(np.zeros((structure.members.num, structure.yield_specs.components_count), dtype=object))
         pv_column = 0
 
         for member_num, member in enumerate(members):
-            for force in member.udefs.T:
+            # FIXME: GENERALIZE PLEASE
+            for comp_num, force in enumerate(member.udefs.T):
                 fv = np.matrix(np.zeros((structure.dofs_count, 1)))
                 global_force = member.t.T * force.T
                 local_node_base_dof = 0
@@ -397,13 +422,37 @@ class Analysis:
 
                 affected_structure_disp = self.get_nodal_disp(fv)
                 nodal_disp_sensitivity[0, pv_column] = affected_structure_disp[0, 0]
+                # TODO: it is good if any member has a disp vector (and disps matrix from sensitivity) property which is filled after analysis.
+                # then we can iterate only on members instead of members count.
+                # each member also has a num property and no need to get their position in the list.
+                # there is another shortcut to do a clean way. create a AffectedMember class with num, disp, disps properties
+                # which it's objects are created after analysis.
                 affected_member_disps = self.get_members_disps(affected_structure_disp[0, 0])
                 current_affected_member_ycns = 0
                 for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
-                    fixed_force = -force.T if member_num == affected_member_num else None
-                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
+                    fixed_force_shape = (structure.members.list[affected_member_num].dofs_count, 1)
+                    fixed_force = -force.T if member_num == affected_member_num else np.matrix(np.zeros((fixed_force_shape)))
+                    if structure.members.list[affected_member_num].__class__.__name__ in ["WallMember", "PlateMember"]:
+                        # NOTE: yield_specs.components_count has different meanings in different members.
+                        fixed_stress_shape = (structure.members.list[affected_member_num].yield_specs.components_count, 1)
+                        if member_num == affected_member_num:
+                            fixed_stress = -structure.members.list[affected_member_num].usefs.T[comp_num].T
+                        else:
+                            fixed_stress = np.matrix(np.zeros((fixed_stress_shape)))
+                    else:
+                        fixed_stress = None
+                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force, fixed_stress)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
+                    if member.__class__.__name__ in ["WallMember", "PlateMember"]:
+                        # FIXME: GENERALIZE PLEASE
+                        if member_num == affected_member_num:
+                            usef = structure.members.list[affected_member_num].usefs.T[comp_num]
+                            affected_member_yield_components_force -= usef.T
+                        affected_member_nodal_strains = affected_member_response.nodal_strains
+                        affected_member_nodal_stresses = affected_member_response.nodal_stresses
+                        members_nodal_strains_sensitivity[affected_member_num, pv_column] = affected_member_nodal_strains
+                        members_nodal_stresses_sensitivity[affected_member_num, pv_column] = affected_member_nodal_stresses
                     members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                     members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                     pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members.list[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
@@ -415,6 +464,8 @@ class Analysis:
             nodal_disp=nodal_disp_sensitivity,
             members_nodal_forces=members_nodal_forces_sensitivity,
             members_disps=members_disps_sensitivity,
+            members_nodal_strains=members_nodal_strains_sensitivity,
+            members_nodal_stresses=members_nodal_stresses_sensitivity,
         )
         return sensitivity
 

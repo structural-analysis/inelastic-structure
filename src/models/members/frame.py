@@ -9,6 +9,8 @@ from ..sections.frame import FrameSection
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
+    nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
     internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
     top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
@@ -29,15 +31,14 @@ class Mass:
 
 
 class FrameMember2D:
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, mass: Mass = None):
+    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, mass: Mass = None):
+        self.num = num
         self.nodes = nodes
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section
         self.dofs_count = 6
         self.yield_specs = YieldSpecs(self.section)
-        self.start = nodes[0]
-        self.end = nodes[1]
         self.l = self._length()
         self.mass = mass if mass else None
         self.m = self._mass() if mass else None
@@ -45,11 +46,10 @@ class FrameMember2D:
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces
         self.udefs = self.get_nodal_forces_from_unit_distortions()
-        # print(f"{self.udefs=}")
 
     def _length(self):
-        a = self.start
-        b = self.end
+        a = self.nodes[0]
+        b = self.nodes[1]
         l = np.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2)
         return l
 
@@ -119,8 +119,8 @@ class FrameMember2D:
         # Reference for transformation formula:
         # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 28
         # Note: the transformation matrix in Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 is not correct
-        a = self.start
-        b = self.end
+        a = self.nodes[0]
+        b = self.nodes[1]
         l = self.l
         t = np.matrix([
             [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
@@ -131,7 +131,7 @@ class FrameMember2D:
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
         return t
 
-    def get_response(self, nodal_disp, fixed_force=None):
+    def get_response(self, nodal_disp, fixed_force=None, fixed_stress=None):
         # nodal_disp: numpy matrix
         if fixed_force is None:
             fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))

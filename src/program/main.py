@@ -286,7 +286,6 @@ class MahiniMethod:
             x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
             # print("bbar reset ", bbar)
             x_history.append(x_cumulative.copy())
-
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
                     spm_var = self.get_primary_var(slack_candidate.var)

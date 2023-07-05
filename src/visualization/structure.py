@@ -31,11 +31,11 @@ def generate_frame_members(frames_array, nodes_array):
 
 def visualize_2d_frame(example_name):
     frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
-    global_cords_path = os.path.join(examples_dir, example_name, "global_cords.csv")
+    nodes_path = os.path.join(examples_dir, example_name, "nodes.csv")
     frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
 
     nodes = []
-    nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
+    nodes_array = np.loadtxt(fname=nodes_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
     for i in range(nodes_array.shape[0]):
         x = nodes_array[i][0]
         y = nodes_array[i][1]

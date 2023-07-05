@@ -2,32 +2,44 @@ import os
 import yaml
 import logging
 import numpy as np
+from enum import Enum
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, LinearBoundary
 from src.models.sections.frame import FrameSection
 from src.models.sections.plate import PlateSection
+from src.models.sections.wall import WallSection
 from src.models.members.frame import FrameMember2D, Mass
 from src.models.members.plate import PlateMember
+from src.models.members.wall import WallMember
 from src.models.loads import Dynamic, Joint
-from src.settings import settings
 
 examples_dir = "input/examples/"
 general_file = "general.yaml"
-global_cords_file = "global_cords.csv"
+nodes_file = "nodes.csv"
 nodal_boundaries_file = "boundaries/nodal.csv"
 linear_boundaries_file = "boundaries/linear.csv"
 static_joint_loads_file = "loads/static/joint_loads.csv"
 frame_sections_file = "sections/frames.yaml"
 plate_sections_file = "sections/plates.yaml"
+wall_sections_file = "sections/walls.yaml"
 frame_members_file = "members/frames.csv"
 plate_members_file = "members/plates.csv"
+wall_members_file = "members/walls.csv"
 masses_file = "members/masses.csv"
-load_limit_file = "limits/load.csv"
+load_limits_file = "limits/load.csv"
 disp_limits_file = "limits/disp.csv"
 dynamic_loads_dir = "loads/dynamic/"
 joint_loads_file = "loads/static/joint_loads.csv"
 output_dir = "output/examples/"
+
+
+class NodeDOF(Enum):
+    FRAME2D = 3
+    FRAME3D = 6
+    WALL = 2
+    PLATE = 3
+
 
 def get_general_properties(example_name):
     general_file_path = os.path.join(examples_dir, example_name, general_file)
@@ -38,24 +50,24 @@ def get_general_properties(example_name):
 
 def create_initial_nodes(example_name, structure_dim):
     initial_nodes = []
-    global_cords_path = os.path.join(examples_dir, example_name, global_cords_file)
+    nodes_path = os.path.join(examples_dir, example_name, nodes_file)
     if structure_dim.lower() == "2d":
-        nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1)
+        nodes_array = np.loadtxt(fname=nodes_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1)
         for i in range(nodes_array.shape[0]):
             initial_nodes.append(Node(
-                num=i,
-                x=nodes_array[i][0],
-                y=nodes_array[i][1],
+                num=int(nodes_array[i][0]),
+                x=nodes_array[i][1],
+                y=nodes_array[i][2],
                 z=0,
             ))
     elif structure_dim.lower() == "3d":
-        nodes_array = np.loadtxt(fname=global_cords_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1)
+        nodes_array = np.loadtxt(fname=nodes_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1)
         for i in range(nodes_array.shape[0]):
             initial_nodes.append(Node(
-                num=i,
-                x=nodes_array[i][0],
-                y=nodes_array[i][1],
-                z=nodes_array[i][2],
+                num=int(nodes_array[i][0]),
+                x=nodes_array[i][1],
+                y=nodes_array[i][2],
+                z=nodes_array[i][3],
             ))
     return initial_nodes
 
@@ -128,6 +140,20 @@ def create_plate_sections(example_name):
         return {}
 
 
+def create_wall_sections(example_name):
+    wall_sections = {}
+    wall_sections_path = os.path.join(examples_dir, example_name, wall_sections_file)
+    try:
+        with open(wall_sections_path, "r") as path:
+            wall_sections_dict = yaml.safe_load(path)
+            for key, value in wall_sections_dict.items():
+                wall_sections[key] = WallSection(input=value)
+            return wall_sections
+    except FileNotFoundError:
+        logging.warning("wall sections input file not found")
+        return {}
+
+
 def create_frame_masses(example_name):
     # mass per length is applied in global direction so there is no need to transform.
     frame_masses = {}
@@ -142,7 +168,7 @@ def create_frame_masses(example_name):
     return frame_masses
 
 
-def create_frame_members(example_name, nodes, general_properties):
+def create_frame2d_members(example_name, nodes, general_properties):
     frame_members_path = os.path.join(examples_dir, example_name, frame_members_file)
     frame_sections = create_frame_sections(example_name)
     frame_masses = create_frame_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -156,13 +182,20 @@ def create_frame_members(example_name, nodes, general_properties):
 
     if frame_sections:
         for i in range(frames_array.shape[0]):
-            frame_section = frame_sections[frames_array[i, 0]]
+            member_num = int(frames_array[i, 0])
+            frame_section = frame_sections[frames_array[i, 1]]
+            member_nodes = frames_array[i, 2]
+            split_nodes = member_nodes.split("-")
             frame_members.append(
                 FrameMember2D(
-                    nodes=(nodes[int(frames_array[i, 1])], nodes[int(frames_array[i, 2])]),
-                    ends_fixity=frames_array[i, 3],
+                    num=member_num,
                     section=frame_section,
-                    mass=Mass(magnitude=frame_masses.get(i)) if frame_masses.get(i) else None
+                    nodes=(
+                        nodes[int(split_nodes[0])],
+                        nodes[int(split_nodes[1])],
+                    ),
+                    mass=Mass(magnitude=frame_masses.get(i)) if frame_masses.get(i) else None,
+                    ends_fixity=frames_array[i, 3],
                 )
             )
     return frame_members
@@ -195,6 +228,36 @@ def create_plate_members(example_name, nodes):
                 )
             )
     return plate_members
+
+
+def create_wall_members(example_name, nodes):
+    wall_members_path = os.path.join(examples_dir, example_name, wall_members_file)
+    wall_sections = create_wall_sections(example_name)
+    wall_members = []
+
+    try:
+        walls_array = np.loadtxt(fname=wall_members_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    except FileNotFoundError:
+        logging.warning("wall members input file not found")
+        return []
+
+    if wall_sections:
+        for i in range(walls_array.shape[0]):
+            member_num = int(walls_array[i, 0])
+            wall_section = wall_sections[walls_array[i, 1]]
+            element_type = walls_array[i, 2].upper()
+            member_nodes = walls_array[i, 3]
+            split_nodes = member_nodes.split("-")
+            final_nodes = [nodes[int(split_node)] for split_node in split_nodes]
+            wall_members.append(
+                WallMember(
+                    num=member_num,
+                    section=wall_section,
+                    element_type=element_type,
+                    nodes=tuple(final_nodes)
+                )
+            )
+    return wall_members
 
 
 def create_joint_load(example_name):
@@ -246,7 +309,7 @@ def create_dynamic_loads(example_name):
 
 def get_structure_input(example_name):
     # joint_load_path = os.path.join(examples_dir, example_name, static_joint_loads_file)
-    load_limit_path = os.path.join(examples_dir, example_name, load_limit_file)
+    load_limit_path = os.path.join(examples_dir, example_name, load_limits_file)
     disp_limits_path = os.path.join(examples_dir, example_name, disp_limits_file)
 
     disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
@@ -260,7 +323,7 @@ def get_structure_input(example_name):
     initial_nodes = create_initial_nodes(example_name, structure_dim=general_properties["structure_dim"])
     nodal_boundaries = create_nodal_boundaries(example_name, initial_nodes=initial_nodes)
     linear_boundaries = create_linear_boundaries(example_name, initial_nodes=initial_nodes)
-    frame_members = create_frame_members(
+    frame2d_members = create_frame2d_members(
         example_name=example_name,
         general_properties=general_properties,
         nodes=initial_nodes,
@@ -270,6 +333,18 @@ def get_structure_input(example_name):
         example_name=example_name,
         nodes=initial_nodes,
     )
+
+    wall_members = create_wall_members(
+        example_name=example_name,
+        nodes=initial_nodes,
+    )
+
+    if frame2d_members:
+        node_dofs_count = NodeDOF.FRAME2D.value
+    elif wall_members:
+        node_dofs_count = NodeDOF.WALL.value
+    elif plate_members:
+        node_dofs_count = NodeDOF.PLATE.value
 
     limits = {
         "load_limit": load_limit,
@@ -282,11 +357,11 @@ def get_structure_input(example_name):
         "distributed": [],
         "dynamic": dynamic_loads,
     }
-
     input = {
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
-        "members": frame_members + plate_members,
+        "node_dofs_count": node_dofs_count, 
+        "members": frame2d_members + plate_members + wall_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,
         "loads": loads,

@@ -1,4 +1,4 @@
-section,start_node,end_node,ends_fixity
-rect,0,1,hinge_hinge
-rect,1,2,hinge_hinge
-rect,2,1,hinge_hinge
+num,section,nodes,ends_fixity
+0,rect,0-1,hinge_hinge
+1,rect,1-2,hinge_hinge
+2,rect,2-1,hinge_hinge
