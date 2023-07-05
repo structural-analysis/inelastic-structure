@@ -1,10 +1,24 @@
 import numpy as np
 from math import isclose
 from scipy.linalg import cho_factor, eigh
+from dataclasses import dataclass
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
 from src.settings import settings
+
+
+@dataclass
+class NodeMapper:
+    structure_node: Node
+    attached_members: list
+
+
+@dataclass
+class AttachedMember:
+    member: object
+    node: Node
+    member_node_num: int
 
 
 class YieldSpecs:
@@ -48,6 +62,7 @@ class Structure:
         self.members = Members(members_list=input["members"])
         self.nodes = self.get_nodes()
         self.nodes_count = len(self.nodes)
+        self.nodes_map = self.create_nodes_map()
         self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
@@ -113,6 +128,22 @@ class Structure:
             if member.__class__.__name__ == "PlateMember":
                 nodes = member.nodes
         return nodes
+
+    def create_nodes_map(self):
+        nodes_map: list(NodeMapper) = []
+        for structure_node in self.nodes:
+            nodes_map.append(NodeMapper(structure_node=structure_node, attached_members=[]))
+            for member in self.members.list:
+                for member_node in member.nodes:
+                    if member_node == structure_node:
+                        nodes_map[structure_node.num].attached_members.append(
+                            AttachedMember(
+                                member=member,
+                                node=member_node,
+                                member_node_num=member.nodes.index(member_node)
+                            )
+                        )
+        return nodes_map
 
     def _get_analysis_type(self):
         if self.general_properties.get("dynamic_analysis") and self.general_properties["dynamic_analysis"]["enabled"]:
