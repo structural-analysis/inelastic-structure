@@ -355,6 +355,14 @@ class Analysis:
             p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = yield_components_force
             base_p0_row = base_p0_row + member.yield_specs.components_count
 
+            # TODO: we can clean and simplify appending member response to members_{responses}
+            # each member should contain only its responses, not zero response of other elements.
+            # but in members_{responses}, instead of appending with i (member num in structure.members.list),
+            # we should attach with member.num, and if one member has not some response it will not appended.
+            # we can use a dataclass like: 
+            # MemberResponse:
+            # member: object
+            # response: Response
             members_nodal_forces[i, 0] = member_response.nodal_force
             members_nodal_strains[i, 0] = member_response.nodal_strains
             members_nodal_stresses[i, 0] = member_response.nodal_stresses
