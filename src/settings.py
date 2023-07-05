@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-4element-inelastic-q8r"
+    example_name: str = "3story-static-inelastic-softening"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     examples_to_test = [

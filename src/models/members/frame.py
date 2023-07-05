@@ -56,6 +56,8 @@ class FrameMember2D:
     def _stiffness(self):
         # Reference for stiffness formula:
         # Bathe K. J., Finite Element Procedures, 1996, page 151.
+        # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 260
+        # Note: rotation in bathe is opposite of kassimali. it is affacted the stiffness elements signs
         l = self.l
         a = self.section.geometry.a
         i = self.section.geometry.iz
@@ -64,39 +66,40 @@ class FrameMember2D:
 
         if (ends_fixity == "fix_fix"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0), 0.0, -12.0 * e * i / (l ** 3.0), -6.0 * e * i / (l ** 2.0)],
-                [0.0, -6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l), 0.0, 6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l)],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0), 0.0, 12.0 * e * i / (l ** 3.0), 6.0 * e * i / (l ** 2.0)],
-                [0.0, -6.0 * e * i / (l ** 2.0), 2.0 * e * i / (l), 0.0, 6.0 * e * i / (l ** 2.0), 4.0 * e * i / (l)]])
+                [e * a / l, 0, 0, -e * a / l, 0, 0],
+                [0, 12 * e * i / (l ** 3), 6 * e * i / (l ** 2), 0, -12 * e * i / (l ** 3), 6 * e * i / (l ** 2)],
+                [0, 6 * e * i / (l ** 2), 4 * e * i / (l), 0, -6 * e * i / (l ** 2), 2 * e * i / (l)],
+                [-e * a / l, 0, 0, e * a / l, 0, 0],
+                [0, -12 * e * i / (l ** 3), -6 * e * i / (l ** 2), 0, 12 * e * i / (l ** 3), -6 * e * i / (l ** 2)],
+                [0, 6 * e * i / (l ** 2), 2 * e * i / (l), 0, -6 * e * i / (l ** 2), 4 * e * i / (l)]])
 
+        # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 343
         elif (ends_fixity == "hinge_fix"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), 0.0, 0.0, -3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0)],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), 0.0, 0.0, 3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0)],
-                [0.0, -3.0 * e * i / (l ** 2.0), 0.0, 0.0, 3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l)]])
+                [e * a / l, 0, 0, -e * a / l, 0, 0],
+                [0, 3 * e * i / (l ** 3), 0, 0, -3 * e * i / (l ** 3), 3 * e * i / (l ** 2)],
+                [0, 0, 0, 0, 0, 0],
+                [-e * a / l, 0, 0, e * a / l, 0, 0],
+                [0, -3 * e * i / (l ** 3), 0, 0, 3 * e * i / (l ** 3), -3 * e * i / (l ** 2)],
+                [0, 3 * e * i / (l ** 2), 0, 0, -3 * e * i / (l ** 2), 3 * e * i / (l)]])
 
         elif (ends_fixity == "fix_hinge"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 3.0 * e * i / (l ** 3.0), -3.0 * e * i / (l ** 2.0), 0.0, -3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, -3.0 * e * i / (l ** 2.0), 3.0 * e * i / (l), 0.0, 3.0 * e * i / (l ** 2.0), 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, -3.0 * e * i / (l ** 3.0), 3.0 * e * i / (l ** 2.0), 0.0, 3.0 * e * i / (l ** 3.0), 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+                [e * a / l, 0, 0, -e * a / l, 0, 0],
+                [0, 3 * e * i / (l ** 3), 3 * e * i / (l ** 2), 0, -3 * e * i / (l ** 3), 0],
+                [0, 3 * e * i / (l ** 2), 3 * e * i / (l), 0, -3 * e * i / (l ** 2), 0],
+                [-e * a / l, 0, 0, e * a / l, 0, 0],
+                [0, -3 * e * i / (l ** 3), -3 * e * i / (l ** 2), 0, 3 * e * i / (l ** 3), 0],
+                [0, 0, 0, 0, 0, 0]])
 
         elif (ends_fixity == "hinge_hinge"):
             k = np.matrix([
-                [e * a / l, 0.0, 0.0, -e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [-e * a / l, 0.0, 0.0, e * a / l, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+                [e * a / l, 0, 0, -e * a / l, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [-e * a / l, 0, 0, e * a / l, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]])
 
         return k
 
@@ -117,7 +120,7 @@ class FrameMember2D:
 
     def _transform_matrix(self):
         # Reference for transformation formula:
-        # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 28
+        # Papadrakakis M., Matrix Methods for Advanced Structural Analysis, 2017, page 28, page 92
         # Note: the transformation matrix in Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 is not correct
         a = self.nodes[0]
         b = self.nodes[1]
