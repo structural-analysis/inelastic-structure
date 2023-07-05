@@ -5,13 +5,13 @@ sec1:
     nu: 0.3
     g: 79.3e+9
   geometry:
-    a: 1.5e-2
-    iz: 2.77e-4
-    iy: 0
-    j: 3.4e-3
+    a: 80.0e-4
+    iz: 1.066666e-3
+    iy: 2.666666e-4
+    j: 3.729138e-6
   nonlinear:
-    is_direct_capacity: true
-    has_axial_yield: true
+    is_direct_capacity: false
+    has_axial_yield: false
     zp: 0
     abar0: 0.15
     ap: 4.2e+6
