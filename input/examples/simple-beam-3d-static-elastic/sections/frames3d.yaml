@@ -12,7 +12,7 @@ sec1:
   nonlinear:
     is_direct_capacity: false
     has_axial_yield: false
-    zp: 0
+    zp: 1000
     abar0: 0.15
     ap: 4.2e+6
     mp: 5.488e+5

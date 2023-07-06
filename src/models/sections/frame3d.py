@@ -6,11 +6,13 @@ class Material:
         self.e = input_material["e"]
         self.sy = input_material["sy"]
         self.nu = input_material["nu"]
+        self.g = input_material["g"]
 
 
 class Geometry:
     def __init__(self, input_geometry):
         self.a = input_geometry["a"]
+        self.j = input_geometry["j"]
         self.iy = input_geometry["iy"]
         self.iz = input_geometry["iz"]
 
@@ -83,7 +85,7 @@ class Softening:
         return q
 
 
-class FrameSection:
+class Frame3dSection:
     def __init__(self, input: dict):
         self.material = Material(input["material"])
         self.geometry = Geometry(input["geometry"])
