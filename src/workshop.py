@@ -6,7 +6,8 @@ from enum import Enum
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, LinearBoundary
-from src.models.sections.frame2d import Frame2dSection
+from src.models.sections.frame2d import Frame2DSection
+from src.models.sections.frame3d import Frame3DSection
 from src.models.sections.plate import PlateSection
 from src.models.sections.wall import WallSection
 from src.models.members.frame2d import Frame2DMember, Mass
@@ -120,7 +121,7 @@ def create_frame2d_sections(example_name, general_properties):
                 os.makedirs(nonlinear_capacity_dir)
 
         for key, value in frame_sections_dict.items():
-            frame_sections[key] = Frame2dSection(input=value)
+            frame_sections[key] = Frame2DSection(input=value)
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
                     ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
@@ -146,11 +147,12 @@ def create_frame3d_sections(example_name, general_properties):
                 os.makedirs(nonlinear_capacity_dir)
 
         for key, value in frame_sections_dict.items():
-            frame_sections[key] = Frame2dSection(input=value)
+            frame_sections[key] = Frame3DSection(input=value)
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
                     ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
-                    ff.write(f"2,mp,{frame_sections[key].nonlinear.mp}\n")
+                    ff.write(f"4,mpy,{frame_sections[key].nonlinear.mpy}\n")
+                    ff.write(f"5,mpz,{frame_sections[key].nonlinear.mpz}\n")
 
         return frame_sections
     except FileNotFoundError:
@@ -426,6 +428,8 @@ def get_structure_input(example_name):
 
     if frame2d_members:
         node_dofs_count = NodeDOF.FRAME2D.value
+    elif frame3d_members:
+        node_dofs_count = NodeDOF.FRAME3D.value
     elif wall_members:
         node_dofs_count = NodeDOF.WALL.value
     elif plate_members:
@@ -446,7 +450,7 @@ def get_structure_input(example_name):
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
         "node_dofs_count": node_dofs_count, 
-        "members": frame2d_members + plate_members + wall_members,
+        "members": frame2d_members + frame3d_members + plate_members + wall_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,
         "loads": loads,

@@ -21,9 +21,11 @@ class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.is_direct_capacity = input_nonlinear["is_direct_capacity"]
         self.has_axial_yield = input_nonlinear["has_axial_yield"]
-        self.zp = float(input_nonlinear["zp"])
+        self.zpz = float(input_nonlinear["zpz"])
+        self.zpy = float(input_nonlinear["zpy"])
         self.abar0 = float(input_nonlinear["abar0"])
-        self.mp = float(input_nonlinear["mp"]) if self.is_direct_capacity else self.zp * material.sy
+        self.mpz = float(input_nonlinear["mpz"]) if self.is_direct_capacity else self.zpz * material.sy
+        self.mpy = float(input_nonlinear["mpz"]) if self.is_direct_capacity else self.zpy * material.sy
         self.ap = float(input_nonlinear["ap"]) if self.is_direct_capacity else geometry.a * material.sy
 
 
@@ -45,16 +47,16 @@ class YieldSpecs:
                     1 / nonlinear.ap,
                 ],
                 [
-                    (1 - nonlinear.abar0) / nonlinear.mp,
-                    1 / nonlinear.mp,
-                    (1 - nonlinear.abar0) / nonlinear.mp,
-                    -(1 - nonlinear.abar0) / nonlinear.mp,
-                    -1 / nonlinear.mp,
-                    -(1 - nonlinear.abar0) / nonlinear.mp,
+                    (1 - nonlinear.abar0) / nonlinear.mpz,
+                    1 / nonlinear.mpz,
+                    (1 - nonlinear.abar0) / nonlinear.mpz,
+                    -(1 - nonlinear.abar0) / nonlinear.mpz,
+                    -1 / nonlinear.mpz,
+                    -(1 - nonlinear.abar0) / nonlinear.mpz,
                 ]
             ])
         else:
-            phi = np.matrix([-1 / nonlinear.mp, 1 / nonlinear.mp])
+            phi = np.matrix([-1 / nonlinear.mpz, 1 / nonlinear.mpz])
         return phi
 
 
@@ -85,7 +87,7 @@ class Softening:
         return q
 
 
-class Frame3dSection:
+class Frame3DSection:
     def __init__(self, input: dict):
         self.material = Material(input["material"])
         self.geometry = Geometry(input["geometry"])

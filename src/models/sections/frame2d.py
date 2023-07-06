@@ -83,7 +83,7 @@ class Softening:
         return q
 
 
-class Frame2dSection:
+class Frame2DSection:
     def __init__(self, input: dict):
         self.material = Material(input["material"])
         self.geometry = Geometry(input["geometry"])
