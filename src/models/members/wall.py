@@ -312,11 +312,9 @@ class WallMember:
         distortion = self.get_unit_distortion(gauss_point_component_num)
         j = self.get_jacobian(gauss_point)
         j_det = np.linalg.det(j)
-        f = gauss_point_b.T * self.section.ce * distortion * self.section.geometry.thickness * self.section.geometry.thickness
-        # f = gauss_point_b.T * self.section.ce * distortion
-        s = self.section.ce * distortion * self.section.geometry.thickness / j_det
-        # s = self.section.ce * distortion
-        return f, s
+        nodal_force = gauss_point_b.T * self.section.ce * distortion * self.section.geometry.thickness * j_det
+        gauss_point_stress = self.section.ce * distortion
+        return nodal_force, gauss_point_stress
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
