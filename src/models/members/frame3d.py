@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from ..points import Node
-from ..sections.frame import FrameSection
+from ..sections.frame3d import Frame3dSection
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Response:
 
 
 class YieldSpecs:
-    def __init__(self, section: FrameSection):
+    def __init__(self, section: Frame3dSection):
         self.points_count = 2
         self.components_count = self.points_count * section.yield_specs.components_count
         self.pieces_count = self.points_count * section.yield_specs.pieces_count
@@ -31,7 +31,7 @@ class Mass:
 
 
 class Frame3DMember:
-    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: FrameSection, roll_angle: float = 0, mass: Mass = None):
+    def __init__(self, nodes: tuple[Node, Node], ends_fixity, section: Frame3dSection, roll_angle: float = 0, mass: Mass = None):
         self.nodes = nodes
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity

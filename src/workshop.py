@@ -6,10 +6,10 @@ from enum import Enum
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, LinearBoundary
-from src.models.sections.frame import FrameSection
+from src.models.sections.frame2d import Frame2dSection
 from src.models.sections.plate import PlateSection
 from src.models.sections.wall import WallSection
-from src.models.members.frame import Frame2DMember, Mass
+from src.models.members.frame2d import Frame2DMember, Mass
 from src.models.members.frame3d import Frame3DMember
 from src.models.members.plate import PlateMember
 from src.models.members.wall import WallMember
@@ -120,7 +120,7 @@ def create_frame2d_sections(example_name, general_properties):
                 os.makedirs(nonlinear_capacity_dir)
 
         for key, value in frame_sections_dict.items():
-            frame_sections[key] = FrameSection(input=value)
+            frame_sections[key] = Frame2dSection(input=value)
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
                     ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
@@ -146,7 +146,7 @@ def create_frame3d_sections(example_name, general_properties):
                 os.makedirs(nonlinear_capacity_dir)
 
         for key, value in frame_sections_dict.items():
-            frame_sections[key] = FrameSection(input=value)
+            frame_sections[key] = Frame2dSection(input=value)
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
                     ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
