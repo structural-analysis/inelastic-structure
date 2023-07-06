@@ -9,13 +9,9 @@ from ..sections.plate import PlateSection
 class Response:
     nodal_force: np.matrix
     yield_components_force: np.matrix
+    nodal_moments: np.matrix
     nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass
@@ -46,10 +42,9 @@ class PlateMember:
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None
-        # udef: unit distorsions equivalent forces
-        # umef: unit distorsions equivalent moments
-        # FIXME: GENERALIZE PLEASE
-        self.udefs, self.umefs = self.get_nodal_forces_from_unit_distortions()
+        # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
+        # udet: unit distorsions equivalent tractions (stress, force, moment, ...) in gauss points
+        self.udefs, self.udets = self.get_nodal_forces_from_unit_distortions()
 
     @property
     def gauss_points(self):
@@ -284,24 +279,25 @@ class PlateMember:
         distortion = self.get_unit_distortion(gauss_point_component_num)
         j = self.get_jacobian(gauss_point)
         j_det = np.linalg.det(j)
-        f = gauss_point_b.T * self.section.ce * distortion * self.section.geometry.thickness * self.section.geometry.thickness
-        # f = gauss_point_b.T * self.section.ce * distortion
-        s = self.section.ce * distortion * self.section.geometry.thickness / j_det
-        # s = self.section.ce * distortion
-        return f, s
+        nodal_force = gauss_point_b.T * self.section.d * distortion * j_det
+        gauss_point_moment = self.section.d * distortion
+        return nodal_force, gauss_point_moment
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
-        gauss_points_stresses = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.components_count)))
+        gauss_points_moments = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.components_count)))
         component_base_num = 0
         for gauss_point in self.gauss_points:
             for j in range(3):
                 nodal_forces[:, component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)[0]
-                gauss_points_stresses[component_base_num:(component_base_num + 3), component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)[1]
+                gauss_points_moments[component_base_num:(component_base_num + 3), component_base_num + j] = self.get_nodal_force_from_unit_distortion(gauss_point=gauss_point, gauss_point_component_num=j)[1]
             component_base_num += 3
-        return nodal_forces, gauss_points_stresses
+        return nodal_forces, gauss_points_moments
 
     def get_response(self, nodal_disp, fixed_external=None, fixed_internal=None):
+        # fixed internal: fixed internal tractions like stress, force, moment, ... in gauss points of a member
+        # fixed external: fixed external forces like force, moment, ... nodes of a member
+
         if fixed_external is None:
             fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
 
@@ -316,7 +312,6 @@ class PlateMember:
         response = Response(
             nodal_force=nodal_force,
             yield_components_force=self.get_yield_components_force(nodal_disp),
-            nodal_strains=self.get_nodal_strains(nodal_disp),
-            nodal_stresses=self.get_nodal_moments(nodal_disp, fixed_internal),
+            nodal_moments=self.get_nodal_moments(nodal_disp, fixed_internal),
         )
         return response

@@ -11,11 +11,7 @@ class Response:
     yield_components_force: np.matrix
     nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 class YieldSpecs:
@@ -44,7 +40,7 @@ class FrameMember2D:
         self.m = self._mass() if mass else None
         self.k = self._stiffness()
         self.t = self._transform_matrix()
-        # udef: unit distorsions equivalent forces
+        # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
         self.udefs = self.get_nodal_forces_from_unit_distortions()
 
     def _length(self):
@@ -132,7 +128,9 @@ class FrameMember2D:
         return t
 
     def get_response(self, nodal_disp, fixed_external=None, fixed_internal=None):
-        # nodal_disp: numpy matrix
+        # fixed internal: fixed internal tractions like stress, force, moment, ... in gauss points of a member
+        # fixed external: fixed external forces like force, moment, ... nodes of a member
+
         if fixed_external is None:
             fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
 

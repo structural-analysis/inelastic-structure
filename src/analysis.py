@@ -16,11 +16,7 @@ class InternalResponses:
     members_nodal_forces: np.matrix
     members_nodal_strains: np.matrix
     members_nodal_stresses: np.matrix
-    members_internal_moments: np.matrix
-    members_top_internal_strains: np.matrix
-    members_bottom_internal_strains: np.matrix
-    members_top_internal_stresses: np.matrix
-    members_bottom_internal_stresses: np.matrix
+    members_nodal_moments: np.matrix
 
 
 @dataclass
@@ -63,11 +59,7 @@ class Analysis:
             self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
             self.elastic_members_nodal_strains = internal_responses.members_nodal_strains
             self.elastic_members_nodal_stresses = internal_responses.members_nodal_stresses
-            self.elastic_members_internal_moments = internal_responses.members_internal_moments
-            self.elastic_members_top_internal_strains = internal_responses.members_top_internal_strains
-            self.elastic_members_bottom_internal_strains = internal_responses.members_bottom_internal_strains
-            self.elastic_members_top_internal_stresses = internal_responses.members_top_internal_stresses
-            self.elastic_members_bottom_internal_stresses = internal_responses.members_bottom_internal_stresses
+            self.elastic_members_nodal_moments = internal_responses.members_nodal_moments
 
             if self.structure.is_inelastic:
                 self.p0 = internal_responses.p0
@@ -341,11 +333,7 @@ class Analysis:
         members_nodal_forces = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_nodal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         members_nodal_stresses = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
-        members_internal_moments = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
-        members_top_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
-        members_bottom_internal_strains = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
-        members_top_internal_stresses = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
-        members_bottom_internal_stresses = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
+        members_nodal_moments = np.matrix(np.zeros((structure.members.num, 1), dtype=object))
         p0 = np.matrix(np.zeros((structure.yield_specs.components_count, 1)))
         base_p0_row = 0
 
@@ -366,22 +354,14 @@ class Analysis:
             members_nodal_forces[i, 0] = member_response.nodal_force
             members_nodal_strains[i, 0] = member_response.nodal_strains
             members_nodal_stresses[i, 0] = member_response.nodal_stresses
-            members_internal_moments[i, 0] = member_response.internal_moments
-            members_top_internal_strains[i, 0] = member_response.top_internal_strains
-            members_bottom_internal_strains[i, 0] = member_response.bottom_internal_strains
-            members_top_internal_stresses[i, 0] = member_response.top_internal_stresses
-            members_bottom_internal_stresses[i, 0] = member_response.bottom_internal_stresses
+            members_nodal_moments[i, 0] = member_response.nodal_moments
 
         return InternalResponses(
             p0=p0,
             members_nodal_forces=members_nodal_forces,
             members_nodal_strains=members_nodal_strains,
             members_nodal_stresses=members_nodal_stresses,
-            members_internal_moments=members_internal_moments,
-            members_top_internal_strains=members_top_internal_strains,
-            members_bottom_internal_strains=members_bottom_internal_strains,
-            members_top_internal_stresses=members_top_internal_stresses,
-            members_bottom_internal_stresses=members_bottom_internal_stresses,
+            members_nodal_moments=members_nodal_moments,
         )
 
     def get_nodal_disp_limits(self, elastic_nodal_disp):
@@ -436,7 +416,7 @@ class Analysis:
                         # NOTE: yield_specs.components_count has different meanings in different members.
                         fixed_internal_shape = (structure.members.list[affected_member_num].yield_specs.components_count, 1)
                         if member_num == affected_member_num:
-                            fixed_internal = -structure.members.list[affected_member_num].usefs.T[comp_num].T
+                            fixed_internal = -structure.members.list[affected_member_num].udets.T[comp_num].T
                         else:
                             fixed_internal = np.matrix(np.zeros((fixed_internal_shape)))
                     else:
@@ -447,8 +427,8 @@ class Analysis:
                     if member.__class__.__name__ in ["WallMember", "PlateMember"]:
                         # FIXME: GENERALIZE PLEASE
                         if member_num == affected_member_num:
-                            usef = structure.members.list[affected_member_num].usefs.T[comp_num]
-                            affected_member_yield_components_force -= usef.T
+                            udet = structure.members.list[affected_member_num].udets.T[comp_num]
+                            affected_member_yield_components_force -= udet.T
                         affected_member_nodal_strains = affected_member_response.nodal_strains
                         affected_member_nodal_stresses = affected_member_response.nodal_stresses
                         members_nodal_strains_sensitivity[affected_member_num, pv_column] = affected_member_nodal_strains

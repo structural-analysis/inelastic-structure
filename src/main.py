@@ -20,14 +20,12 @@ def run(example_name):
         "nodal_disp",
         "nodal_strains",
         "nodal_stresses",
+        "nodal_moments",
         "members_disps",
         "members_nodal_forces",
         "members_nodal_strains",
         "members_nodal_stresses",
-        # "top_internal_strains",
-        # "bottom_internal_strains",
-        # "top_internal_stresses",
-        # "bottom_internal_stresses",
+        "members_nodal_moments",
     ]
     if analysis.type == "static":
         write_static_responses_to_file(

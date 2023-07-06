@@ -41,13 +41,6 @@ class YieldSpecs:
             ]).T / self.sy
         elif self.yield_surface == "mises":
             phi = get_von_mises_matrix(sy=self.sy)
-        # print(f"{phi.shape}")
-        # print(f"{phi[0, :]}")
-        # input()
-        # print(f"{phi[1, :]}")
-        # input()
-        # print(f"{phi[2, :]}")
-        # input()
         return phi
 
 

@@ -11,11 +11,7 @@ class Response:
     yield_components_force: np.matrix
     nodal_strains: np.matrix
     nodal_stresses: np.matrix
-    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass
@@ -53,10 +49,9 @@ class WallMember:
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None
-        # udef: unit distorsions equivalent forces
-        # usef: unit distorsions equivalent stresses
-        # FIXME: GENERALIZE PLEASE
-        self.udefs, self.usefs = self.get_nodal_forces_from_unit_distortions()
+        # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
+        # udet: unit distorsions equivalent tractions (stress, force, moment, ...) in gauss points
+        self.udefs, self.udets = self.get_nodal_forces_from_unit_distortions()
 
     @property
     def gauss_points(self):
@@ -328,6 +323,9 @@ class WallMember:
         return nodal_forces, gauss_points_stresses
 
     def get_response(self, nodal_disp, fixed_external=None, fixed_internal=None):
+        # fixed internal: fixed internal tractions like stress, force, moment, ... in gauss points of a member
+        # fixed external: fixed external forces like force, moment, ... nodes of a member
+
         if fixed_external is None:
             fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
 
