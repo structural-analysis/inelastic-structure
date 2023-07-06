@@ -107,7 +107,7 @@ def get_stiffness(gauss_points, nodes, t):
     v = 0.3
     e = 2e11
     w = 5 / 6 # warping coefficient
-    c = np.matrix(np.zeros((5, 5)))
+    d = np.matrix(np.zeros((5, 5)))
     cb = np.matrix([
         [1, v, 0],
         [v, 1, 0],
@@ -116,13 +116,13 @@ def get_stiffness(gauss_points, nodes, t):
     ceb = ((e * t ** 3) / (12 * (1 - v ** 2))) * cb
     cs = np.matrix(np.eye(2))
     ces = ((e * t * w)/(2 * (1 + v))) * cs
-    c[0:3, 0:3] = ceb
-    c[3:5, 3:5] = ces
+    d[0:3, 0:3] = ceb
+    d[3:5, 3:5] = ces
     for gauss_point in gauss_points:
         j = get_jacobian(gauss_point, nodes)
         b = get_b(gauss_point, j)
         det_j = get_jacob_det(j)
-        gauss_point_k = b.T * c * b * det_j
+        gauss_point_k = b.T * d * b * det_j
         k += gauss_point_k
     return k
 

@@ -430,18 +430,18 @@ class Analysis:
                 affected_member_disps = self.get_members_disps(affected_structure_disp[0, 0])
                 current_affected_member_ycns = 0
                 for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
-                    fixed_force_shape = (structure.members.list[affected_member_num].dofs_count, 1)
-                    fixed_force = -force.T if member_num == affected_member_num else np.matrix(np.zeros((fixed_force_shape)))
+                    fixed_external_shape = (structure.members.list[affected_member_num].dofs_count, 1)
+                    fixed_external = -force.T if member_num == affected_member_num else np.matrix(np.zeros((fixed_external_shape)))
                     if structure.members.list[affected_member_num].__class__.__name__ in ["WallMember", "PlateMember"]:
                         # NOTE: yield_specs.components_count has different meanings in different members.
-                        fixed_stress_shape = (structure.members.list[affected_member_num].yield_specs.components_count, 1)
+                        fixed_internal_shape = (structure.members.list[affected_member_num].yield_specs.components_count, 1)
                         if member_num == affected_member_num:
-                            fixed_stress = -structure.members.list[affected_member_num].usefs.T[comp_num].T
+                            fixed_internal = -structure.members.list[affected_member_num].usefs.T[comp_num].T
                         else:
-                            fixed_stress = np.matrix(np.zeros((fixed_stress_shape)))
+                            fixed_internal = np.matrix(np.zeros((fixed_internal_shape)))
                     else:
-                        fixed_stress = None
-                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force, fixed_stress)
+                        fixed_internal = None
+                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_external, fixed_internal)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
                     if member.__class__.__name__ in ["WallMember", "PlateMember"]:
@@ -660,8 +660,8 @@ class Analysis:
                 current_affected_member_ycns = 0
 
                 for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
-                    fixed_force = -load.T if member_num == affected_member_num else None
-                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_force)
+                    fixed_external = -load.T if member_num == affected_member_num else None
+                    affected_member_response = structure.members.list[affected_member_num].get_response(affected_member_disp[0, 0], fixed_external)
                     affected_member_nodal_force = affected_member_response.nodal_force
                     affected_member_yield_components_force = affected_member_response.yield_components_force
                     members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
