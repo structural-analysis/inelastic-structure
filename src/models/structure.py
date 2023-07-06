@@ -322,9 +322,6 @@ class Structure:
 
     def aggregate_boundaries(self):
         boundaries = self.nodal_boundaries
-        for member in self.members.list:
-            if member.__class__.__name__ == "PlateMember":
-                boundaries = self.get_nodal_boundaries_from_linear()
         return list(set(boundaries))
 
     def get_nodal_boundaries_from_linear(self):

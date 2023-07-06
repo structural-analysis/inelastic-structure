@@ -268,7 +268,7 @@ class PlateMember:
         return yield_components_force
 
     def get_unit_distortion(self, gauss_point_component_num):
-        distortion = np.matrix(np.zeros((3, 1)))
+        distortion = np.matrix(np.zeros((5, 1)))
         distortion[gauss_point_component_num, 0] = 1
         return distortion
 
@@ -281,7 +281,7 @@ class PlateMember:
         j_det = np.linalg.det(j)
         nodal_force = gauss_point_b.T * self.section.d * distortion * j_det
         gauss_point_moment = self.section.d * distortion
-        return nodal_force, gauss_point_moment
+        return nodal_force, gauss_point_moment[0:self.section.yield_specs.components_count]
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
