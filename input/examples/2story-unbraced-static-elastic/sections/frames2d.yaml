@@ -5,8 +5,8 @@ sec1:
     nu: 0.3
   geometry:
     a: 16.0e-4
-    iz: 540.0e-8
-    iy: 0
+    i33: 540.0e-8
+    i22: 0
   nonlinear:
     is_direct_capacity: true
     has_axial_yield: false

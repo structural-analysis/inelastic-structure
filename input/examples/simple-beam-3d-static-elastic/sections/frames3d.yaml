@@ -6,8 +6,8 @@ sec1:
     g: 7.692e+10
   geometry:
     a: 80.0e-4
-    iz: 2.666666e-5
-    iy: 1.066666e-6
+    i33: 2.666666e-5
+    i22: 1.066666e-6
     j: 3.729e-6
   nonlinear:
     is_direct_capacity: false

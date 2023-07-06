@@ -60,7 +60,7 @@ class Frame2DMember:
         # Note: rotation in bathe is opposite of kassimali. it is affacted the stiffness elements signs
         l = self.l
         a = self.section.geometry.a
-        i = self.section.geometry.iz
+        i = self.section.geometry.i33
         e = self.section.material.e
         ends_fixity = self.ends_fixity
 

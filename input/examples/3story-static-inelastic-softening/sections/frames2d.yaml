@@ -5,8 +5,8 @@ sec1:
     nu: 0.3
   geometry:
     a: 1.5e-2
-    iz: 2.77e-4
-    iy: 0
+    i33: 2.77e-4
+    i22: 0
   nonlinear:
     is_direct_capacity: true
     has_axial_yield: true
@@ -25,8 +25,8 @@ sec2:
     nu: 0.3
   geometry:
     a: 2.32e-3
-    iz: 1.58e-5
-    iy: 0
+    i33: 1.58e-5
+    i22: 0
   nonlinear:
     is_direct_capacity: true
     has_axial_yield: true
@@ -45,8 +45,8 @@ sec3:
     nu: 0.3
   geometry:
     a: 3.9e-3
-    iz: 8.38e-6
-    iy: 0
+    i33: 8.38e-6
+    i22: 0
   nonlinear:
     is_direct_capacity: true
     has_axial_yield: true

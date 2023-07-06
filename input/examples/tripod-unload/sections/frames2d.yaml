@@ -5,8 +5,8 @@ beam1:
     nu: 0.3
   geometry:
     a: 1.1e-2
-    iz: 1.10916666667e-3
-    iy: 0
+    i33: 1.10916666667e-3
+    i22: 0
   nonlinear:
     is_direct_capacity: false
     has_axial_yield: true
@@ -22,8 +22,8 @@ beam2:
     nu: 0.3
   geometry:
     a: 1.0e-3
-    iz: 8.33333333e-7
-    iy: 0
+    i33: 8.33333333e-7
+    i22: 0
   nonlinear:
     is_direct_capacity: false
     has_axial_yield: true
@@ -39,8 +39,8 @@ beam3:
     nu: 0.3
   geometry:
     a: 2.1e-2
-    iz: 7.7175e-3
-    iy: 0
+    i33: 7.7175e-3
+    i22: 0
   nonlinear:
     is_direct_capacity: false
     has_axial_yield: true

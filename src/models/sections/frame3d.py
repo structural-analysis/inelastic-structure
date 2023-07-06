@@ -13,8 +13,8 @@ class Geometry:
     def __init__(self, input_geometry):
         self.a = input_geometry["a"]
         self.j = input_geometry["j"]
-        self.iy = input_geometry["iy"]
-        self.iz = input_geometry["iz"]
+        self.i22 = input_geometry["i22"]
+        self.i33 = input_geometry["i33"]
 
 
 class Nonlinear:
