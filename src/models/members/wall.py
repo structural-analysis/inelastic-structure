@@ -52,7 +52,7 @@ class WallMember:
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
         self.t = self.get_transform()
-        self.m = None
+        self.m = None # mass computation in bathe, page 165, 166
         # udef: unit distorsions equivalent forces
         # usef: unit distorsions equivalent stresses
         # FIXME: GENERALIZE PLEASE

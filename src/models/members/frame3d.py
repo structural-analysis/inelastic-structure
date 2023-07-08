@@ -141,12 +141,18 @@ class Frame3DMember:
         mass = self.mass.magnitude
         m = np.matrix(
             [
-                [mass * l / 2, 0, 0, 0, 0, 0],
-                [0, mass * l / 2, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, mass * l / 2, 0, 0],
-                [0, 0, 0, 0, mass * l / 2, 0],
-                [0, 0, 0, 0, 0, 0],
+                [mass * l / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, mass * l / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, mass * l / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, mass * l / 2, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, mass * l / 2, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, mass * l / 2, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             ]
         )
         return m
@@ -161,11 +167,19 @@ class Frame3DMember:
         rxx = (b.x - a.x) / l
         rxy = (b.y - a.y) / l
         rxz = (b.z - a.z) / l
-        r = np.matrix([
-            [rxx, rxy, rxz],
-            [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2)],
-            [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2)]
-        ])
+        if rxx == 0 and rxz == 0:
+            # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 479
+            r = np.matrix([
+                [0, rxy, 0],
+                [-rxy * np.cos(si), 0, np.sin(si)],
+                [rxy * np.sin(si), 0, np.cos(si)],
+            ])
+        else:
+            r = np.matrix([
+                [rxx, rxy, rxz],
+                [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2)],
+                [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2)]
+            ])
         t = np.matrix(np.zeros((12, 12)))
         t[0:3, 0:3] = r
         t[3:6, 3:6] = r
@@ -345,11 +359,19 @@ class Frame3DMemberSAP:
         rxx = (b.x - a.x) / l
         rxy = (b.y - a.y) / l
         rxz = (b.z - a.z) / l
-        r = np.matrix([
-            [rxx, rxz, rxy],
-            [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si)],
-            [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si)],
-        ])
+        if rxx == 0 and rxz == 0:
+            # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 479
+            r = np.matrix([
+                [0, rxy, 0],
+                [rxy * np.sin(si), np.cos(si), 0],
+                [-rxy * np.cos(si), np.sin(si), 0],
+            ])
+        else:
+            r = np.matrix([
+                [rxx, rxz, rxy],
+                [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si)],
+                [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si)],
+            ])
         t = np.matrix(np.zeros((12, 12)))
         t[0:3, 0:3] = r
         t[3:6, 3:6] = r

@@ -11,7 +11,7 @@ from src.models.sections.frame3d import Frame3DSection
 from src.models.sections.plate import PlateSection
 from src.models.sections.wall import WallSection
 from src.models.members.frame2d import Frame2DMember, Mass
-from src.models.members.frame3d import Frame3DMemberSAP
+from src.models.members.frame3d import Frame3DMember
 from src.models.members.plate import PlateMember
 from src.models.members.wall import WallMember
 from src.models.loads import Dynamic, Joint
@@ -268,7 +268,7 @@ def create_frame3d_members(example_name, nodes, general_properties):
             member_nodes = frames_array[i, 2]
             split_nodes = member_nodes.split("-")
             frame_members.append(
-                Frame3DMemberSAP(
+                Frame3DMember(
                     num=member_num,
                     section=frame_section,
                     nodes=(
