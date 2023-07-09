@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-4element-elastic-q8r"
+    example_name: str = "plate-confined-elastic"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     examples_to_test = [
