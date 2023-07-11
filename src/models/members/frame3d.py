@@ -11,11 +11,7 @@ class Response:
     yield_components_force: np.matrix
     nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
     nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    internal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    top_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    bottom_internal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 class YieldSpecs:
