@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-semiconfined-inelastic"
+    example_name: str = "3d-2side-dynamic-elastic"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     examples_to_test = [
@@ -22,6 +22,10 @@ class Settings(BaseSettings):
         "simple-beam-dynamic-inelastic-1phase",
         "1story-dynamic-inelastic-ll1.0-ap400k",
         "2story-dynamic-inelastic",
+        "3d-2side-static-elastic",
+        "3d-simple-beam-static-elastic",
+        "3d-2side-dynamic-elastic",
+        "3d-simple-beam-dynamic-elastic",
         "wall-1element-elastic",
         "wall-1element-elastic-q8r",
         "wall-9element-elastic",

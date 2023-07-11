@@ -6,10 +6,12 @@ from enum import Enum
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, LinearBoundary
-from src.models.sections.frame import FrameSection
+from src.models.sections.frame2d import Frame2DSection
+from src.models.sections.frame3d import Frame3DSection
 from src.models.sections.plate import PlateSection
 from src.models.sections.wall import WallSection
-from src.models.members.frame import FrameMember2D, Mass
+from src.models.members.frame2d import Frame2DMember, Mass
+from src.models.members.frame3d import Frame3DMember
 from src.models.members.plate import PlateMember
 from src.models.members.wall import WallMember
 from src.models.loads import Dynamic, Joint
@@ -20,10 +22,12 @@ nodes_file = "nodes.csv"
 nodal_boundaries_file = "boundaries/nodal.csv"
 linear_boundaries_file = "boundaries/linear.csv"
 static_joint_loads_file = "loads/static/joint_loads.csv"
-frame_sections_file = "sections/frames.yaml"
+frame2d_sections_file = "sections/frames2d.yaml"
+frame3d_sections_file = "sections/frames3d.yaml"
 plate_sections_file = "sections/plates.yaml"
 wall_sections_file = "sections/walls.yaml"
-frame_members_file = "members/frames.csv"
+frame2d_members_file = "members/frames2d.csv"
+frame3d_members_file = "members/frames3d.csv"
 plate_members_file = "members/plates.csv"
 wall_members_file = "members/walls.csv"
 masses_file = "members/masses.csv"
@@ -103,22 +107,52 @@ def create_linear_boundaries(example_name, initial_nodes):
     return linear_boundaries
 
 
-def create_frame_sections(example_name):
+def create_frame2d_sections(example_name, general_properties):
     frame_sections = {}
-    frame_sections_path = os.path.join(examples_dir, example_name, frame_sections_file)
+    frame_sections_path = os.path.join(examples_dir, example_name, frame2d_sections_file)
+    is_inelastic = general_properties["inelastic"]["enabled"]
     try:
         with open(frame_sections_path, "r") as path:
             frame_sections_dict = yaml.safe_load(path)
 
-        nonlinear_capacity_dir = f"{output_dir}/{example_name}/nonlinear_capacity"
-        if not os.path.exists(nonlinear_capacity_dir):
-            os.makedirs(nonlinear_capacity_dir)
+        if is_inelastic:
+            nonlinear_capacity_dir = f"{output_dir}/{example_name}/nonlinear_capacity"
+            if not os.path.exists(nonlinear_capacity_dir):
+                os.makedirs(nonlinear_capacity_dir)
 
         for key, value in frame_sections_dict.items():
-            frame_sections[key] = FrameSection(input=value)
-            with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
-                ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
-                ff.write(f"2,mp,{frame_sections[key].nonlinear.mp}\n")
+            frame_sections[key] = Frame2DSection(input=value)
+            if is_inelastic:
+                with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
+                    ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
+                    ff.write(f"2,mp,{frame_sections[key].nonlinear.mp}\n")
+
+        return frame_sections
+    except FileNotFoundError:
+        logging.warning("frame sections input file not found")
+        return {}
+
+
+def create_frame3d_sections(example_name, general_properties):
+    frame_sections = {}
+    frame_sections_path = os.path.join(examples_dir, example_name, frame3d_sections_file)
+    is_inelastic = general_properties["inelastic"]["enabled"]
+    try:
+        with open(frame_sections_path, "r") as path:
+            frame_sections_dict = yaml.safe_load(path)
+
+        if is_inelastic:
+            nonlinear_capacity_dir = f"{output_dir}/{example_name}/nonlinear_capacity"
+            if not os.path.exists(nonlinear_capacity_dir):
+                os.makedirs(nonlinear_capacity_dir)
+
+        for key, value in frame_sections_dict.items():
+            frame_sections[key] = Frame3DSection(input=value)
+            if is_inelastic:
+                with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
+                    ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
+                    ff.write(f"4,mpy,{frame_sections[key].nonlinear.mpy}\n")
+                    ff.write(f"5,mpz,{frame_sections[key].nonlinear.mpz}\n")
 
         return frame_sections
     except FileNotFoundError:
@@ -154,7 +188,21 @@ def create_wall_sections(example_name):
         return {}
 
 
-def create_frame_masses(example_name):
+def create_frame2d_masses(example_name):
+    # mass per length is applied in global direction so there is no need to transform.
+    frame_masses = {}
+    masses_path = os.path.join(examples_dir, example_name, masses_file)
+    try:
+        masses_array = np.loadtxt(fname=masses_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    except FileNotFoundError:
+        logging.warning("mass input file not found")
+        return {}
+    for i in range(masses_array.shape[0]):
+        frame_masses[int(masses_array[i][0])] = masses_array[i][1]
+    return frame_masses
+
+
+def create_frame3d_masses(example_name):
     # mass per length is applied in global direction so there is no need to transform.
     frame_masses = {}
     masses_path = os.path.join(examples_dir, example_name, masses_file)
@@ -169,9 +217,9 @@ def create_frame_masses(example_name):
 
 
 def create_frame2d_members(example_name, nodes, general_properties):
-    frame_members_path = os.path.join(examples_dir, example_name, frame_members_file)
-    frame_sections = create_frame_sections(example_name)
-    frame_masses = create_frame_masses(example_name) if general_properties.get("dynamic_analysis") else {}
+    frame_members_path = os.path.join(examples_dir, example_name, frame2d_members_file)
+    frame_sections = create_frame2d_sections(example_name, general_properties)
+    frame_masses = create_frame2d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
     frame_members = []
 
     try:
@@ -187,7 +235,40 @@ def create_frame2d_members(example_name, nodes, general_properties):
             member_nodes = frames_array[i, 2]
             split_nodes = member_nodes.split("-")
             frame_members.append(
-                FrameMember2D(
+                Frame2DMember(
+                    num=member_num,
+                    section=frame_section,
+                    nodes=(
+                        nodes[int(split_nodes[0])],
+                        nodes[int(split_nodes[1])],
+                    ),
+                    mass=Mass(magnitude=frame_masses.get(i)) if frame_masses.get(i) else None,
+                    ends_fixity=frames_array[i, 3],
+                )
+            )
+    return frame_members
+
+
+def create_frame3d_members(example_name, nodes, general_properties):
+    frame_members_path = os.path.join(examples_dir, example_name, frame3d_members_file)
+    frame_sections = create_frame3d_sections(example_name, general_properties)
+    frame_masses = create_frame3d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
+    frame_members = []
+
+    try:
+        frames_array = np.loadtxt(fname=frame_members_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    except FileNotFoundError:
+        logging.warning("frame members input file not found")
+        return []
+
+    if frame_sections:
+        for i in range(frames_array.shape[0]):
+            member_num = int(frames_array[i, 0])
+            frame_section = frame_sections[frames_array[i, 1]]
+            member_nodes = frames_array[i, 2]
+            split_nodes = member_nodes.split("-")
+            frame_members.append(
+                Frame3DMember(
                     num=member_num,
                     section=frame_section,
                     nodes=(
@@ -330,6 +411,12 @@ def get_structure_input(example_name):
         nodes=initial_nodes,
     )
 
+    frame3d_members = create_frame3d_members(
+        example_name=example_name,
+        general_properties=general_properties,
+        nodes=initial_nodes,
+    )
+
     plate_members = create_plate_members(
         example_name=example_name,
         nodes=initial_nodes,
@@ -342,6 +429,8 @@ def get_structure_input(example_name):
 
     if frame2d_members:
         node_dofs_count = NodeDOF.FRAME2D.value
+    elif frame3d_members:
+        node_dofs_count = NodeDOF.FRAME3D.value
     elif wall_members:
         node_dofs_count = NodeDOF.WALL.value
     elif plate_members:
@@ -362,7 +451,7 @@ def get_structure_input(example_name):
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
         "node_dofs_count": node_dofs_count, 
-        "members": frame2d_members + plate_members + wall_members,
+        "members": frame2d_members + frame3d_members + plate_members + wall_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,
         "loads": loads,
