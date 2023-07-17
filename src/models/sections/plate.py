@@ -103,10 +103,10 @@ class PlateSection:
 @lru_cache
 def get_von_mises_matrix(mp):
     si = np.array([1.9, 1.7, 1.2, 1, 0.5, 0, -0.5, -1, -1.2, -1.7, -1.9])
-    m = 20
+    m = 40
     n = si.shape[0]  # -2 & +2 will produce only one plane each
     p_total = m * n + 2  # total number of yield planes
-    teta = np.zeros(20)
+    teta = np.zeros(40)
     pi = np.pi
     for i in range(m):
         teta[i] = 2 * pi * i / m
