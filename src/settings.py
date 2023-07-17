@@ -31,7 +31,6 @@ class Settings(BaseSettings):
         "wall-9element-elastic",
         "wall-4element-elastic-q8r",
         "wall-1element-inelastic",
-        "wall-4element-inelastic-q8r", # time-consuming
         "plate-1element-elastic-q8r",
         "plate-4element-elastic-q8r",
         "plate-9element-confined-elastic",
@@ -40,10 +39,11 @@ class Settings(BaseSettings):
         "plate-1element-inelastic-q8r",
         "plate-check-inelastic-q8r",
         "plate-square-inelastic-q8r",
-        "plate-4element-inelastic-q8r", # time-consuming
-        "plate-9element-confined-inelastic", # time-consuming
-        "plate-confined-inelastic", # time-consuming
-        "plate-semiconfined-inelastic", # time-consuming
+        # "wall-4element-inelastic-q8r", # time-consuming
+        # "plate-4element-inelastic-q8r", # time-consuming
+        # "plate-9element-confined-inelastic", # time-consuming
+        # "plate-confined-inelastic", # time-consuming
+        # "plate-semiconfined-inelastic", # time-consuming
     ]
 
 
