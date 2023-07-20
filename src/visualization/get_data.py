@@ -11,7 +11,7 @@ output_dir = "output/examples/"
 yield_surface_path = os.path.join(examples_dir, example_name, "visualization/yield_surface.csv")
 yield_points_path = os.path.join(examples_dir, example_name, "visualization/yield_points.csv")
 increments_path = os.path.join(examples_dir, example_name, "visualization/increments.csv")
-frames_path = os.path.join(examples_dir, example_name, "members/frames.csv")
+frames_path = os.path.join(examples_dir, example_name, "members/frames2d.csv")
 
 output_increments_path = os.path.join(output_dir, example_name)
 
@@ -23,6 +23,8 @@ yield_surface_array = np.loadtxt(fname=yield_surface_path, skiprows=1, delimiter
 frames_array = np.loadtxt(fname=frames_path, usecols=range(4), delimiter=",", ndmin=2, skiprows=1, dtype=str)
 # yield_data_array = np.loadtxt(fname=yield_data_path, usecols=range(6), delimiter=",", ndmin=2, dtype=float)
 
+SELECTED_YIELD_POINT = 4
+FROM_TIME_STEP = 36
 
 def find_subdirs(path):
     subdirs = os.listdir(path)
@@ -66,7 +68,8 @@ if analysis_type == "static":
 elif analysis_type == "dynamic":
     time_steps_path = os.path.join(output_dir, example_name, "inelastic", "increments")
     selected_time_steps = find_subdirs(time_steps_path)
-    selected_yield_point = 15
+    # selected_time_steps = [step for step in range(FROM_TIME_STEP, 50)]
+    selected_yield_point = SELECTED_YIELD_POINT
     selected_figs = selected_time_steps
 
 def get_yield_components_data():
@@ -214,9 +217,9 @@ def get_yield_surface():
 
 def get_capacities():
     examples_dir = "input/examples/"
-    frame_members_file = "members/frames.csv"
+    frame_members_file = "members/frames2d.csv"
     frame_members_path = os.path.join(examples_dir, example_name, frame_members_file)
-    frames_array = np.loadtxt(fname=frame_members_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=str)
+    frames_array = np.loadtxt(fname=frame_members_path, usecols=range(2), delimiter=",", ndmin=1, skiprows=1, dtype=str)
     
     nonlinear_capacity_dir = f"{output_dir}/{settings.example_name}/nonlinear_capacity"
     sections = [section.replace(".csv", "") for section in os.listdir(nonlinear_capacity_dir)]
@@ -230,5 +233,5 @@ def get_capacities():
                 sections_capacity[section][int(capacities[i, 0])] = {}
             sections_capacity[section][int(capacities[i, 0])]["name"] = capacities[i, 1]
             sections_capacity[section][int(capacities[i, 0])]["value"] = float(capacities[i, 2])
-    frames_capacity = [sections_capacity[frames_array[f_num]] for f_num in range(frames_array.shape[0])]
+    frames_capacity = [sections_capacity[frames_array[f_num, 1]] for f_num in range(frames_array.shape[0])]
     return frames_capacity

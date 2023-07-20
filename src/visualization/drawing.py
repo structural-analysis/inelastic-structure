@@ -101,7 +101,7 @@ def generate_increments_yield_surfaces(selected_increments, yield_components_cou
         ax = add_diagram_to_figure(fig, figure_grid_size, position, dimension)
         draw_yield_condition(ax, increments_yield_points[i], yield_surface)
         edit_plot_labes(yield_components)
-        # ax.set_title(f"Increment {increment}", fontsize=10)
+        # ax.set_title(f"time: {'{:10.2f}'.format((increment + 1) * 0.02)}", fontsize=10)
     plt.tight_layout(h_pad=1)
     plt.show()
 
