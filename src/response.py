@@ -114,11 +114,6 @@ def calculate_static_responses(analysis):
         members_nodal_stresses = np.zeros([1, structure.members.num], dtype=object)
         nodal_strains = np.zeros([1, 1], dtype=object)
         nodal_stresses = np.zeros([1, 1], dtype=object)
-        internal_moments = np.zeros([1, structure.members.num], dtype=object)
-        top_internal_strains = np.zeros([1, structure.members.num], dtype=object)
-        bottom_internal_strains = np.zeros([1, structure.members.num], dtype=object)
-        top_internal_stresses = np.zeros([1, structure.members.num], dtype=object)
-        bottom_internal_stresses = np.zeros([1, structure.members.num], dtype=object)
 
         nodal_disp[0, 0] = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp[0, 0]
         for i in range(structure.members.num):
@@ -126,11 +121,6 @@ def calculate_static_responses(analysis):
             members_nodal_forces[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces[i, 0]
             members_nodal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_strains[i, 0]
             members_nodal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_stresses[i, 0]
-            internal_moments[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_internal_moments[i, 0]
-            top_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_strains[i, 0]
-            bottom_internal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_strains[i, 0]
-            top_internal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_top_internal_stresses[i, 0]
-            bottom_internal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_bottom_internal_stresses[i, 0]
 
         if has_any_response(members_nodal_strains):
             nodal_strains[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains)
@@ -142,11 +132,6 @@ def calculate_static_responses(analysis):
             "members_nodal_forces": members_nodal_forces,
             "members_nodal_strains": members_nodal_strains,
             "members_nodal_stresses": members_nodal_stresses,
-            "internal_moments": internal_moments,
-            "top_internal_strains": top_internal_strains,
-            "bottom_internal_strains": bottom_internal_strains,
-            "top_internal_stresses": top_internal_stresses,
-            "bottom_internal_stresses": bottom_internal_stresses,
         }
         if has_any_response(members_nodal_strains):
             responses.update(

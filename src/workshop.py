@@ -295,17 +295,18 @@ def create_plate_members(example_name, nodes):
 
     if plate_sections:
         for i in range(plates_array.shape[0]):
-            plate_section = plate_sections[plates_array[i, 0]]
+            member_num = int(plates_array[i, 0])
+            plate_section = plate_sections[plates_array[i, 1]]
+            element_type = plates_array[i, 2].upper()
+            member_nodes = plates_array[i, 3]
+            split_nodes = member_nodes.split("-")
+            final_nodes = [nodes[int(split_node)] for split_node in split_nodes]
             plate_members.append(
                 PlateMember(
+                    num=member_num,
                     section=plate_section,
-                    initial_nodes=(
-                        nodes[int(plates_array[i, 1][0])],
-                        nodes[int(plates_array[i, 1][1])],
-                        nodes[int(plates_array[i, 1][2])],
-                        nodes[int(plates_array[i, 1][3])],
-                    ),
-                    mesh_count=(int(plates_array[i, 2]), int(plates_array[i, 3])),
+                    element_type=element_type,
+                    nodes=tuple(final_nodes)
                 )
             )
     return plate_members

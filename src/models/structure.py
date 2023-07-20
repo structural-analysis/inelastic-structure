@@ -124,9 +124,9 @@ class Structure:
 
     def get_nodes(self):
         nodes = self.initial_nodes
-        for member in self.members.list:
-            if member.__class__.__name__ == "PlateMember":
-                nodes = member.nodes
+        # for member in self.members.list:
+        #     if member.__class__.__name__ == "PlateMember":
+        #         nodes = member.nodes
         return nodes
 
     def create_nodes_map(self):
@@ -322,9 +322,6 @@ class Structure:
 
     def aggregate_boundaries(self):
         boundaries = self.nodal_boundaries
-        for member in self.members.list:
-            if member.__class__.__name__ == "PlateMember":
-                boundaries = self.get_nodal_boundaries_from_linear()
         return list(set(boundaries))
 
     def get_nodal_boundaries_from_linear(self):
