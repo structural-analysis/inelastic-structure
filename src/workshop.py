@@ -151,8 +151,8 @@ def create_frame3d_sections(example_name, general_properties):
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
                     ff.write(f"0,ap,{frame_sections[key].nonlinear.ap}\n")
-                    ff.write(f"4,mpy,{frame_sections[key].nonlinear.mpy}\n")
-                    ff.write(f"5,mpz,{frame_sections[key].nonlinear.mpz}\n")
+                    ff.write(f"4,mp22,{frame_sections[key].nonlinear.mp22}\n")
+                    ff.write(f"5,mp33,{frame_sections[key].nonlinear.mp33}\n")
 
         return frame_sections
     except FileNotFoundError:

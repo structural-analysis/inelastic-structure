@@ -20,43 +20,28 @@ class Geometry:
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.is_direct_capacity = input_nonlinear["is_direct_capacity"]
-        self.has_axial_yield = input_nonlinear["has_axial_yield"]
-        self.zpz = float(input_nonlinear["zpz"])
-        self.zpy = float(input_nonlinear["zpy"])
-        self.abar0 = float(input_nonlinear["abar0"])
-        self.mpz = float(input_nonlinear["mpz"]) if self.is_direct_capacity else self.zpz * material.sy
-        self.mpy = float(input_nonlinear["mpz"]) if self.is_direct_capacity else self.zpy * material.sy
+        self.zp33 = float(input_nonlinear["zp33"])
+        self.zp22 = float(input_nonlinear["zp22"])
+        self.mp33 = float(input_nonlinear["mp33"]) if self.is_direct_capacity else self.zp33 * material.sy
+        self.mp22 = float(input_nonlinear["mp22"]) if self.is_direct_capacity else self.zp22 * material.sy
         self.ap = float(input_nonlinear["ap"]) if self.is_direct_capacity else geometry.a * material.sy
 
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.phi = self.create_phi(nonlinear)
-        self.components_count = 2 if nonlinear.has_axial_yield else 1
+        self.components_count = 3
         self.pieces_count = self.phi.shape[1]
 
     def create_phi(self, nonlinear):
-        if nonlinear.has_axial_yield:
-            phi = np.matrix([
-                [
-                    1 / nonlinear.ap,
-                    0,
-                    -1 / nonlinear.ap,
-                    -1 / nonlinear.ap,
-                    0,
-                    1 / nonlinear.ap,
-                ],
-                [
-                    (1 - nonlinear.abar0) / nonlinear.mpz,
-                    1 / nonlinear.mpz,
-                    (1 - nonlinear.abar0) / nonlinear.mpz,
-                    -(1 - nonlinear.abar0) / nonlinear.mpz,
-                    -1 / nonlinear.mpz,
-                    -(1 - nonlinear.abar0) / nonlinear.mpz,
-                ]
-            ])
-        else:
-            phi = np.matrix([-1 / nonlinear.mpz, 1 / nonlinear.mpz])
+        ap = nonlinear.ap
+        mp33 = nonlinear.mp33
+        mp22 = nonlinear.mp22
+        phi = np.matrix([
+            [1 / (2 * ap), 1 / (2 * ap), 1 / (2 * ap), 1 / (2 * ap), -1 / (2 * ap), -1 / (2 * ap), -1 / (2 * ap), -1 / (2 * ap), 1 / ap, 1 / ap, 1 / ap, 1 / ap, -1 / ap, -1 / ap, -1 / ap, -1 / ap],
+            [1 / mp33, -1 / mp33, 1 / mp33, -1 / mp33, 1 / mp33, -1 / mp33, 1 / mp33, -1 / mp33, 8 / (9 * mp33), -8 / (9 * mp33), 8 / (9 * mp33), -8 / (9 * mp33), 8 / (9 * mp33), -8 / (9 * mp33), 8 / (9 * mp33), -8 / (9 * mp33)],
+            [1 / mp22, 1 / mp22, -1 / mp22, -1 / mp22, 1 / mp22, 1 / mp22, -1 / mp22, -1 / mp22, 8 / (9 * mp22), 8 / (9 * mp22), -8 / (9 * mp22), -8 / (9 * mp22), 8 / (9 * mp22), 8 / (9 * mp22), -8 / (9 * mp22), -8 / (9 * mp22)],
+        ])
         return phi
 
 

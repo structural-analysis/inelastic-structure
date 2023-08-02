@@ -11,11 +11,9 @@ sec1:
     j: 3.729e-6
   nonlinear:
     is_direct_capacity: false
-    has_axial_yield: false
-    zpz: 4.0e-4
-    zpy: 8.0e-5
-    abar0: 0.15
+    zp33: 4.0e-4
+    zp22: 8.0e-5
     ap: 1920000
-    mpz: 19200
-    mpy: 3840
+    mp33: 96000
+    mp22: 19200
   softening: null

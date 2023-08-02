@@ -190,7 +190,7 @@ class Frame3DMember:
         t[9:12, 9:12] = r
         return t
 
-    def get_response(self, nodal_disp, fixed_force=None):
+    def get_response(self, nodal_disp, fixed_force=None, fixed_stress=None):
         # nodal_disp: numpy matrix
         if fixed_force is None:
             fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
@@ -200,16 +200,13 @@ class Frame3DMember:
         else:
             nodal_force = self.k * nodal_disp
 
-        if self.section.nonlinear.has_axial_yield:
-            yield_components_force = np.matrix(np.zeros((4, 1)))
-            yield_components_force[0, 0] = nodal_force[0, 0]
-            yield_components_force[1, 0] = nodal_force[2, 0]
-            yield_components_force[2, 0] = nodal_force[3, 0]
-            yield_components_force[3, 0] = nodal_force[5, 0]
-        else:
-            yield_components_force = np.matrix(np.zeros((2, 1)))
-            yield_components_force[0, 0] = nodal_force[2, 0]
-            yield_components_force[1, 0] = nodal_force[5, 0]
+        yield_components_force = np.matrix(np.zeros((6, 1)))
+        yield_components_force[0, 0] = nodal_force[0, 0]
+        yield_components_force[1, 0] = nodal_force[4, 0]
+        yield_components_force[2, 0] = nodal_force[5, 0]
+        yield_components_force[3, 0] = nodal_force[6, 0]
+        yield_components_force[4, 0] = nodal_force[10, 0]
+        yield_components_force[5, 0] = nodal_force[11, 0]
 
         response = Response(
             nodal_force=nodal_force,
@@ -219,12 +216,10 @@ class Frame3DMember:
 
     def get_nodal_forces_from_unit_distortions(self):
         nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
-        if self.section.nonlinear.has_axial_yield:
-            nodal_forces[:, 0] = self.k[:, 0]
-            nodal_forces[:, 1] = self.k[:, 2]
-            nodal_forces[:, 2] = self.k[:, 3]
-            nodal_forces[:, 3] = self.k[:, 5]
-        else:
-            nodal_forces[:, 0] = self.k[:, 2]
-            nodal_forces[:, 1] = self.k[:, 5]
+        nodal_forces[:, 0] = self.k[:, 0]
+        nodal_forces[:, 1] = self.k[:, 4]
+        nodal_forces[:, 2] = self.k[:, 5]
+        nodal_forces[:, 3] = self.k[:, 6]
+        nodal_forces[:, 4] = self.k[:, 10]
+        nodal_forces[:, 5] = self.k[:, 11]
         return nodal_forces
