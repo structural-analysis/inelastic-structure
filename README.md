@@ -20,3 +20,8 @@ total_dofs_num
 - upgrade plate to polygon elements
 - multiprocess
 - do TODOs
+
+
+# 3D Frame:
+in 3d frame moment33 is dof = 4, 10, moment22 is dof = 5, 11, shear33 is dof 2, 8 and
+shear22 is dof 1, 7.

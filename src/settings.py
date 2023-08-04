@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "3d-2side-static-inelastic"
+    example_name: str = "3d-2side-dynamic-inelastic"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     examples_to_test = [
