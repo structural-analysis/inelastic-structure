@@ -91,6 +91,7 @@ def calculate_static_responses(analysis):
 
             for j in range(structure.members.num):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
+
         responses = {
             "load_levels": load_levels,
             "nodal_disp": nodal_disp,

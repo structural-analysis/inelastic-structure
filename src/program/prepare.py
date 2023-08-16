@@ -1,5 +1,7 @@
 import numpy as np
 
+from src.settings import settings
+
 
 class RawData:
     def __init__(self, analysis):
@@ -21,6 +23,10 @@ class RawData:
         self.disp_limits_count = vars_count.disp_limits_count
         self.limits_count = vars_count.limits_count
         self.plastic_vars_count = vars_count.plastic_vars_count
+
+        if settings.use_sifting:
+            self.unsifted_plastic_vars_count = vars_count.unsifted_plastic_vars_count
+
         self.softening_vars_count = vars_count.softening_vars_count
         self.yield_points_indices = vars_count.yield_points_indices
 
@@ -28,6 +34,9 @@ class RawData:
         self.constraints_count = vars_count.constraints_count
         self.slack_vars_count = vars_count.slack_vars_count
         self.total_vars_count = vars_count.total_vars_count
+
+        if settings.use_sifting:
+            self.sifted_indices = vars_count.sifted_indices
 
         self.b = self._get_b_column()
         self.table = self._create_table()
@@ -50,9 +59,17 @@ class RawData:
         primary_vars_count = self.primary_vars_count
         phi_pv_phi = self.phi.T * self.pv * self.phi
         phi_p0 = self.phi.T * self.p0
+
         dv_phi = self.dv * self.phi
         raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
-        raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
+
+        if settings.use_sifting:
+            sifted_indices = self.sifted_indices
+            sifted_phi_pv_phi = phi_pv_phi[sifted_indices][:, sifted_indices]
+            sifted_phi_p0 = phi_p0[sifted_indices, 0]
+            raw_a[0:yield_pieces_count, 0:yield_pieces_count] = sifted_phi_pv_phi
+        else:
+            raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
 
         if softening_vars_count:
             raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = self.q
@@ -60,7 +77,12 @@ class RawData:
             raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = self.w
 
         landa_base_num = yield_pieces_count + softening_vars_count
-        raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
+
+        if settings.use_sifting:
+            raw_a[0:yield_pieces_count, landa_base_num] = sifted_phi_p0
+        else:
+            raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
+
         raw_a[landa_base_num, landa_base_num] = 1.0
 
         if self.disp_limits.any():
@@ -113,6 +135,7 @@ class RawData:
                 self.phi.T * analysis.pv_prev * self.phi * analysis.plastic_multipliers_prev
             ).flatten()
         )
+        # TODO: FIXME: update values for sifting
         # print(f"{self.b=}")
 
 
@@ -123,7 +146,17 @@ class VarsCount:
 
         self.disp_limits_count = self.disp_limits.shape[0]
         self.limits_count = 1 + self.disp_limits_count * 2
-        self.plastic_vars_count = structure.yield_specs.pieces_count
+
+        if settings.use_sifting:
+            phi_p0 = structure.phi.T * analysis.p0
+            elastic_resp = phi_p0 * structure.limits["load_limit"]
+            self.sifted_indices = np.argwhere(elastic_resp > settings.sifting_limit)[:, 0].tolist()
+            sifted_vars_count = len(self.sifted_indices)
+            self.plastic_vars_count = sifted_vars_count
+            self.unsifted_plastic_vars_count = structure.yield_specs.pieces_count
+        else:
+            self.plastic_vars_count = structure.yield_specs.pieces_count
+
         self.softening_vars_count = 2 * structure.yield_specs.points_count if structure.include_softening else 0
         self.yield_points_indices = structure.yield_points_indices
 

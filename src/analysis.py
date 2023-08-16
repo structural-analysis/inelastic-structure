@@ -3,6 +3,7 @@ import enum
 from dataclasses import dataclass
 from scipy.linalg import cho_solve
 
+from src.settings import settings
 from src.models.loads import Loads
 from src.program.prepare import RawData, VarsCount
 from src.program.main import MahiniMethod
@@ -74,7 +75,22 @@ class Analysis:
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
-                self.plastic_vars = mahini_method.solve()
+                if settings.use_sifting:
+                    sifted_plastic_vars = mahini_method.solve()
+                    sifted_pms_history = sifted_plastic_vars["pms_history"]
+                    pms_history = mahini_method.unsift_plastic_vars(
+                        sifted_pms_history=sifted_pms_history,
+                        sifted_indices=raw_data.sifted_indices,
+                        unsifted_plastic_vars_count=raw_data.unsifted_plastic_vars_count,
+                    )
+                    self.plastic_vars = {
+                        "pms_history": pms_history,
+                        "load_level_history": sifted_plastic_vars["load_level_history"]
+                    }
+                else:
+                    self.plastic_vars = mahini_method.solve()
+                print(f"{self.plastic_vars=}")
+                # input()
 
         elif self.type == "dynamic":
             dynamic_analysis_method = DynamicAnalysisMethod.DUHAMEL
