@@ -804,22 +804,9 @@ class MahiniMethod:
 
     def unsift_plastic_vars(self, sifted_pms_history, sifted_indices, unsifted_plastic_vars_count):
         pms_history = []
+        col = len(sifted_indices) * [0]
         for sifted_pms in sifted_pms_history:
-            print(f"{sifted_pms=}")
-            j = 0
-            o = 0
             pms = np.matrix(np.zeros((unsifted_plastic_vars_count, 1)))
-            print(f"{pms=}")
-            print(f"{len(sifted_indices)=}")
-            for i in range(unsifted_plastic_vars_count):
-                print(f"{o=}")
-                if (o != len(sifted_indices) and i == sifted_indices[o]):
-                    print(f"{i=}")
-                    print(f"{sifted_pms[o, 0]=}")
-                    print(f"{pms[i, 0]=}")
-                    pms[i, 0] = sifted_pms[o, 0]
-                    o += 1
-                else:
-                    j += 1
+            pms[sifted_indices, col] = sifted_pms.reshape(-1).tolist()
             pms_history.append(pms)
         return pms_history

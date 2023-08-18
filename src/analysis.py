@@ -89,8 +89,6 @@ class Analysis:
                     }
                 else:
                     self.plastic_vars = mahini_method.solve()
-                print(f"{self.plastic_vars=}")
-                # input()
 
         elif self.type == "dynamic":
             dynamic_analysis_method = DynamicAnalysisMethod.DUHAMEL
