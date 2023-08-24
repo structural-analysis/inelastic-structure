@@ -80,8 +80,8 @@ class Analysis:
                     sifted_pms_history = sifted_plastic_vars["pms_history"]
                     pms_history = mahini_method.unsift_plastic_vars(
                         sifted_pms_history=sifted_pms_history,
-                        sifted_indices=raw_data.sifted_indices,
-                        unsifted_plastic_vars_count=raw_data.unsifted_plastic_vars_count,
+                        sifted_indices=mahini_method.sifted_indices,
+                        unsifted_plastic_vars_count=raw_data.plastic_vars_count,
                     )
                     self.plastic_vars = {
                         "pms_history": pms_history,

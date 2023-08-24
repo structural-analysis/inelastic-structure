@@ -19,7 +19,7 @@ class YieldSpecs:
         self.points_count = 2
         self.components_count = self.points_count * section.yield_specs.components_count
         self.pieces_count = self.points_count * section.yield_specs.pieces_count
-
+        self.section = section
 
 class Mass:
     def __init__(self, magnitude):

@@ -1,10 +1,13 @@
 import numpy as np
+
+from src.settings import settings
 from src.program.models import FPM, SlackCandidate
 from src.program.functions import zero_out_small_values
 
 
 class MahiniMethod:
     def __init__(self, raw_data):
+        self.raw_data = raw_data
         self.primary_vars_count = raw_data.primary_vars_count
         self.slack_vars_count = raw_data.slack_vars_count
         self.total_vars_count = raw_data.total_vars_count
@@ -12,12 +15,24 @@ class MahiniMethod:
         self.softening_vars_count = raw_data.softening_vars_count
         self.constraints_count = raw_data.constraints_count
         self.yield_points_indices = raw_data.yield_points_indices
-
+        self.yield_pieces = raw_data.yield_pieces
+        self.disp_limits = raw_data.disp_limits
+        self.limits_count = raw_data.limits_count
+        if settings.use_sifting:
+            self.sifted_indices = self.get_sifted_indices(settings.sifting_limit)
+            sifted_vars_count = len(self.sifted_indices)
+            self.plastic_vars_count = sifted_vars_count
+            self.sifted_yield_points = self.get_sifted_yield_points(self.sifted_indices)
+            self.softening_vars_count = 2 * len(self.sifted_yield_points)
+            self.sifted_softening_indices = self.get_sifted_softening_indices(self.sifted_yield_points)
+            self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
+            self.slack_vars_count = self.constraints_count
+            self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
         self.landa_var = raw_data.landa_var
         self.limits_slacks = raw_data.limits_slacks
-        self.table = raw_data.table
         self.b = raw_data.b
         self.c = raw_data.c
+        self.table = self._create_table()
         self.is_two_phase = True if any(self.b < 0) else False
 
     def solve_dynamic(self):
@@ -351,6 +366,66 @@ class MahiniMethod:
             "load_level_history": load_level_history
         }
         return result
+
+    def _create_table(self):
+        raw_data = self.raw_data
+        disp_limits_count = raw_data.disp_limits_count
+        phi_p0 = raw_data.phi_p0
+        phi_pv_phi = raw_data.phi_pv_phi
+
+        constraints_count = self.constraints_count
+        yield_pieces_count = self.plastic_vars_count
+        softening_vars_count = self.softening_vars_count
+        primary_vars_count = self.primary_vars_count
+        landa_base_num = yield_pieces_count + softening_vars_count
+
+        dv_phi = raw_data.dv * raw_data.phi
+
+        raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
+
+        if settings.use_sifting:
+            sifted_indices = self.sifted_indices
+            sifted_phi_pv_phi = phi_pv_phi[sifted_indices][:, sifted_indices]
+            sifted_phi_p0 = phi_p0[sifted_indices, 0]
+            raw_a[0:yield_pieces_count, 0:yield_pieces_count] = sifted_phi_pv_phi
+            if softening_vars_count:
+                raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = raw_data.q[self.sifted_softening_indices][:, sifted_indices]
+                raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - raw_data.h[sifted_indices][:, self.sifted_softening_indices]
+                raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = raw_data.w[self.sifted_softening_indices][:, self.sifted_softening_indices]
+                raw_a[0:yield_pieces_count, landa_base_num] = sifted_phi_p0
+        else:
+            raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
+            if softening_vars_count:
+                raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = raw_data.q
+                raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - raw_data.h
+                raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = raw_data.w
+                raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
+
+        raw_a[landa_base_num, landa_base_num] = 1.0
+
+        if self.disp_limits.any():
+            if settings.use_sifting:
+                dv_phi = dv_phi[0, self.sifted_indices]
+            disp_limit_base_num = yield_pieces_count + softening_vars_count + 1
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), 0:yield_pieces_count] = dv_phi
+            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), 0:yield_pieces_count] = - dv_phi
+
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = self.d0
+            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - self.d0
+
+        a_matrix = np.array(raw_a)
+        columns_count = primary_vars_count + self.slack_vars_count
+        table = np.zeros((constraints_count, columns_count))
+        table[0:constraints_count, 0:primary_vars_count] = a_matrix
+
+        # Assigning diagonal arrays of slack variables.
+        # TODO: use np.eye instead
+        j = primary_vars_count
+        for i in range(constraints_count):
+            table[i, j] = 1.0
+            j += 1
+
+        return table
 
     def get_slack_var(self, primary_var):
         if primary_var < self.primary_vars_count:
@@ -810,3 +885,24 @@ class MahiniMethod:
             pms[sifted_indices, col] = sifted_pms.reshape(-1).tolist()
             pms_history.append(pms)
         return pms_history
+
+    def get_sifted_indices(self, sifting_limit):
+        raw_data = self.raw_data
+        elastic_resp = raw_data.phi_p0 * raw_data.load_limit
+        sifted_indices = np.argwhere(elastic_resp > sifting_limit)[:, 0].tolist()
+        return sifted_indices
+
+    def get_sifted_yield_points(self, sifted_indices):
+        yield_pieces = self.raw_data.yield_pieces
+        related_yield_points = []
+        for sifted_index in sifted_indices:
+            related_yield_points.append(yield_pieces[sifted_index].point_num)
+        sifted_yield_points = set(related_yield_points)
+        return sifted_yield_points
+
+    def get_sifted_softening_indices(self, sifted_yield_points):
+        softening_indices = []
+        for sifted_yield_point in sifted_yield_points:
+            softening_indices.append(2 * sifted_yield_point)
+            softening_indices.append(2 * sifted_yield_point + 1)
+        return softening_indices

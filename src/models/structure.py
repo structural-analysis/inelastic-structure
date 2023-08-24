@@ -21,11 +21,19 @@ class AttachedMember:
     member_node_num: int
 
 
+@dataclass
+class YieldPiece:
+    point_num: int
+    member_num: int
+    piece_num: int
+
+
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
         self.points_count = yield_specs_dict["points_count"]
         self.components_count = yield_specs_dict["components_count"]
         self.pieces_count = yield_specs_dict["pieces_count"]
+        self.yield_pieces = yield_specs_dict["yield_pieces"]
 
 
 class Members:
@@ -38,16 +46,34 @@ class Members:
         points_count = 0
         components_count = 0
         pieces_count = 0
+        piece_counter = 0
+        point_counter = 0
+        member_counter = 0
+        yield_pieces = []
 
         for member in self.list:
             points_count += member.yield_specs.points_count
             components_count += member.yield_specs.components_count
             pieces_count += member.yield_specs.pieces_count
 
+            for _ in range(member.yield_specs.points_count):
+                section_pieces_count = member.yield_specs.section.yield_specs.pieces_count
+                for _ in range(section_pieces_count):
+                    yield_pieces.append(
+                        YieldPiece(
+                            piece_num=piece_counter,
+                            point_num=point_counter,
+                            member_num=member_counter,
+                        )
+                    )
+                    piece_counter += 1
+                point_counter += 1
+            member_counter += 1
         yield_specs_dict = {
             "points_count": points_count,
             "components_count": components_count,
             "pieces_count": pieces_count,
+            "yield_pieces": yield_pieces,
         }
         return yield_specs_dict
 
