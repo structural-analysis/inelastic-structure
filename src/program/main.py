@@ -23,8 +23,9 @@ class MahiniMethod:
             sifted_vars_count = len(self.sifted_indices)
             self.plastic_vars_count = sifted_vars_count
             self.sifted_yield_points = self.get_sifted_yield_points(self.sifted_indices)
-            self.softening_vars_count = 2 * len(self.sifted_yield_points)
-            self.sifted_softening_indices = self.get_sifted_softening_indices(self.sifted_yield_points)
+            if self.softening_vars_count:
+                self.softening_vars_count = 2 * len(self.sifted_yield_points)
+                self.sifted_softening_indices = self.get_sifted_softening_indices(self.sifted_yield_points)
             self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
             self.slack_vars_count = self.constraints_count
             self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
@@ -424,7 +425,15 @@ class MahiniMethod:
         for i in range(constraints_count):
             table[i, j] = 1.0
             j += 1
-
+        print(f"{constraints_count=}")
+        print(f"{yield_pieces_count=}")
+        print(f"{softening_vars_count=}")
+        print(f"{disp_limits_count=}")
+        print(f"{primary_vars_count=}")
+        print(f"{raw_a.shape=}")
+        print(f"{sifted_indices=}")
+        print(f"{columns_count=}")
+        print(f"{table=}")
         return table
 
     def get_slack_var(self, primary_var):
