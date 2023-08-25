@@ -379,7 +379,6 @@ class MahiniMethod:
         softening_vars_count = self.softening_vars_count
         primary_vars_count = self.primary_vars_count
         landa_base_num = yield_pieces_count + softening_vars_count
-
         dv_phi = raw_data.dv * raw_data.phi
 
         raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
@@ -389,18 +388,18 @@ class MahiniMethod:
             sifted_phi_pv_phi = phi_pv_phi[sifted_indices][:, sifted_indices]
             sifted_phi_p0 = phi_p0[sifted_indices, 0]
             raw_a[0:yield_pieces_count, 0:yield_pieces_count] = sifted_phi_pv_phi
+            raw_a[0:yield_pieces_count, landa_base_num] = sifted_phi_p0
             if softening_vars_count:
                 raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = raw_data.q[self.sifted_softening_indices][:, sifted_indices]
                 raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - raw_data.h[sifted_indices][:, self.sifted_softening_indices]
                 raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = raw_data.w[self.sifted_softening_indices][:, self.sifted_softening_indices]
-                raw_a[0:yield_pieces_count, landa_base_num] = sifted_phi_p0
         else:
             raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
+            raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
             if softening_vars_count:
                 raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = raw_data.q
                 raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - raw_data.h
                 raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = raw_data.w
-                raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
 
         raw_a[landa_base_num, landa_base_num] = 1.0
 
