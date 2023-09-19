@@ -33,7 +33,7 @@ class YieldSpecs:
         self.points_count = points_count
         self.components_count = self.points_count * section.yield_specs.components_count
         self.pieces_count = self.points_count * section.yield_specs.pieces_count
-
+        self.section = section
 
 class WallMember:
     # calculations is based on four gauss points

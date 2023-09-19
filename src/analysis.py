@@ -80,7 +80,7 @@ class Analysis:
                     sifted_pms_history = sifted_plastic_vars["pms_history"]
                     pms_history = mahini_method.unsift_plastic_vars(
                         sifted_pms_history=sifted_pms_history,
-                        sifted_indices=mahini_method.sifted_indices,
+                        sifted_yield_pieces=mahini_method.sifted_yield_pieces,
                         unsifted_plastic_vars_count=raw_data.plastic_vars_count,
                     )
                     self.plastic_vars = {
@@ -168,13 +168,12 @@ class Analysis:
                     structure.yield_specs.components_count, structure.yield_specs.components_count
                 )))
                 self.pv_history[0, 0] = initial_pv
-                vars_count = VarsCount(self)
                 self.load_level = 0
+                vars_count = VarsCount(self)
                 # self.constraints_force = np.matrix(np.zeros((plastic_vars_count, 1)))
                 # self.constraints_force_prev = np.matrix(np.zeros((plastic_vars_count, 1)))
-                self.plastic_multipliers_prev = np.matrix(np.zeros((vars_count.plastic_vars_count, 1)))
                 self.plastic_multipliers_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-
+                self.plastic_multipliers_prev = np.matrix(np.zeros((vars_count.plastic_vars_count, 1)))
             for time_step in range(1, time_steps):
                 print(f"{time_step=}")
                 print(f"{self.time[time_step][0, 0]=}")
@@ -238,10 +237,15 @@ class Analysis:
                     self.load_level_prev = self.load_level
                     raw_data = RawData(self)
                     mahini_method = MahiniMethod(raw_data)
+                    # if time_step == 1:
+                    #     self.plastic_multipliers_prev = np.matrix(np.zeros((mahini_method.plastic_vars_count, 1)))
                     self.plastic_vars = mahini_method.solve_dynamic()
                     self.plastic_vars_history[time_step, 0] = self.plastic_vars
                     self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]
                     self.load_level = self.plastic_vars["load_level_history"][-1]
+                    # print(f"{self.delta_plastic_multipliers.shape=}")
+                    # print(f"{self.plastic_multipliers_prev.shape=}")
+                    # print(f"{self.plastic_vars=}")
                     self.plastic_multipliers = self.delta_plastic_multipliers + self.plastic_multipliers_prev
                     self.plastic_multipliers_history[time_step, 0] = self.plastic_multipliers
 
