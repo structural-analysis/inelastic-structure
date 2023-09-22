@@ -24,6 +24,7 @@ class MahiniMethod:
         self.d0 = raw_data.d0
         self.b = raw_data.b
         self.c = raw_data.c
+        print(f"{self.c=}")
         self.cs = raw_data.cs
         if settings.use_sifting:
             self.update_for_sifting()
@@ -909,15 +910,12 @@ class MahiniMethod:
 
     def update_for_sifting(self):
         self.sifted_yield_pieces = self.get_sifted_yield_pieces(settings.sifting_limit)
-        print(f"{self.sifted_yield_pieces=}")
         sifted_vars_count = len(self.sifted_yield_pieces)
         self.plastic_vars_count = sifted_vars_count
         self.sifted_yield_points = self.get_sifted_yield_points(self.sifted_yield_pieces)
         if self.softening_vars_count:
             self.softening_vars_count = 2 * len(self.sifted_yield_points)
             self.sifted_softening_indices = self.get_sifted_softening_indices(self.sifted_yield_points)
-            print(f"{self.sifted_yield_points=}")
-            print(f"{self.sifted_softening_indices=}")
         self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
         self.slack_vars_count = self.constraints_count
         self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
@@ -930,19 +928,37 @@ class MahiniMethod:
         self.c = self.update_c()
 
     def update_b(self):
-        yield_pieces_count = self.plastic_vars_count
-        disp_limits_count = len(self.disp_limits)
-
-        b = np.ones((self.constraints_count))
-        b[yield_pieces_count + self.softening_vars_count] = self.load_limit
+        # TODO: CHECK FOR SOFTENING AND DISP_LIMITS IN EXAMPLES. MAYBE NOT WORK
+        limits_count = self.raw_data.limits_count
+        disp_limits_count = limits_count - 1
+        sifted_softening_vars_count = 0
+        sifted_b = np.zeros((self.constraints_count))
+        sifted_plastic_vars_count = len(self.sifted_yield_pieces)
+        sifted_b[:sifted_plastic_vars_count] = self.b[self.sifted_yield_pieces]
         if self.softening_vars_count:
-            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs[self.sifted_softening_indices, 0])[:, 0]
-
+            sifted_softening_indices = [self.raw_data.plastic_vars_count + index for index in self.sifted_softening_indices]
+            sifted_softening_vars_count = len(sifted_softening_indices)
+            # assign softening values
+            sifted_b[sifted_plastic_vars_count:sifted_plastic_vars_count + sifted_softening_vars_count] = self.b[sifted_softening_indices]
         if self.disp_limits.any():
-            disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
-            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.disp_limits[:, 2])
-            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.disp_limits[:, 2])
-        return b
+            disp_limit_base_num = self.raw_data.plastic_vars_count + self.raw_data.softening_vars_count + 1
+            sifted_disp_limit_base_num = sifted_plastic_vars_count + sifted_softening_vars_count + 1
+            # assign disp_limits values
+            sifted_b[sifted_disp_limit_base_num:sifted_disp_limit_base_num + disp_limits_count] = self.b[disp_limit_base_num:disp_limit_base_num + disp_limits_count]
+        # assign limits
+        sifted_b[sifted_plastic_vars_count + sifted_softening_vars_count] = self.load_limit
+        # print(f"{self.b=}")
+        # print(f"{sifted_b=}")
+        # print(f"{self.b[self.raw_data.plastic_vars_count + sifted_softening_vars_count]=}")
+        # print(f"{sifted_b[sifted_plastic_vars_count + sifted_softening_vars_count]=}")
+        # print(f"{self.b.shape=}")
+        # print(f"{sifted_b.shape=}")
+        # print(f"{disp_limit_base_num=}")
+        # print(f"{sifted_disp_limit_base_num=}")
+        # print(f"{sifted_plastic_vars_count=}")
+        # print(f"{sifted_softening_vars_count=}")
+        # print(f"{disp_limits_count=}")
+        return sifted_b
     
     def update_c(self):
         c = np.zeros(self.total_vars_count)

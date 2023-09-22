@@ -2,11 +2,11 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "simple-beam-static-inelastic"
+    example_name: str = "wall-4element-inelastic-q8r"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     use_sifting: bool = True
-    sifting_limit: float = 0.7
+    sifting_limit: float = 0.3
     examples_to_test = [
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",

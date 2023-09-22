@@ -75,7 +75,6 @@ class RawData:
                 self.phi.T * analysis.pv_prev * self.phi * analysis.plastic_multipliers_prev
             ).flatten()
         )
-        # TODO: FIXME: update values for sifting
 
 
 class VarsCount:
