@@ -394,8 +394,6 @@ class Structure:
         return np.sort(boundaries_dof)
 
     def condense_boundary(self):
-        zero_mass_dofs = self.zero_mass_dofs
-
         mass_dof_i = 0
         zero_mass_dof_i = 0
 
@@ -407,7 +405,7 @@ class Structure:
         zero_mass_bound_i = 0
         if self.zero_mass_dofs.any():
             for dof in range(self.dofs_count):
-                if dof == zero_mass_dofs[zero_mass_dof_i]:
+                if dof == self.zero_mass_dofs[zero_mass_dof_i]:
                     if bound_i < self.boundaries_dof.shape[0]:
                         if dof == self.boundaries_dof[bound_i]:
                             mass_bounds = np.delete(mass_bounds, bound_i - mass_bound_i, 0)
@@ -431,25 +429,27 @@ class Structure:
                     else:
                         break
                     mass_dof_i += 1
+        else:
+            zero_mass_bounds = np.zeros(0)
         return mass_bounds, zero_mass_bounds
 
     def apply_static_condensation(self):
         mtt, ktt, k00, k0t = self.get_zero_and_nonzero_mass_props()
         mass_bounds = self.mass_bounds
         zero_mass_bounds = self.zero_mass_bounds
-        # reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
+
         reduced_ktt = self.apply_boundary_conditions(
             row_boundaries_dof=mass_bounds,
             col_boundaries_dof=mass_bounds,
             structure_prop=ktt,
         )
-        # condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
+
         condensed_m = self.apply_boundary_conditions(
             row_boundaries_dof=mass_bounds,
             col_boundaries_dof=mass_bounds,
             structure_prop=mtt,
         )
-        # reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
+
         reduced_k00 = self.apply_boundary_conditions(
             row_boundaries_dof=zero_mass_bounds,
             col_boundaries_dof=zero_mass_bounds,
@@ -484,7 +484,7 @@ class Structure:
         zero_i = 0
         zero_mass_dofs_i = 0
         for dof in range(self.dofs_count):
-            if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
+            if self.zero_mass_dofs.any() and dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 mtt = np.delete(mtt, dof - zero_i, 1)
                 mtt = np.delete(mtt, dof - zero_i, 0)
                 ktt = np.delete(ktt, dof - zero_i, 1)
@@ -539,7 +539,7 @@ class Structure:
         ut_i = 0
         zero_mass_dofs_i = 0
         for dof in range(self.dofs_count):
-            if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
+            if self.zero_mass_dofs.any() and dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 disp[dof, 0] = u0[u0_i, 0]
                 u0_i += 1
                 zero_mass_dofs_i += 1
