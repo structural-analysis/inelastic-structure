@@ -1,7 +1,8 @@
 import numpy as np
+from enum import Enum
 from math import isclose
-from scipy.linalg import cho_factor, eigh
 from dataclasses import dataclass
+from scipy.linalg import cho_factor, eigh
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
@@ -19,6 +20,12 @@ class AttachedMember:
     member: object
     node: Node
     member_node_num: int
+
+class StructureType(Enum):
+    FRAME2D = "2d-frame"
+    FRAME3D = "3d-frame"
+    WALL2D = "2d-wall"
+    PLATE2D = "2d-palte"
 
 
 class YieldSpecs:
