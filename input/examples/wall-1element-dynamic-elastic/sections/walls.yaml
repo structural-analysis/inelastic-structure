@@ -3,7 +3,7 @@ wall:
     e: 2.0e+11
     sy: 240.0e+6
     nu: 0.3
-    rho: 2.0
+    rho: 7850
   geometry:
     t: 0.01
   nonlinear:
