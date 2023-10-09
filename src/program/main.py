@@ -24,7 +24,6 @@ class MahiniMethod:
         self.d0 = raw_data.d0
         self.b = raw_data.b
         self.c = raw_data.c
-        print(f"{self.c=}")
         self.cs = raw_data.cs
         if settings.use_sifting:
             self.update_for_sifting()
@@ -36,7 +35,6 @@ class MahiniMethod:
         basic_variables = self.get_initial_basic_variables()
         # from pprint import pprint
         print(f"{self.is_two_phase=}")
-        print(f"{self.b=}")
         if self.is_two_phase:
             db = np.zeros(self.slack_vars_count)
             self.negative_b_count = np.count_nonzero(self.b < 0)
@@ -90,12 +88,7 @@ class MahiniMethod:
             )
 
         landa_row = will_out_row
-        print(f"{basic_variables=}")
-        # np.set_printoptions(precision=4, linewidth=200, suppress=True)
-        # print(f"{will_out_row=}")
-        # print(f"{will_out_var=}")
-        # print("//////////////////////////////////////////////////////////////////////////////////")
-        # pprint(b_matrix_inv)
+
         while self.limits_slacks.issubset(set(basic_variables)):
             if self.is_two_phase:
                 sorted_slack_candidates = self.get_sorted_slack_d_candidates(
@@ -104,11 +97,13 @@ class MahiniMethod:
                     db=db,
                 )
             else:
+                print("elseseseslelselslelselsle")
                 sorted_slack_candidates = self.get_sorted_slack_candidates(
                     basic_variables=basic_variables,
                     b_matrix_inv=b_matrix_inv,
                     cb=cb,
                 )
+                print(f"{sorted_slack_candidates=}")
             will_in_col = fpm.var
             # print("***************")
             # print(f"{will_in_col=}")
@@ -132,6 +127,8 @@ class MahiniMethod:
             x_history.append(x_cumulative.copy())
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
+                print(f"{fpm.cost=}")
+                print(f"{slack_candidate.cost=}")
                 if not self.is_candidate_fpm(fpm, slack_candidate):
                     spm_var = self.get_primary_var(slack_candidate.var)
                     r = self.calculate_r(
@@ -167,7 +164,9 @@ class MahiniMethod:
                     if self.is_will_out_var_opm(will_out_var):
                         print("unload opm")
                         opm_var = will_out_var
+                        print(f"{self.is_two_phase=}")
                         if self.is_two_phase:
+                            print(f"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                             basic_variables, b_matrix_inv, cb, db, landa_row = self.unload_dynamic(
                                 pm_var=opm_var,
                                 basic_variables=basic_variables,
@@ -177,8 +176,9 @@ class MahiniMethod:
                                 landa_row=landa_row,
                             )
                         else:
+                            print("-------------------------------------")
                             basic_variables, b_matrix_inv, cb, landa_row = self.unload(
-                                pm_var=spm_var,
+                                pm_var=opm_var,
                                 basic_variables=basic_variables,
                                 b_matrix_inv=b_matrix_inv,
                                 cb=cb,

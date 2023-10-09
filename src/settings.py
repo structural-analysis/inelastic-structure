@@ -2,10 +2,10 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-1element-dynamic-elastic"
+    example_name: str = "2story-dynamic-inelastic"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
-    use_sifting: bool = True
+    use_sifting: bool = False
     sifting_limit: float = 0.3
     examples_to_test = [
         "simple-beam-static-elastic",
