@@ -38,11 +38,11 @@ joint_loads_file = "loads/static/joint_loads.csv"
 output_dir = "output/examples/"
 
 
-class NodeDOF(Enum):
+class StructureNodeDOF(int, Enum):
     FRAME2D = 3
     FRAME3D = 6
-    WALL = 2
-    PLATE = 3
+    WALL2D = 2
+    PLATE2D = 3
 
 
 def get_general_properties(example_name):
@@ -216,7 +216,7 @@ def create_frame3d_masses(example_name):
     return frame_masses
 
 
-def create_frame2d_members(example_name, nodes, general_properties):
+def create_frame2d_members(example_name, structure_type, node_dofs_count, nodes, general_properties):
     frame_members_path = os.path.join(examples_dir, example_name, frame2d_members_file)
     frame_sections = create_frame2d_sections(example_name, general_properties)
     frame_masses = create_frame2d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -236,6 +236,8 @@ def create_frame2d_members(example_name, nodes, general_properties):
             split_nodes = member_nodes.split("-")
             frame_members.append(
                 Frame2DMember(
+                    structure_type=structure_type,
+                    structure_node_dofs_count=node_dofs_count,
                     num=member_num,
                     section=frame_section,
                     nodes=(
@@ -249,7 +251,7 @@ def create_frame2d_members(example_name, nodes, general_properties):
     return frame_members
 
 
-def create_frame3d_members(example_name, nodes, general_properties):
+def create_frame3d_members(example_name, structure_type, node_dofs_count, nodes, general_properties):
     frame_members_path = os.path.join(examples_dir, example_name, frame3d_members_file)
     frame_sections = create_frame3d_sections(example_name, general_properties)
     frame_masses = create_frame3d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -269,6 +271,8 @@ def create_frame3d_members(example_name, nodes, general_properties):
             split_nodes = member_nodes.split("-")
             frame_members.append(
                 Frame3DMember(
+                    structure_type=structure_type,
+                    structure_node_dofs_count=node_dofs_count,
                     num=member_num,
                     section=frame_section,
                     nodes=(
@@ -282,7 +286,7 @@ def create_frame3d_members(example_name, nodes, general_properties):
     return frame_members
 
 
-def create_plate_members(example_name, nodes):
+def create_plate_members(example_name, nodes, structure_type, node_dofs_count):
     plate_members_path = os.path.join(examples_dir, example_name, plate_members_file)
     plate_sections = create_plate_sections(example_name)
     plate_members = []
@@ -303,6 +307,8 @@ def create_plate_members(example_name, nodes):
             final_nodes = [nodes[int(split_node)] for split_node in split_nodes]
             plate_members.append(
                 PlateMember(
+                    structure_type=structure_type,
+                    structure_node_dofs_count=node_dofs_count,
                     num=member_num,
                     section=plate_section,
                     element_type=element_type,
@@ -312,7 +318,7 @@ def create_plate_members(example_name, nodes):
     return plate_members
 
 
-def create_wall_members(example_name, nodes):
+def create_wall_members(example_name, nodes, structure_type, node_dofs_count):
     wall_members_path = os.path.join(examples_dir, example_name, wall_members_file)
     wall_sections = create_wall_sections(example_name)
     wall_members = []
@@ -333,6 +339,8 @@ def create_wall_members(example_name, nodes):
             final_nodes = [nodes[int(split_node)] for split_node in split_nodes]
             wall_members.append(
                 WallMember(
+                    structure_type=structure_type,
+                    structure_node_dofs_count=node_dofs_count,
                     num=member_num,
                     section=wall_section,
                     element_type=element_type,
@@ -402,39 +410,41 @@ def get_structure_input(example_name):
     dynamic_loads = create_dynamic_loads(example_name)
 
     general_properties = get_general_properties(example_name)
+    structure_type = general_properties["structure_type"].upper()
+    node_dofs_count = StructureNodeDOF[structure_type]
     initial_nodes = create_initial_nodes(example_name, structure_dim=general_properties["structure_dim"])
     nodal_boundaries = create_nodal_boundaries(example_name, initial_nodes=initial_nodes)
     linear_boundaries = create_linear_boundaries(example_name, initial_nodes=initial_nodes)
     frame2d_members = create_frame2d_members(
         example_name=example_name,
-        general_properties=general_properties,
         nodes=initial_nodes,
+        general_properties=general_properties,
+        node_dofs_count=node_dofs_count,
+        structure_type=structure_type,
     )
 
     frame3d_members = create_frame3d_members(
         example_name=example_name,
         general_properties=general_properties,
         nodes=initial_nodes,
+        node_dofs_count=node_dofs_count,
+        structure_type=structure_type,
     )
 
     plate_members = create_plate_members(
         example_name=example_name,
         nodes=initial_nodes,
+        node_dofs_count=node_dofs_count,
+        structure_type=structure_type,
     )
 
     wall_members = create_wall_members(
         example_name=example_name,
         nodes=initial_nodes,
+        node_dofs_count=node_dofs_count,
+        structure_type=structure_type,
     )
 
-    if frame2d_members:
-        node_dofs_count = NodeDOF.FRAME2D.value
-    elif frame3d_members:
-        node_dofs_count = NodeDOF.FRAME3D.value
-    elif wall_members:
-        node_dofs_count = NodeDOF.WALL.value
-    elif plate_members:
-        node_dofs_count = NodeDOF.PLATE.value
 
     limits = {
         "load_limit": load_limit,
@@ -448,6 +458,7 @@ def get_structure_input(example_name):
         "dynamic": dynamic_loads,
     }
     input = {
+        "structure_type": structure_type,
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
         "node_dofs_count": node_dofs_count, 

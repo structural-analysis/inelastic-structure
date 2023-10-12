@@ -37,13 +37,19 @@ class YieldSpecs:
 
 class WallMember:
     # calculations is based on four gauss points
-    def __init__(self, num: int, section: WallSection, element_type: str, nodes: tuple):
+    def __init__(self, structure_node_dofs_count, num: int, structure_type: str, section: WallSection, element_type: str, nodes: tuple):
+        self.structure_node_dofs_count = structure_node_dofs_count
+        self.structure_type = structure_type
         self.num = num
         self.section = section
         self.element_type = element_type  # Q4, Q4R, Q8, Q8R
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
-        self.dofs_count = 2 * self.nodes_count
+        self.node_dof_count = 2
+        self.dofs_count = self.node_dof_count * self.nodes_count
+        self.mapped_node_dofs = self.map_node_dofs()
+        self.mapped_element_dofs = self.map_element_dofs()
+        print(f"{self.mapped_element_dofs=}")
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
@@ -344,3 +350,19 @@ class WallMember:
             nodal_stresses=self.get_nodal_stresses(nodal_disp, fixed_internal),
         )
         return response
+
+    def map_node_dofs(self):
+        if self.structure_type == "FRAME2D":
+            mapped_node_dofs = [0, 1]
+        elif self.structure_type == "FRAME3D":
+            mapped_node_dofs = [0, 1]
+        elif self.structure_type == "WALL2D":
+            mapped_node_dofs = [0, 1]
+        return mapped_node_dofs
+
+    def map_element_dofs(self):
+        element_dofs = []
+        for node_num in range(self.nodes_count):
+            for mapped_node_dof in self.mapped_node_dofs:
+                element_dofs.append(mapped_node_dof + node_num * self.structure_node_dofs_count)
+        return element_dofs

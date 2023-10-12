@@ -21,12 +21,6 @@ class AttachedMember:
     node: Node
     member_node_num: int
 
-class StructureType(Enum):
-    FRAME2D = "2d-frame"
-    FRAME3D = "3d-frame"
-    WALL2D = "2d-wall"
-    PLATE2D = "2d-palte"
-
 
 class YieldSpecs:
     def __init__(self, yield_specs_dict):
@@ -63,6 +57,7 @@ class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
         self.general_properties = input["general_properties"]
+        self.structure_type = input["structure_type"]
         self.dim = self.general_properties["structure_dim"]
         self.initial_nodes = input["initial_nodes"]
         self.initial_nodes_count = len(self.initial_nodes)
