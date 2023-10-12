@@ -49,10 +49,14 @@ class WallMember:
         self.dofs_count = self.node_dof_count * self.nodes_count
         self.mapped_node_dofs = self.map_node_dofs()
         self.mapped_element_dofs = self.map_element_dofs()
-        print(f"{self.mapped_element_dofs=}")
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
+        self.mapped_k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        print(f"{self.mapped_element_dofs=}")
+        print(f"{self.k=}")
+        self.mapped_k[self.mapped_element_dofs, self.mapped_element_dofs] = self.k
+        print(f"{self.mapped_k=}")
         self.t = self.get_transform()
         self.m = None
         # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
