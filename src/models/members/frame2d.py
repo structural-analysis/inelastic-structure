@@ -33,8 +33,8 @@ class Frame2DMember:
         self.num = num
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
-        self.node_dof_count = 3
-        self.dofs_count = self.node_dof_count * self.nodes_count
+        self.node_dofs_count = 3
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section

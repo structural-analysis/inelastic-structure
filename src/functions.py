@@ -128,3 +128,11 @@ def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity)
     plastic_response = sensitivity * phi_x
     elastoplastic_response = scaled_elastic_response + plastic_response
     return elastoplastic_response
+
+
+def map_member_dofs(nodes_count, mapped_node_dofs, structure_node_dofs_count):
+    element_dofs = []
+    for node_num in range(nodes_count):
+        for mapped_node_dof in mapped_node_dofs:
+            element_dofs.append(mapped_node_dof + node_num * structure_node_dofs_count)
+    return element_dofs
