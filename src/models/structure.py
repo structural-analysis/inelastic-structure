@@ -1,7 +1,8 @@
 import numpy as np
+from enum import Enum
 from math import isclose
-from scipy.linalg import cho_factor, eigh
 from dataclasses import dataclass
+from scipy.linalg import cho_factor, eigh
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
@@ -82,6 +83,7 @@ class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
         self.general_properties = input["general_properties"]
+        self.type = input["structure_type"]
         self.dim = self.general_properties["structure_dim"]
         self.initial_nodes = input["initial_nodes"]
         self.initial_nodes_count = len(self.initial_nodes)
@@ -183,10 +185,19 @@ class Structure:
         return member_global_stiffness
 
     def get_stiffness(self):
+        # TODO: we must add mapping of element dof to structure dofs.
         structure_stiffness = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
-            structure_stiffness = self._assemble_members(member, member_global_stiffness, structure_stiffness)
+            mapped_member_node_dofs = self.map_member_node_dofs(member)
+            mapped_element_dofs = self.map_member_dofs(
+                member_nodes_count=member.nodes_count,
+                mapped_node_dofs=mapped_member_node_dofs,
+            )
+            mapped_dofs_count = self.node_dofs_count * member.nodes_count
+            mapped_k = np.matrix(np.zeros((mapped_dofs_count, mapped_dofs_count)))
+            mapped_k[np.ix_(mapped_element_dofs, mapped_element_dofs)] = member_global_stiffness
+            structure_stiffness = self._assemble_members(member, mapped_k, structure_stiffness)
         return structure_stiffness
 
     def apply_boundary_conditions(self, row_boundaries_dof, col_boundaries_dof, structure_prop):
@@ -223,9 +234,18 @@ class Structure:
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
+        # TODO: map nodes of member to nodes of structure
         structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             if member.m is not None:
+                mapped_member_node_dofs = self.map_member_node_dofs(member)
+                mapped_element_dofs = self.map_member_dofs(
+                    member_nodes_count=member.nodes_count,
+                    mapped_node_dofs=mapped_member_node_dofs,
+                )
+                mapped_dofs_count = self.node_dofs_count * member.nodes_count
+                mapped_m = np.matrix(np.zeros((mapped_dofs_count, mapped_dofs_count)))
+                mapped_m[np.ix_(mapped_element_dofs, mapped_element_dofs)] = member.m
                 structure_mass = self._assemble_members(member, member.m, structure_mass)
         return structure_mass
 
@@ -233,15 +253,15 @@ class Structure:
         return np.sort(np.where(~self.m.any(axis=1))[0])
 
     def _assemble_members(self, member, member_prop, structure_prop):
-        member_nodes_count = len(member.nodes)
-        member_dofs_count = member.k.shape[0]
-        member_node_dofs_count = int(member_dofs_count / member_nodes_count)
+        # member_node_dofs_count = member.node_dofs_count
+        member_dofs_count = member_prop.shape[0]
+        structure_node_dofs_count = self.node_dofs_count
         for i in range(member_dofs_count):
             for j in range(member_dofs_count):
-                local_member_node_row = int(j // member_node_dofs_count)
-                p = int(member_node_dofs_count * member.nodes[local_member_node_row].num + j % member_node_dofs_count)
-                local_member_node_column = int(i // member_node_dofs_count)
-                q = int(member_node_dofs_count * member.nodes[local_member_node_column].num + i % member_node_dofs_count)
+                local_member_node_row = int(j // structure_node_dofs_count)
+                p = int(structure_node_dofs_count * member.nodes[local_member_node_row].num + j % structure_node_dofs_count)
+                local_member_node_column = int(i // structure_node_dofs_count)
+                q = int(structure_node_dofs_count * member.nodes[local_member_node_column].num + i % structure_node_dofs_count)
                 structure_prop[p, q] = structure_prop[p, q] + member_prop[j, i]
         return structure_prop
 
@@ -547,3 +567,36 @@ class Structure:
                 disp[dof, 0] = ut[ut_i, 0]
                 ut_i += 1
         return disp
+
+    def map_member_node_dofs(self, member):
+        member_type = member.__class__.__name__
+        if self.type == "FRAME2D":
+            if member_type == "WallMember":
+                mapped_node_dofs = [0, 1]
+            if member_type == "Frame2DMember":
+                 mapped_node_dofs = [0, 1, 2]
+
+        elif self.type == "FRAME3D":
+            if member_type == "Frame3DMember":
+                mapped_node_dofs = [0, 1, 2, 3, 4, 5]
+            elif member_type == "WallMember":
+                mapped_node_dofs = [0, 2]
+            elif member_type == "PlateMember":
+                # FIXME: check the dofs for plate and fix the values. The values below are not correct.
+                mapped_node_dofs = [2, 3, 4]
+
+        elif self.type == "WALL2D":
+            if member_type == "WallMember":
+                mapped_node_dofs = [0, 1]
+
+        elif self.type == "PLATE2D":
+            mapped_node_dofs = [0, 1, 2]
+
+        return mapped_node_dofs
+
+    def map_member_dofs(self, member_nodes_count, mapped_node_dofs):
+        element_dofs = []
+        for member_node_num in range(member_nodes_count):
+            for mapped_node_dof in mapped_node_dofs:
+                element_dofs.append(mapped_node_dof + member_node_num * self.node_dofs_count)
+        return element_dofs

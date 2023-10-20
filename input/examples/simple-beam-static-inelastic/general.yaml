@@ -1,4 +1,5 @@
 structure_dim: 2d
+structure_type: "FRAME2D"
 inelastic:
   enabled: true
   include_softening: false

@@ -30,10 +30,12 @@ class Frame2DMember:
     def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame2DSection, mass: Mass = None):
         self.num = num
         self.nodes = nodes
+        self.nodes_count = len(self.nodes)
+        self.node_dofs_count = 3
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section
-        self.dofs_count = 6
         self.yield_specs = YieldSpecs(self.section)
         self.l = self._length()
         self.mass = mass if mass else None

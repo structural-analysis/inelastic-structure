@@ -30,10 +30,12 @@ class Frame3DMember:
     def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
         self.num = num
         self.nodes = nodes
+        self.nodes_count = len(self.nodes)
+        self.node_dofs_count = 6
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section
-        self.dofs_count = 12
         self.yield_specs = YieldSpecs(self.section)
         self.roll_angle = np.deg2rad(roll_angle)
         self.l = self._length()
