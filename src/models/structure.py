@@ -212,6 +212,14 @@ class Structure:
         structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for member in self.members.list:
             if member.m is not None:
+                mapped_member_node_dofs = self.map_member_node_dofs(member)
+                mapped_element_dofs = self.map_member_dofs(
+                    member_nodes_count=member.nodes_count,
+                    mapped_node_dofs=mapped_member_node_dofs,
+                )
+                mapped_dofs_count = self.node_dofs_count * member.nodes_count
+                mapped_m = np.matrix(np.zeros((mapped_dofs_count, mapped_dofs_count)))
+                mapped_m[np.ix_(mapped_element_dofs, mapped_element_dofs)] = member.m
                 structure_mass = self._assemble_members(member, member.m, structure_mass)
         return structure_mass
 
