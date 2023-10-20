@@ -1,6 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from functools import lru_cache
+
 from ..points import NaturalPoint, GaussPoint
 from ..sections.wall import WallSection
 
@@ -43,7 +44,8 @@ class WallMember:
         self.element_type = element_type  # Q4, Q4R, Q8, Q8R
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
-        self.dofs_count = 2 * self.nodes_count
+        self.node_dofs_count = 2
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()

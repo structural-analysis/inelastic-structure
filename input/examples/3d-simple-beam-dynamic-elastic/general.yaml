@@ -1,4 +1,5 @@
 structure_dim: 3d
+structure_type: "FRAME3D"
 inelastic:
   enabled: false
   include_softening: false
