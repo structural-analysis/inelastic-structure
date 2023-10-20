@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "1story-dynamic-inelastic-ll1.0-ap400k"
+    example_name: str = "simple-beam-static-elastic"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     use_sifting: bool = True
