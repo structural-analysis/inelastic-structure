@@ -30,9 +30,7 @@ class YieldSpecs:
 
 class PlateMember:
     # calculations is based on four gauss points
-    def __init__(self, structure_node_dofs_count: int, structure_type: str, num: int, section: PlateSection, element_type: str, nodes: tuple):
-        self.structure_type = structure_type
-        self.structure_node_dofs_count = structure_node_dofs_count
+    def __init__(self, num: int, section: PlateSection, element_type: str, nodes: tuple):
         self.num = num
         self.section = section
         self.element_type = element_type  # Q4, Q4R, Q8, Q8R

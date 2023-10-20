@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from ..points import NaturalPoint, GaussPoint
 from ..sections.wall import WallSection
-from src.functions import map_member_dofs
+
 
 @dataclass
 class Response:
@@ -38,28 +38,17 @@ class YieldSpecs:
 
 class WallMember:
     # calculations is based on four gauss points
-    def __init__(self, structure_node_dofs_count, num: int, structure_type: str, section: WallSection, element_type: str, nodes: tuple):
-        self.structure_node_dofs_count = structure_node_dofs_count
-        self.structure_type = structure_type
+    def __init__(self, num: int, section: WallSection, element_type: str, nodes: tuple):
         self.num = num
         self.section = section
         self.element_type = element_type  # Q4, Q4R, Q8, Q8R
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.node_dofs_count = 2
-        self.member_dofs_count = self.node_dofs_count * self.nodes_count
-        self.mapped_dofs_count = self.structure_node_dofs_count * self.nodes_count
-        self.mapped_node_dofs = self.map_node_dofs()
-        self.mapped_element_dofs = map_member_dofs(
-            self.nodes_count,
-            self.mapped_node_dofs,
-            self.structure_node_dofs_count,
-        )
+        self.dofs_count = self.node_dofs_count * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
-        self.mapped_k = np.matrix(np.zeros((self.mapped_dofs_count, self.mapped_dofs_count)))
-        self.mapped_k[np.ix_(self.mapped_element_dofs, self.mapped_element_dofs)] = self.k
         self.t = self.get_transform()
         self.m = None
         # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
@@ -219,7 +208,7 @@ class WallMember:
         return b
 
     def get_stiffness(self):
-        k = np.matrix(np.zeros((self.member_dofs_count, self.member_dofs_count)))
+        k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for gauss_point in self.gauss_points:
             b = self.get_shape_derivatives(gauss_point)
             j = self.get_jacobian(gauss_point)
@@ -230,7 +219,7 @@ class WallMember:
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(self.member_dofs_count))
+        return np.matrix(np.eye(self.dofs_count))
 
     def get_nodal_strains(self, nodal_disp):
         nodal_strains = np.matrix(np.zeros((3 * self.nodes_count, 1)))
@@ -325,7 +314,7 @@ class WallMember:
         return nodal_force, gauss_point_stress
 
     def get_nodal_forces_from_unit_distortions(self):
-        nodal_forces = np.matrix(np.zeros((self.member_dofs_count, self.yield_specs.components_count)))
+        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
         gauss_points_stresses = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.components_count)))
         component_base_num = 0
         for gauss_point in self.gauss_points:
@@ -340,7 +329,7 @@ class WallMember:
         # fixed external: fixed external forces like force, moment, ... nodes of a member
 
         if fixed_external is None:
-            fixed_external = np.matrix(np.zeros((self.member_dofs_count, 1)))
+            fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
 
         if fixed_internal is None:
             fixed_internal = np.matrix(np.zeros((self.yield_specs.components_count, 1)))
@@ -357,12 +346,3 @@ class WallMember:
             nodal_stresses=self.get_nodal_stresses(nodal_disp, fixed_internal),
         )
         return response
-
-    def map_node_dofs(self):
-        if self.structure_type == "FRAME2D":
-            mapped_node_dofs = [0, 1]
-        elif self.structure_type == "FRAME3D":
-            mapped_node_dofs = [0, 1]
-        elif self.structure_type == "WALL2D":
-            mapped_node_dofs = [0, 1]
-        return mapped_node_dofs

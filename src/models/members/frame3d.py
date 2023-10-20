@@ -27,9 +27,7 @@ class Mass:
 
 
 class Frame3DMember:
-    def __init__(self, structure_node_dofs_count: int, structure_type: str, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
-        self.structure_type = structure_type
-        self.structure_node_dofs_count = structure_node_dofs_count
+    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
         self.num = num
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
