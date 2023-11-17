@@ -59,7 +59,7 @@ class MahiniMethod:
             self.table = new_table.copy()
             self.d = self.calculate_initial_d(self.table)
         bbar = self.b
-        # print(bbar)
+        print(f"{bbar=}")
         b_matrix_inv = np.eye(self.slack_vars_count)
         cb = np.zeros(self.slack_vars_count)
         x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
@@ -112,6 +112,7 @@ class MahiniMethod:
             # print(bbar)
             # print(b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
+            print(f"{bbar=}")
             # TODO: ZERO OUT ABAR HERE AND IF UNBOUNDED END THE COMPUTATION
             abar = zero_out_small_values(abar)
             # if not any(abar > 0):
@@ -123,7 +124,7 @@ class MahiniMethod:
             will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
-            # print("bbar reset ", bbar)
+            print(f"reset {bbar=}")
             x_history.append(x_cumulative.copy())
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
@@ -211,9 +212,9 @@ class MahiniMethod:
                         break
         # print(f"before    {basic_variables=}")
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
-        # print(f"{bbar=}")
+        print(f"{bbar=}")
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
-        # print("bbar reset ", bbar)
+        print(f"reset {bbar=}")
         x_history.append(x_cumulative.copy())
         pms_history = []
         load_level_history = []
@@ -671,45 +672,56 @@ class MahiniMethod:
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
+        print(f"{positive_abar_indices=}")
         positive_abar = abar[positive_abar_indices]
+        print(f"{positive_abar=}")
+        print(f"{bbar[positive_abar_indices]=}")
         ba = bbar[positive_abar_indices] / positive_abar
         zipped_ba = np.row_stack([positive_abar_indices, ba])
+        print(f"{zipped_ba=}")
         mask = np.argsort(zipped_ba[1], kind="stable")
+        print(f"{mask=}")
         sorted_zipped_ba = zipped_ba[:, mask]
-
+        print(f"{sorted_zipped_ba=}")
         # if will in variable is landa
         # print(f"{sorted_zipped_ba=}")
-        will_out_row = int(sorted_zipped_ba[0, 0])
-        # if will in variable is plastic or softening
-        if landa_row and will_in_col:
-            # if will in variable is plastic
-            if will_in_col < self.plastic_vars_count or will_in_col == self.primary_vars_count:
-                # skip landa variable from exiting
-                if landa_row == sorted_zipped_ba[0, 0]:
-                    will_out_row = int(sorted_zipped_ba[0, 1])
+        is_unbounded = self.check_is_unbounded(sorted_zipped_ba, landa_row)
+        if is_unbounded:
+            will_out_row = np.where(basic_variables == self.raw_data.landa_bar_var)[0][0]
+            print(f"{will_out_row=}")
+            input()
+        else:
+            will_out_row = int(sorted_zipped_ba[0, 0])
+            # if will in variable is plastic or softening
+            if landa_row and will_in_col:
+                # if will in variable is plastic
+                if will_in_col < self.plastic_vars_count or will_in_col == self.primary_vars_count:
+                    # skip landa variable from exiting
+                    if landa_row == sorted_zipped_ba[0, 0]:
+                        will_out_row = int(sorted_zipped_ba[0, 1])
 
-            # if will in variable is softening
-            else:
-                will_out_row = int(sorted_zipped_ba[0, 0])
-                # when we reach load or disp limit:
+                # if will in variable is softening
+                else:
+                    will_out_row = int(sorted_zipped_ba[0, 0])
+                    # when we reach load or disp limit:
 
-                will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
-                if settings.use_sifting:
-                    will_in_col_yield_point = self.sifted_yield_points[will_in_col_yield_point]
-                for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
-                    will_out_row = int(ba_row)
-                    if will_out_row != landa_row:
-                        # if exiting variable is load or disp limit
-                        if will_out_row >= self.primary_vars_count - 1:
-                            break
-                        will_out_var = basic_variables[will_out_row]
-                        will_out_yield_point = self.get_will_out_yield_point(will_out_var)
-                        print(f"{will_out_yield_point=}")
-                        print(f"{will_in_col_yield_point=}")
-                        print("--------------------")
-                        if will_in_col_yield_point != will_out_yield_point:
-                            will_out_row = int(sorted_zipped_ba[0, i])
-                            break
+                    will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
+                    if settings.use_sifting:
+                        will_in_col_yield_point = self.sifted_yield_points[will_in_col_yield_point]
+                    for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
+                        will_out_row = int(ba_row)
+                        if will_out_row != landa_row:
+                            # if exiting variable is load or disp limit
+                            if will_out_row >= self.primary_vars_count - 1:
+                                break
+                            will_out_var = basic_variables[will_out_row]
+                            will_out_yield_point = self.get_will_out_yield_point(will_out_var)
+                            print(f"{will_out_yield_point=}")
+                            print(f"{will_in_col_yield_point=}")
+                            print("--------------------")
+                            if will_in_col_yield_point != will_out_yield_point:
+                                will_out_row = int(sorted_zipped_ba[0, i])
+                                break
         return will_out_row
 
     def get_initial_basic_variables(self):
@@ -964,3 +976,16 @@ class MahiniMethod:
         c = np.zeros(self.total_vars_count)
         c[0:self.plastic_vars_count] = 1.0
         return -1 * c
+
+    def check_is_unbounded(self, sorted_zipped_ba, landa_row):
+        if not sorted_zipped_ba.any():
+            is_unbounded = True
+        elif landa_row == sorted_zipped_ba[0, 0] and sorted_zipped_ba[1, 0] < 0:
+            print(f"{landa_row=}")
+            print(f"{sorted_zipped_ba[0, 0]=}")
+            print(f"{sorted_zipped_ba[1, 0]=}")
+            is_unbounded = True
+        else:
+            is_unbounded = False
+        print(f"{is_unbounded=}")
+        return is_unbounded
