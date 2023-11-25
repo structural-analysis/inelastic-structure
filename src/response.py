@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from src.functions import get_elastoplastic_response
-
+from src.settings import settings
 
 outputs_dir = "output/examples/"
 
@@ -323,4 +323,4 @@ def write_response_to_file(example_name, response, response_name):
         os.makedirs(response_dir, exist_ok=True)
         for i in range(response.shape[1]):
             dir = os.path.join(response_dir, f"{str(i)}.csv")
-            np.savetxt(fname=dir, X=np.array(response[increment, i]), delimiter=",")
+            np.savetxt(fname=dir, X=np.array(response[increment, i]), delimiter=",", fmt=f'%.{settings.output_digits}e')

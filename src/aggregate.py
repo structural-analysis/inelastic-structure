@@ -1,6 +1,6 @@
 import os
 import numpy as np
-
+from src.settings import settings
 
 outputs_dir = "output/examples/"
 
@@ -67,7 +67,7 @@ def write_responses(responses, structure_type_path):
                 dof_path = os.path.join(element_path, f"{dof}.csv")
                 dof_response = responses[response][element][dof]
                 os.makedirs(element_path, exist_ok=True)
-                np.savetxt(fname=dof_path, X=dof_response, delimiter=",")
+                np.savetxt(fname=dof_path, X=dof_response, delimiter=",", fmt=f'%.{settings.output_digits}e')
 
 
 def get_structure_types(example_name):
