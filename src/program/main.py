@@ -24,7 +24,6 @@ class MahiniMethod:
         self.d0 = raw_data.d0
         self.b = raw_data.b
         self.c = raw_data.c
-        print(f"{self.c=}")
         self.cs = raw_data.cs
         if settings.use_sifting:
             self.update_for_sifting()
