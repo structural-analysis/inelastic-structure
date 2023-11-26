@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.sparse import csr_matrix
-import time
 
 from src.settings import settings
 from src.program.models import FPM, SlackCandidate
@@ -62,7 +61,6 @@ class MahiniMethod:
             self.table = new_table.copy()
             self.d = self.calculate_initial_d(self.table)
         bbar = self.b
-        # print(bbar)
         b_matrix_inv = np.eye(self.slack_vars_count)
         cb = np.zeros(self.slack_vars_count)
         x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
@@ -70,10 +68,6 @@ class MahiniMethod:
         fpm = FPM
         fpm.var = self.landa_var
         fpm.cost = 0
-        # pprint(b_matrix_inv)
-        # print(f"{fpm.var=}")
-        # print("table")
-        # print(self.table)
         if self.is_two_phase:
             fpm, b_matrix_inv, basic_variables, cb, db, will_out_row, will_out_var = self.enter_landa_dynamic(
                 fpm=fpm,
