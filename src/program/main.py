@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.sparse import csr_matrix
+import time
 
 from src.settings import settings
 from src.program.models import FPM, SlackCandidate
@@ -728,8 +730,10 @@ class MahiniMethod:
             else:
                 eta[i] = -item / will_out_item
         e[:, will_out_row] = eta
-        updated_b_matrix_inv = np.dot(e, b_matrix_inv)
-        return updated_b_matrix_inv
+        sparse_e = csr_matrix(e)
+        sparse_b_inv = csr_matrix(b_matrix_inv)
+        updated_b_matrix_inv = sparse_e.dot(sparse_b_inv)
+        return updated_b_matrix_inv.toarray()
 
     def is_candidate_fpm(self, fpm, slack_candidate):
         if fpm.cost <= slack_candidate.cost:

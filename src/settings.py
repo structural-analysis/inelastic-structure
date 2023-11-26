@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    example_name: str = "simple-beam-static-inelastic"
+    example_name: str = "wall-4element-inelastic-q8r"
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
