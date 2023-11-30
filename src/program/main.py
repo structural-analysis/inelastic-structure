@@ -16,16 +16,12 @@ class MahiniMethod:
         self.softening_vars_count = raw_data.softening_vars_count
         self.constraints_count = raw_data.constraints_count
         self.yield_points_indices = raw_data.yield_points_indices
-        self.yield_pieces = raw_data.yield_pieces
         self.disp_limits = raw_data.disp_limits
-        self.load_limit = raw_data.load_limit
-        self.limits_count = raw_data.limits_count
         self.landa_var = raw_data.landa_var
         self.limits_slacks = raw_data.limits_slacks
         self.d0 = raw_data.d0
         self.b = raw_data.b
         self.c = raw_data.c
-        self.cs = raw_data.cs
         self.table = self._create_table()
 
         self.is_two_phase = True if any(self.b < 0) else False

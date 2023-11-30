@@ -1,5 +1,4 @@
 import numpy as np
-from enum import Enum
 from math import isclose
 from dataclasses import dataclass
 from scipy.linalg import cho_factor, eigh
@@ -24,59 +23,78 @@ class AttachedMember:
 
 @dataclass
 class YieldPiece:
-    point_num: int
+    yield_point_num: int
+    sifted_num_in_structure: int = None
+    unsifted_num_in_structure: int
+    sifted_num_in_yield_point: int = None
+    unsifted_num_in_yield_point: int
+
+
+@dataclass
+class YieldPoint:
+    num: int
     member_num: int
-    piece_num: int
+    is_selected: bool
+    unsifted_pieces: list(YieldPiece)
+    sifted_pieces: list(YieldPiece) = []
+    unsifted_phi: np.matrix
+    sifted_phi: np.matrix = np.matrix(np.zeros((1, 1)))
 
 
 class YieldSpecs:
-    def __init__(self, yield_specs_dict):
-        self.points_count = yield_specs_dict["points_count"]
-        self.components_count = yield_specs_dict["components_count"]
-        self.pieces_count = yield_specs_dict["pieces_count"]
-        self.yield_pieces = yield_specs_dict["yield_pieces"]
+    def __init__(self, members_list):
+        self.members_list = members_list
+        self.members_yield_specs = self.get_members_yield_specs()
+        self.points_count = self.members_yield_specs["points_count"]
+        self.components_count = self.members_yield_specs["components_count"]
+        self.pieces_count = self.members_yield_specs["pieces_count"]
+        self.yield_points: list = self.members_yield_specs["yield_points"]
+
+    def get_members_yield_specs(self):
+        point_num = 0
+        components_count = 0
+        member_num = 0
+        yield_points = []
+        unsifted_structure_piece_num = 0
+        for member in self.members_list:
+            components_count += member.yield_specs.components_count
+            for _ in range(member.yield_specs.points_count):
+                unsifted_yield_point_piece_num = 0
+                unsifted_pieces = []
+                for _ in range(member.yield_specs.pieces_count):
+                    unsifted_pieces.append(
+                        YieldPiece(
+                            yield_point_num=point_num,
+                            unsifted_num_in_structure=unsifted_structure_piece_num,
+                            unsifted_num_in_yield_point=unsifted_yield_point_piece_num,
+
+                        )
+                    )
+                    unsifted_yield_point_piece_num += 1
+                    unsifted_structure_piece_num += 1
+                yield_points.append(
+                    YieldPoint(
+                        num=point_num,
+                        member_num=member_num,
+                        is_selected=True,
+                        unsifted_pieces=unsifted_pieces
+                    )
+                )
+                point_num += 1
+            member_num += 1
+        members_yield_specs = {
+            "points_count": point_num,
+            "components_count": components_count,
+            "pieces_count": unsifted_structure_piece_num,
+            "yield_points": yield_points,
+        }
+        return members_yield_specs
 
 
 class Members:
     def __init__(self, members_list):
         self.list = members_list
         self.num = len(members_list)
-        self.yield_specs = YieldSpecs(self.get_yield_specs_dict())
-
-    def get_yield_specs_dict(self):
-        points_count = 0
-        components_count = 0
-        pieces_count = 0
-        piece_counter = 0
-        point_counter = 0
-        member_counter = 0
-        yield_pieces = []
-
-        for member in self.list:
-            points_count += member.yield_specs.points_count
-            components_count += member.yield_specs.components_count
-            pieces_count += member.yield_specs.pieces_count
-
-            for _ in range(member.yield_specs.points_count):
-                section_pieces_count = member.yield_specs.section.yield_specs.pieces_count
-                for _ in range(section_pieces_count):
-                    yield_pieces.append(
-                        YieldPiece(
-                            piece_num=piece_counter,
-                            point_num=point_counter,
-                            member_num=member_counter,
-                        )
-                    )
-                    piece_counter += 1
-                point_counter += 1
-            member_counter += 1
-        yield_specs_dict = {
-            "points_count": points_count,
-            "components_count": components_count,
-            "pieces_count": pieces_count,
-            "yield_pieces": yield_pieces,
-        }
-        return yield_specs_dict
 
 
 class Structure:
@@ -94,7 +112,7 @@ class Structure:
         self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
-        self.yield_specs = self.members.yield_specs
+        self.yield_specs = YieldSpecs(members_list=self.members.list)
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
         self.boundaries = self.aggregate_boundaries()

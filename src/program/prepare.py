@@ -1,12 +1,9 @@
 import numpy as np
 
-from src.settings import settings
-
 
 class RawData:
     def __init__(self, analysis):
         structure = analysis.structure
-        self.yield_pieces = structure.members.yield_specs.yield_pieces
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
         self.phi = structure.phi
