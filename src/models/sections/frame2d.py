@@ -27,6 +27,7 @@ class Nonlinear:
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
+        self.min_sifted_pieces_count = 2 if nonlinear.has_axial_yield else 1
         self.phi = self.create_phi(nonlinear)
         self.components_count = 2 if nonlinear.has_axial_yield else 1
         self.pieces_count = self.phi.shape[1]

@@ -16,7 +16,6 @@ total_dofs_num
 - add more elements
 - optimize code to full usage of numpy (remove for loops, ...)
 - improve performance (run every massive calculation with numpy)
-- use sifting
 - upgrade plate to polygon elements
 - multiprocess
 - do TODOs

@@ -75,20 +75,7 @@ class Analysis:
                 self.dv = self.get_nodal_disp_limits_sensitivity_rows()
                 raw_data = RawData(self)
                 mahini_method = MahiniMethod(raw_data)
-                if settings.use_sifting:
-                    sifted_plastic_vars = mahini_method.solve()
-                    sifted_pms_history = sifted_plastic_vars["pms_history"]
-                    pms_history = mahini_method.unsift_plastic_vars(
-                        sifted_pms_history=sifted_pms_history,
-                        sifted_yield_pieces=mahini_method.sifted_yield_pieces,
-                        unsifted_plastic_vars_count=raw_data.plastic_vars_count,
-                    )
-                    self.plastic_vars = {
-                        "pms_history": pms_history,
-                        "load_level_history": sifted_plastic_vars["load_level_history"]
-                    }
-                else:
-                    self.plastic_vars = mahini_method.solve()
+                self.plastic_vars = mahini_method.solve()
 
         elif self.type == "dynamic":
             dynamic_analysis_method = DynamicAnalysisMethod.DUHAMEL
@@ -237,38 +224,13 @@ class Analysis:
                     self.load_level_prev = self.load_level
                     raw_data = RawData(self)
                     mahini_method = MahiniMethod(raw_data)
-
-                    if settings.use_sifting:
-                        sifted_plastic_vars = mahini_method.solve_dynamic()
-                        sifted_pms_history = sifted_plastic_vars["pms_history"]
-                        pms_history = mahini_method.unsift_plastic_vars(
-                            sifted_pms_history=sifted_pms_history,
-                            sifted_yield_pieces=mahini_method.sifted_yield_pieces,
-                            unsifted_plastic_vars_count=raw_data.plastic_vars_count,
-                        )
-                        self.plastic_vars = {
-                            "pms_history": pms_history,
-                            "load_level_history": sifted_plastic_vars["load_level_history"]
-                        }
-                    else:
-                        self.plastic_vars = mahini_method.solve_dynamic()
-
+                    self.plastic_vars = mahini_method.solve_dynamic()
                     self.plastic_vars_history[time_step, 0] = self.plastic_vars
                     self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]
-                    print(f"{self.delta_plastic_multipliers=}")
                     self.load_level = self.plastic_vars["load_level_history"][-1]
                     self.plastic_multipliers = self.delta_plastic_multipliers + self.plastic_multipliers_prev
                     self.plastic_multipliers_history[time_step, 0] = self.plastic_multipliers
-
-
-
-
                     self.plastic_multipliers_prev = self.plastic_multipliers
-
-
-
-                    print(f"{structure.phi.shape=}")
-                    print(f"{self.plastic_multipliers.shape=}")
                     phi_x = structure.phi * self.plastic_multipliers
                     elastoplastic_a2s = get_elastoplastic_response(
                         load_level=self.load_level,
