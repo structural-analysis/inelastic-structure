@@ -20,7 +20,7 @@ def calculate_static_responses(analysis):
         pms_history = analysis.plastic_vars["pms_history"]
         load_level_history = analysis.plastic_vars["load_level_history"]
         increments_count = len(load_level_history)
-        phi = structure.phi
+        phi = structure.yield_specs.intact_phi
 
         load_levels = np.zeros([increments_count, 1], dtype=object)
 
@@ -28,18 +28,18 @@ def calculate_static_responses(analysis):
         nodal_disp = np.zeros([increments_count, 1], dtype=object)
 
         members_nodal_forces_sensitivity = analysis.members_nodal_forces_sensitivity
-        members_nodal_forces = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
 
         members_nodal_strains_sensitivity = analysis.members_nodal_strains_sensitivity
-        members_nodal_strains = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_nodal_strains = np.zeros([increments_count, structure.members_count], dtype=object)
         nodal_strains = np.zeros([increments_count, 1], dtype=object)
 
         members_nodal_stresses_sensitivity = analysis.members_nodal_stresses_sensitivity
-        members_nodal_stresses = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_nodal_stresses = np.zeros([increments_count, structure.members_count], dtype=object)
         nodal_stresses = np.zeros([increments_count, 1], dtype=object)
 
         members_disps_sensitivity = analysis.members_disps_sensitivity
-        members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
+        members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
 
         for i in range(increments_count):
             pms = pms_history[i]
@@ -74,7 +74,7 @@ def calculate_static_responses(analysis):
                 elastic_response=analysis.elastic_members_nodal_stresses,
                 sensitivity=members_nodal_stresses_sensitivity,
             )
-            for j in range(structure.members.num):
+            for j in range(structure.members_count):
                 members_nodal_forces[i, j] = elastoplastic_members_nodal_forces[j, 0]
                 members_nodal_strains[i, j] = elastoplastic_members_nodal_strains[j, 0]
                 members_nodal_stresses[i, j] = elastoplastic_members_nodal_stresses[j, 0]
@@ -89,7 +89,7 @@ def calculate_static_responses(analysis):
                 nodal_strains[i, 0] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_strains.T)
                 nodal_stresses[i, 0] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_stresses.T)
 
-            for j in range(structure.members.num):
+            for j in range(structure.members_count):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
 
         responses = {
@@ -109,15 +109,15 @@ def calculate_static_responses(analysis):
             )
     elif not structure.is_inelastic: # if structure is elastic
         nodal_disp = np.zeros([1, 1], dtype=object)
-        members_disps = np.zeros([1, structure.members.num], dtype=object)
-        members_nodal_forces = np.zeros([1, structure.members.num], dtype=object)
-        members_nodal_strains = np.zeros([1, structure.members.num], dtype=object)
-        members_nodal_stresses = np.zeros([1, structure.members.num], dtype=object)
+        members_disps = np.zeros([1, structure.members_count], dtype=object)
+        members_nodal_forces = np.zeros([1, structure.members_count], dtype=object)
+        members_nodal_strains = np.zeros([1, structure.members_count], dtype=object)
+        members_nodal_stresses = np.zeros([1, structure.members_count], dtype=object)
         nodal_strains = np.zeros([1, 1], dtype=object)
         nodal_stresses = np.zeros([1, 1], dtype=object)
 
         nodal_disp[0, 0] = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp[0, 0]
-        for i in range(structure.members.num):
+        for i in range(structure.members_count):
             members_disps[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_disps[i, 0]
             members_nodal_forces[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces[i, 0]
             members_nodal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_strains[i, 0]
@@ -178,7 +178,7 @@ def calculate_dynamic_responses(analysis):
             pms_history = plastic_vars["pms_history"]
             load_level_history = plastic_vars["load_level_history"]
             increments_count = len(load_level_history)
-            phi = structure.phi
+            phi = structure.yield_specs.intact_phi
 
             load_levels = np.zeros([increments_count, 1], dtype=object)
 
@@ -186,10 +186,10 @@ def calculate_dynamic_responses(analysis):
             nodal_disp = np.zeros([increments_count, 1], dtype=object)
 
             members_nodal_forces_sensitivity = members_nodal_forces_sensitivity_history[time_step, 0]
-            members_nodal_forces = np.zeros([increments_count, structure.members.num], dtype=object)
+            members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
 
             members_disps_sensitivity = members_disps_sensitivity_history[time_step, 0]
-            members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
+            members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
             for i in range(increments_count):
                 pms = pms_history[i]
                 load_level = load_level_history[i]
@@ -211,7 +211,7 @@ def calculate_dynamic_responses(analysis):
                     elastic_response=elastic_members_nodal_forces_history[time_step, 0],
                     sensitivity=members_nodal_forces_sensitivity,
                 )
-                for j in range(structure.members.num):
+                for j in range(structure.members_count):
                     members_nodal_forces[i, j] = elastoplastic_members_nodal_forces[j, 0]
 
                 elastoplastic_members_disps = get_elastoplastic_response(
@@ -220,7 +220,7 @@ def calculate_dynamic_responses(analysis):
                     elastic_response=elastic_members_disps_history[time_step, 0],
                     sensitivity=members_disps_sensitivity,
                 )
-                for j in range(structure.members.num):
+                for j in range(structure.members_count):
                     members_disps[i, j] = elastoplastic_members_disps[j, 0]
 
             responses[time_step, 0] = {
@@ -241,8 +241,8 @@ def calculate_dynamic_responses(analysis):
 
         for time_step in range(1, analysis.time_steps):
             nodal_disp = np.zeros([increments_count, 1], dtype=object)
-            members_nodal_forces = np.zeros([increments_count, structure.members.num], dtype=object)
-            members_disps = np.zeros([increments_count, structure.members.num], dtype=object)
+            members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
+            members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
             # elastoplastic_nodal_disp = get_elastoplastic_response(
             #     load_level=load_level,
             #     phi_x=phi_x,
@@ -259,7 +259,7 @@ def calculate_dynamic_responses(analysis):
                 #     sensitivity=members_nodal_forces_sensitivity,
                 # )
                 elastic_members_nodal_forces = elastic_members_nodal_forces_history[time_step, 0] * load_limit
-                for j in range(structure.members.num):
+                for j in range(structure.members_count):
                     members_nodal_forces[i, j] = elastic_members_nodal_forces[j, 0]
 
                 # elastoplastic_members_disps = get_elastoplastic_response(
@@ -269,7 +269,7 @@ def calculate_dynamic_responses(analysis):
                 #     sensitivity=members_disps_sensitivity,
                 # )
                 elastic_members_disps = elastic_members_disps_history[time_step, 0] * load_limit
-                for j in range(structure.members.num):
+                for j in range(structure.members_count):
                     members_disps[i, j] = elastic_members_disps[j, 0]
 
                 responses[time_step, 0] = {

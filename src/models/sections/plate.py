@@ -1,6 +1,7 @@
 import numpy as np
 from functools import lru_cache
 
+
 class Material:
     def __init__(self, input_material):
         self.e = input_material["e"]
@@ -23,7 +24,8 @@ class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.mp = nonlinear.mp
         self.yield_surface = nonlinear.yield_surface
-        self.components_count = 3
+        self.sifted_pieces_count = 4
+        self.components_count = self.phi.shape[0]
         self.pieces_count = self.phi.shape[1]
 
     @property

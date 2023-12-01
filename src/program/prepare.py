@@ -6,11 +6,11 @@ class RawData:
         structure = analysis.structure
         self.load_limit = structure.limits["load_limit"]
         self.disp_limits = structure.limits["disp_limits"]
-        self.phi = structure.phi
-        self.q = structure.q
-        self.h = structure.h
-        self.w = structure.w
-        self.cs = structure.cs
+        self.phi = structure.yield_specs.intact_phi
+        self.q = structure.yield_specs.intact_q
+        self.h = structure.yield_specs.intact_h
+        self.w = structure.yield_specs.intact_w
+        self.cs = structure.yield_specs.intact_cs
 
         self.p0 = analysis.p0
         self.pv = analysis.pv
@@ -82,10 +82,10 @@ class VarsCount:
         self.disp_limits_count = self.disp_limits.shape[0]
         self.limits_count = 1 + self.disp_limits_count * 2
 
-        self.softening_vars_count = 2 * structure.yield_specs.points_count if structure.include_softening else 0
-        self.plastic_vars_count = structure.yield_specs.pieces_count
+        self.softening_vars_count = 2 * structure.yield_specs.all_points_count if structure.include_softening else 0
+        self.plastic_vars_count = structure.yield_specs.all_pieces_count
 
-        self.yield_points_indices = structure.yield_points_indices
+        self.yield_points_indices = structure.yield_specs.yield_points_indices
 
         self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
         self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count

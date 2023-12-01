@@ -21,80 +21,85 @@ class AttachedMember:
     member_node_num: int
 
 
-@dataclass
-class YieldPiece:
-    yield_point_num: int
-    sifted_num_in_structure: int = None
-    unsifted_num_in_structure: int
-    sifted_num_in_yield_point: int = None
-    unsifted_num_in_yield_point: int
-
-
-@dataclass
-class YieldPoint:
-    num: int
-    member_num: int
-    is_selected: bool
-    unsifted_pieces: list(YieldPiece)
-    sifted_pieces: list(YieldPiece) = []
-    unsifted_phi: np.matrix
-    sifted_phi: np.matrix = np.matrix(np.zeros((1, 1)))
-
-
 class YieldSpecs:
-    def __init__(self, members_list):
-        self.members_list = members_list
-        self.members_yield_specs = self.get_members_yield_specs()
-        self.points_count = self.members_yield_specs["points_count"]
-        self.components_count = self.members_yield_specs["components_count"]
-        self.pieces_count = self.members_yield_specs["pieces_count"]
-        self.yield_points: list = self.members_yield_specs["yield_points"]
+    def __init__(self, members):
+        self.members = members
+        self.all_yield_points: list = self.get_all_yield_points_stats()[0]
+        self.all_components_count = self.get_all_yield_points_stats()[1]
+        self.all_pieces_count = self.get_all_yield_points_stats()[2]
+        self.all_points_count = len(self.all_yield_points)
+        self.intact_phi = self.create_intact_phi()
+        self.intact_q = self.create_intact_q()
+        self.intact_h = self.create_intact_h()
+        self.intact_w = self.create_intact_w()
+        self.intact_cs = self.create_intact_cs()
+        self.yield_points_indices = self.get_yield_points_indices()
 
-    def get_members_yield_specs(self):
-        point_num = 0
-        components_count = 0
-        member_num = 0
-        yield_points = []
-        unsifted_structure_piece_num = 0
-        for member in self.members_list:
-            components_count += member.yield_specs.components_count
-            for _ in range(member.yield_specs.points_count):
-                unsifted_yield_point_piece_num = 0
-                unsifted_pieces = []
-                for _ in range(member.yield_specs.pieces_count):
-                    unsifted_pieces.append(
-                        YieldPiece(
-                            yield_point_num=point_num,
-                            unsifted_num_in_structure=unsifted_structure_piece_num,
-                            unsifted_num_in_yield_point=unsifted_yield_point_piece_num,
+    def get_all_yield_points_stats(self):
+        all_yield_points = []
+        all_components_count = 0
+        all_pieces_count = 0
+        for member_num, member in enumerate(self.members):
+            for yield_point in member.yield_specs.yield_points:
+                yield_point.member_num = member_num
+                all_yield_points.append(yield_point)
+                all_components_count += yield_point.components_count
+                all_pieces_count += yield_point.all_pieces_count
+        return all_yield_points, all_components_count, all_pieces_count
 
-                        )
-                    )
-                    unsifted_yield_point_piece_num += 1
-                    unsifted_structure_piece_num += 1
-                yield_points.append(
-                    YieldPoint(
-                        num=point_num,
-                        member_num=member_num,
-                        is_selected=True,
-                        unsifted_pieces=unsifted_pieces
-                    )
-                )
-                point_num += 1
-            member_num += 1
-        members_yield_specs = {
-            "points_count": point_num,
-            "components_count": components_count,
-            "pieces_count": unsifted_structure_piece_num,
-            "yield_points": yield_points,
-        }
-        return members_yield_specs
+    def create_intact_phi(self):
+        intact_phi = np.matrix(np.zeros((self.all_components_count, self.all_pieces_count)))
+        current_row_start = 0
+        current_column_start = 0
+        for yield_point in self.all_yield_points:
+            current_row_end = current_row_start + yield_point.components_count
+            current_column_end = current_column_start + yield_point.all_pieces_count
+            intact_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.intact_phi
+            current_row_start = current_row_end
+            current_column_start = current_column_end
+        return intact_phi
 
+    def create_intact_q(self):
+        intact_q = np.matrix(np.zeros((2 * self.all_points_count, self.all_pieces_count)))
+        pieces_counter = 0
+        for i, yield_point in enumerate(self.all_yield_points):
+            intact_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.all_pieces_count] = yield_point.softening_properties.q
+            pieces_counter += yield_point.all_pieces_count
+        return intact_q
 
-class Members:
-    def __init__(self, members_list):
-        self.list = members_list
-        self.num = len(members_list)
+    def create_intact_h(self):
+        intact_h = np.matrix(np.zeros((self.all_pieces_count, 2 * self.all_points_count)))
+        pieces_counter = 0
+        for i, yield_point in enumerate(self.all_yield_points):
+            intact_h[pieces_counter:pieces_counter + yield_point.all_pieces_count, 2 * i:2 * i + 2] = yield_point.softening_properties.h
+            pieces_counter += yield_point.all_pieces_count
+        return intact_h
+
+    def create_intact_w(self):
+        intact_w = np.matrix(np.zeros((2 * self.all_points_count, 2 * self.all_points_count)))
+        for i, yield_point in enumerate(self.all_yield_points):
+            intact_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.softening_properties.w
+        return intact_w
+
+    def create_intact_cs(self):
+        intact_cs = np.matrix(np.zeros((2 * self.all_points_count, 1)))
+        for i, yield_point in enumerate(self.all_yield_points):
+            intact_cs[2 * i:2 * i + 2, 0] = yield_point.softening_properties.cs
+        return intact_cs
+
+    # TODO: can't we get yield point piece numbers from yield_points data?
+    def get_yield_points_indices(self):
+        yield_points_indices = []
+        index_counter = 0
+        for yield_point in self.all_yield_points:
+            yield_points_indices.append(
+                {
+                    "begin": index_counter,
+                    "end": index_counter + yield_point.all_pieces_count - 1,
+                }
+            )
+            index_counter += yield_point.all_pieces_count
+        return yield_points_indices
 
 
 class Structure:
@@ -105,14 +110,15 @@ class Structure:
         self.dim = self.general_properties["structure_dim"]
         self.initial_nodes = input["initial_nodes"]
         self.initial_nodes_count = len(self.initial_nodes)
-        self.members = Members(members_list=input["members"])
+        self.members = input["members"]
+        self.members_count = len(self.members)
         self.nodes = self.get_nodes()
         self.nodes_count = len(self.nodes)
         self.nodes_map = self.create_nodes_map()
         self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
-        self.yield_specs = YieldSpecs(members_list=self.members.list)
+        self.yield_specs = YieldSpecs(members=self.members)
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
         self.boundaries = self.aggregate_boundaries()
@@ -126,14 +132,6 @@ class Structure:
             structure_prop=self.k,
         )
         self.kc = cho_factor(self.reduced_k)
-
-        if self.is_inelastic:
-            self.yield_points_indices = self.get_yield_points_indices()
-            self.phi = self.create_phi()
-            self.q = self.create_q()
-            self.h = self.create_h()
-            self.w = self.create_w()
-            self.cs = self.create_cs()
 
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
@@ -170,16 +168,13 @@ class Structure:
 
     def get_nodes(self):
         nodes = self.initial_nodes
-        # for member in self.members.list:
-        #     if member.__class__.__name__ == "PlateMember":
-        #         nodes = member.nodes
         return nodes
 
     def create_nodes_map(self):
         nodes_map: list(NodeMapper) = []
         for structure_node in self.nodes:
             nodes_map.append(NodeMapper(structure_node=structure_node, attached_members=[]))
-            for member in self.members.list:
+            for member in self.members:
                 for member_node in member.nodes:
                     if member_node == structure_node:
                         nodes_map[structure_node.num].attached_members.append(
@@ -205,7 +200,7 @@ class Structure:
     def get_stiffness(self):
         # TODO: we must add mapping of element dof to structure dofs.
         structure_stiffness = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
-        for member in self.members.list:
+        for member in self.members:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
             mapped_member_node_dofs = self.map_member_node_dofs(member)
             mapped_element_dofs = self.map_member_dofs(
@@ -254,7 +249,7 @@ class Structure:
         # mass per length is applied in global direction so there is no need to transform.
         # TODO: map nodes of member to nodes of structure
         structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
-        for member in self.members.list:
+        for member in self.members:
             if member.m is not None:
                 mapped_member_node_dofs = self.map_member_node_dofs(member)
                 mapped_element_dofs = self.map_member_dofs(
@@ -315,74 +310,6 @@ class Structure:
     def get_global_dof(self, node_num, dof):
         global_dof = int(self.node_dofs_count * node_num + dof)
         return global_dof
-
-    def create_phi(self):
-        phi = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.pieces_count)))
-        current_row = 0
-        current_column = 0
-        for member in self.members.list:
-            for _ in range(member.yield_specs.points_count):
-                for yield_section_row in range(member.section.yield_specs.phi.shape[0]):
-                    for yield_section_column in range(member.section.yield_specs.phi.shape[1]):
-                        phi[current_row + yield_section_row, current_column + yield_section_column] = member.section.yield_specs.phi[yield_section_row, yield_section_column]
-                current_column = current_column + member.section.yield_specs.phi.shape[1]
-                current_row = current_row + member.section.yield_specs.phi.shape[0]
-        return phi
-
-    def create_q(self):
-        q = np.matrix(np.zeros((2 * self.yield_specs.points_count, self.yield_specs.pieces_count)))
-        yield_point_counter = 0
-        yield_pieces_count_counter = 0
-        for member in self.members.list:
-            for _ in range(member.yield_specs.points_count):
-                q[2 * yield_point_counter:2 * yield_point_counter + 2, yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter] = member.section.softening.q
-                yield_point_counter += 1
-                yield_pieces_count_counter += member.section.yield_specs.pieces_count
-        return q
-
-    def create_h(self):
-        h = np.matrix(np.zeros((self.yield_specs.pieces_count, 2 * self.yield_specs.points_count)))
-        yield_point_counter = 0
-        yield_pieces_count_counter = 0
-        for member in self.members.list:
-            for _ in range(member.yield_specs.points_count):
-                h[yield_pieces_count_counter:member.section.yield_specs.pieces_count + yield_pieces_count_counter, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.h
-                yield_point_counter += 1
-                yield_pieces_count_counter += member.section.yield_specs.pieces_count
-        return h
-
-    def create_w(self):
-        w = np.matrix(np.zeros((2 * self.yield_specs.points_count, 2 * self.yield_specs.points_count)))
-        yield_point_counter = 0
-        for member in self.members.list:
-            for _ in range(member.yield_specs.points_count):
-                w[2 * yield_point_counter:2 * yield_point_counter + 2, 2 * yield_point_counter:2 * yield_point_counter + 2] = member.section.softening.w
-                yield_point_counter += 1
-        return w
-
-    def create_cs(self):
-        cs = np.matrix(np.zeros((2 * self.yield_specs.points_count, 1)))
-        yield_point_counter = 0
-        for member in self.members.list:
-            for _ in range(member.yield_specs.points_count):
-                cs[2 * yield_point_counter:2 * yield_point_counter + 2, 0] = member.section.softening.cs
-                yield_point_counter += 1
-        return cs
-
-    def get_yield_points_indices(self):
-        yield_points_indices = []
-        index_counter = 0
-        for member in self.members.list:
-            yield_point_pieces = int(member.yield_specs.pieces_count / member.yield_specs.points_count)
-            for _ in range(member.yield_specs.points_count):
-                yield_points_indices.append(
-                    {
-                        "begin": index_counter,
-                        "end": index_counter + yield_point_pieces - 1,
-                    }
-                )
-                index_counter += yield_point_pieces
-        return yield_points_indices
 
     def aggregate_boundaries(self):
         boundaries = self.nodal_boundaries

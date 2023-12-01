@@ -29,8 +29,9 @@ class Nonlinear:
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
+        self.sifted_pieces_count = 4
         self.phi = self.create_phi(nonlinear)
-        self.components_count = 3
+        self.components_count = self.phi.shape[0]
         self.pieces_count = self.phi.shape[1]
 
     def create_phi(self, nonlinear):
