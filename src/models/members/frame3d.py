@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from ..points import Node
 from ..sections.frame3d import Frame3DSection
-from ..yield_models import YieldPoint, YieldPiece
+from ..yield_models import MemberYieldSpecs
 
 
 @dataclass
@@ -15,43 +15,6 @@ class Response:
     nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
-class YieldSpecs:
-    def __init__(self, section: Frame3DSection):
-        self.section = section
-        self.points_count = 2
-        self.components_count = self.points_count * section.yield_specs.components_count
-        self.yield_points = self.get_yield_points()
-
-    def get_yield_points(self):
-        yield_points = []
-        for _ in range(self.points_count):
-            yield_pieces = []
-            yield_piece_num = 0
-            for _ in range(self.section.yield_specs.pieces_count):
-                yield_pieces.append(
-                    YieldPiece(
-                        local_num=yield_piece_num,
-                        selected=True,
-                    )
-                )
-                yield_piece_num += 1
-            yield_points.append(
-                YieldPoint(
-                    selected=True,
-                    member_num=-1,
-                    components_count=self.section.yield_specs.components_count,
-                    all_pieces=yield_pieces,
-                    all_pieces_count=self.section.yield_specs.pieces_count,
-                    intact_phi=self.section.yield_specs.phi,
-                    sifted_pieces=[],
-                    sifted_pieces_count=self.section.yield_specs.sifted_pieces_count,
-                    sifted_phi=np.matrix(np.zeros((1, 1))),
-                    softening_properties=self.section.softening,
-                )
-            )
-        return yield_points
-
-
 class Mass:
     def __init__(self, magnitude):
         self.magnitude = magnitude
@@ -60,6 +23,7 @@ class Mass:
 class Frame3DMember:
     def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
         self.num = num
+        self.yield_points_count = 2
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.node_dofs_count = 6
@@ -67,7 +31,7 @@ class Frame3DMember:
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section
-        self.yield_specs = YieldSpecs(self.section)
+        self.yield_specs = MemberYieldSpecs(self.section, points_count=self.yield_points_count)
         self.roll_angle = np.deg2rad(roll_angle)
         self.l = self._length()
         self.mass = mass if mass else None

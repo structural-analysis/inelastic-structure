@@ -6,6 +6,7 @@ from scipy.linalg import cho_factor, eigh
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, NodeDOFRestrainer
 from src.settings import settings
+from .yield_models import StructureYieldSpecs
 
 
 @dataclass
@@ -19,87 +20,6 @@ class AttachedMember:
     member: object
     node: Node
     member_node_num: int
-
-
-class YieldSpecs:
-    def __init__(self, members):
-        self.members = members
-        self.all_yield_points: list = self.get_all_yield_points_stats()[0]
-        self.all_components_count = self.get_all_yield_points_stats()[1]
-        self.all_pieces_count = self.get_all_yield_points_stats()[2]
-        self.all_points_count = len(self.all_yield_points)
-        self.intact_phi = self.create_intact_phi()
-        self.intact_q = self.create_intact_q()
-        self.intact_h = self.create_intact_h()
-        self.intact_w = self.create_intact_w()
-        self.intact_cs = self.create_intact_cs()
-        self.yield_points_indices = self.get_yield_points_indices()
-
-    def get_all_yield_points_stats(self):
-        all_yield_points = []
-        all_components_count = 0
-        all_pieces_count = 0
-        for member_num, member in enumerate(self.members):
-            for yield_point in member.yield_specs.yield_points:
-                yield_point.member_num = member_num
-                all_yield_points.append(yield_point)
-                all_components_count += yield_point.components_count
-                all_pieces_count += yield_point.all_pieces_count
-        return all_yield_points, all_components_count, all_pieces_count
-
-    def create_intact_phi(self):
-        intact_phi = np.matrix(np.zeros((self.all_components_count, self.all_pieces_count)))
-        current_row_start = 0
-        current_column_start = 0
-        for yield_point in self.all_yield_points:
-            current_row_end = current_row_start + yield_point.components_count
-            current_column_end = current_column_start + yield_point.all_pieces_count
-            intact_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.intact_phi
-            current_row_start = current_row_end
-            current_column_start = current_column_end
-        return intact_phi
-
-    def create_intact_q(self):
-        intact_q = np.matrix(np.zeros((2 * self.all_points_count, self.all_pieces_count)))
-        pieces_counter = 0
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.all_pieces_count] = yield_point.softening_properties.q
-            pieces_counter += yield_point.all_pieces_count
-        return intact_q
-
-    def create_intact_h(self):
-        intact_h = np.matrix(np.zeros((self.all_pieces_count, 2 * self.all_points_count)))
-        pieces_counter = 0
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_h[pieces_counter:pieces_counter + yield_point.all_pieces_count, 2 * i:2 * i + 2] = yield_point.softening_properties.h
-            pieces_counter += yield_point.all_pieces_count
-        return intact_h
-
-    def create_intact_w(self):
-        intact_w = np.matrix(np.zeros((2 * self.all_points_count, 2 * self.all_points_count)))
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.softening_properties.w
-        return intact_w
-
-    def create_intact_cs(self):
-        intact_cs = np.matrix(np.zeros((2 * self.all_points_count, 1)))
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_cs[2 * i:2 * i + 2, 0] = yield_point.softening_properties.cs
-        return intact_cs
-
-    # TODO: can't we get yield point piece numbers from yield_points data?
-    def get_yield_points_indices(self):
-        yield_points_indices = []
-        index_counter = 0
-        for yield_point in self.all_yield_points:
-            yield_points_indices.append(
-                {
-                    "begin": index_counter,
-                    "end": index_counter + yield_point.all_pieces_count - 1,
-                }
-            )
-            index_counter += yield_point.all_pieces_count
-        return yield_points_indices
 
 
 class Structure:
@@ -118,7 +38,7 @@ class Structure:
         self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
-        self.yield_specs = YieldSpecs(members=self.members)
+        self.yield_specs = StructureYieldSpecs(members=self.members)
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
         self.boundaries = self.aggregate_boundaries()

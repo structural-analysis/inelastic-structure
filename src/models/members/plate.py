@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from ..points import NaturalPoint, GaussPoint
 from ..sections.plate import PlateSection
-from ..yield_models import YieldPoint, YieldPiece
+from ..yield_models import MemberYieldSpecs
 
 
 @dataclass
@@ -23,43 +23,6 @@ class Moment:
     xy: float
 
 
-class YieldSpecs:
-    def __init__(self, section: PlateSection, points_count: int):
-        self.section = section
-        self.points_count = points_count
-        self.components_count = self.points_count * section.yield_specs.components_count
-        self.yield_points = self.get_yield_points()
-
-    def get_yield_points(self):
-        yield_points = []
-        for _ in range(self.points_count):
-            yield_pieces = []
-            yield_piece_num = 0
-            for _ in range(self.section.yield_specs.pieces_count):
-                yield_pieces.append(
-                    YieldPiece(
-                        local_num=yield_piece_num,
-                        selected=True,
-                    )
-                )
-                yield_piece_num += 1
-            yield_points.append(
-                YieldPoint(
-                    selected=True,
-                    member_num=-1,
-                    components_count=self.section.yield_specs.components_count,
-                    all_pieces=yield_pieces,
-                    all_pieces_count=self.section.yield_specs.pieces_count,
-                    intact_phi=self.section.yield_specs.phi,
-                    sifted_pieces=[],
-                    sifted_pieces_count=self.section.yield_specs.sifted_pieces_count,
-                    sifted_phi=np.matrix(np.zeros((1, 1))),
-                    softening_properties=self.section.softening,
-                )
-            )
-        return yield_points
-
-
 class PlateMember:
     # calculations is based on four gauss points
     def __init__(self, num: int, section: PlateSection, element_type: str, nodes: tuple):
@@ -71,7 +34,7 @@ class PlateMember:
         self.node_dofs_count = 3
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.gauss_points_count = len(self.gauss_points)
-        self.yield_specs = YieldSpecs(section=self.section, points_count=self.gauss_points_count)
+        self.yield_specs = MemberYieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None
