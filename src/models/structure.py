@@ -55,7 +55,8 @@ class Structure:
 
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
-            self.damping = self.general_properties["dynamic_analysis"].get("damping") if self.general_properties["dynamic_analysis"].get("damping") else 0
+            self.damping = self.general_properties["dynamic_analysis"].get("damping") \
+                if self.general_properties["dynamic_analysis"].get("damping") else 0
             self.zero_mass_dofs = self.get_zero_mass_dofs()
             self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
             condensation_params = self.apply_static_condensation()
@@ -439,7 +440,7 @@ class Structure:
             if member_type == "WallMember":
                 mapped_node_dofs = [0, 1]
             if member_type == "Frame2DMember":
-                 mapped_node_dofs = [0, 1, 2]
+                mapped_node_dofs = [0, 1, 2]
 
         elif self.type == "FRAME3D":
             if member_type == "Frame3DMember":

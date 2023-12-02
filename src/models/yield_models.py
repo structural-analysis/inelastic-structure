@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+from typing import List
 
 
 @dataclass
@@ -13,10 +14,10 @@ class YieldPoint:
     selected: bool
     member_num: int
     components_count: int
-    all_pieces: list()
+    all_pieces: List[YieldPiece]
     all_pieces_count: int
     intact_phi: np.matrix
-    sifted_pieces: list
+    sifted_pieces: List[YieldPiece]
     sifted_pieces_count: int
     sifted_phi: np.matrix
     softening_properties: object
@@ -62,9 +63,10 @@ class MemberYieldSpecs:
 class StructureYieldSpecs:
     def __init__(self, members):
         self.members = members
-        self.all_yield_points: list = self.get_all_yield_points_stats()[0]
-        self.all_components_count = self.get_all_yield_points_stats()[1]
-        self.all_pieces_count = self.get_all_yield_points_stats()[2]
+        self.all_yield_points_stats: tuple = self.get_all_yield_points_stats()
+        self.all_yield_points: list = self.all_yield_points_stats[0]
+        self.all_components_count = self.all_yield_points_stats[1]
+        self.all_pieces_count = self.all_yield_points_stats[2]
         self.all_points_count = len(self.all_yield_points)
         self.intact_phi = self.create_intact_phi()
         self.intact_q = self.create_intact_q()
