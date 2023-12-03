@@ -1,44 +1,46 @@
 import os
 import numpy as np
-from src.functions import get_elastoplastic_response
-from src.settings import settings
+
+from .functions import get_elastoplastic_response
+from .settings import settings
+from .analysis.initial_analysis import AnalysisType
 
 outputs_dir = "output/examples/"
 
 
-def calculate_responses(analysis):
-    if analysis.type == "static":
-        responses = calculate_static_responses(analysis)
-    if analysis.type == "dynamic":
-        responses = calculate_dynamic_responses(analysis)
+def calculate_responses(initial_analysis, inelastic_analysis=None):
+    if initial_analysis.analysis_type is AnalysisType.STATIC:
+        responses = calculate_static_responses(initial_analysis, inelastic_analysis)
+    if initial_analysis.analysis_type is AnalysisType.DYNAMIC:
+        responses = calculate_dynamic_responses(initial_analysis, inelastic_analysis)
     return responses
 
 
-def calculate_static_responses(analysis):
-    structure = analysis.structure
+def calculate_static_responses(initial_analysis, inelastic_analysis=None):
+    structure = initial_analysis.structure
     if structure.is_inelastic:
-        pms_history = analysis.plastic_vars["pms_history"]
-        load_level_history = analysis.plastic_vars["load_level_history"]
+        pms_history = inelastic_analysis.plastic_vars["pms_history"]
+        load_level_history = inelastic_analysis.plastic_vars["load_level_history"]
         increments_count = len(load_level_history)
         phi = structure.yield_specs.intact_phi
 
         load_levels = np.zeros([increments_count, 1], dtype=object)
 
-        nodal_disp_sensitivity = analysis.nodal_disp_sensitivity
+        nodal_disp_sensitivity = initial_analysis.nodal_disp_sensitivity
         nodal_disp = np.zeros([increments_count, 1], dtype=object)
 
-        members_nodal_forces_sensitivity = analysis.members_nodal_forces_sensitivity
+        members_nodal_forces_sensitivity = initial_analysis.members_nodal_forces_sensitivity
         members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
 
-        members_nodal_strains_sensitivity = analysis.members_nodal_strains_sensitivity
+        members_nodal_strains_sensitivity = initial_analysis.members_nodal_strains_sensitivity
         members_nodal_strains = np.zeros([increments_count, structure.members_count], dtype=object)
         nodal_strains = np.zeros([increments_count, 1], dtype=object)
 
-        members_nodal_stresses_sensitivity = analysis.members_nodal_stresses_sensitivity
+        members_nodal_stresses_sensitivity = initial_analysis.members_nodal_stresses_sensitivity
         members_nodal_stresses = np.zeros([increments_count, structure.members_count], dtype=object)
         nodal_stresses = np.zeros([increments_count, 1], dtype=object)
 
-        members_disps_sensitivity = analysis.members_disps_sensitivity
+        members_disps_sensitivity = initial_analysis.members_disps_sensitivity
         members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
 
         for i in range(increments_count):
@@ -51,7 +53,7 @@ def calculate_static_responses(analysis):
             elastoplastic_nodal_disp = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
-                elastic_response=analysis.elastic_nodal_disp,
+                elastic_response=initial_analysis.elastic_nodal_disp,
                 sensitivity=nodal_disp_sensitivity,
             )
             nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
@@ -59,19 +61,19 @@ def calculate_static_responses(analysis):
             elastoplastic_members_nodal_forces = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
-                elastic_response=analysis.elastic_members_nodal_forces,
+                elastic_response=initial_analysis.elastic_members_nodal_forces,
                 sensitivity=members_nodal_forces_sensitivity,
             )
             elastoplastic_members_nodal_strains = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
-                elastic_response=analysis.elastic_members_nodal_strains,
+                elastic_response=initial_analysis.elastic_members_nodal_strains,
                 sensitivity=members_nodal_strains_sensitivity,
             )
             elastoplastic_members_nodal_stresses = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
-                elastic_response=analysis.elastic_members_nodal_stresses,
+                elastic_response=initial_analysis.elastic_members_nodal_stresses,
                 sensitivity=members_nodal_stresses_sensitivity,
             )
             for j in range(structure.members_count):
@@ -82,7 +84,7 @@ def calculate_static_responses(analysis):
             elastoplastic_members_disps = get_elastoplastic_response(
                 load_level=load_level,
                 phi_x=phi_x,
-                elastic_response=analysis.elastic_members_disps,
+                elastic_response=initial_analysis.elastic_members_disps,
                 sensitivity=members_disps_sensitivity,
             )
             if has_any_response(members_nodal_strains):
@@ -107,7 +109,8 @@ def calculate_static_responses(analysis):
                     "nodal_stresses": nodal_stresses,
                 }
             )
-    elif not structure.is_inelastic: # if structure is elastic
+
+    elif not structure.is_inelastic:  # if structure is elastic
         nodal_disp = np.zeros([1, 1], dtype=object)
         members_disps = np.zeros([1, structure.members_count], dtype=object)
         members_nodal_forces = np.zeros([1, structure.members_count], dtype=object)
@@ -116,12 +119,12 @@ def calculate_static_responses(analysis):
         nodal_strains = np.zeros([1, 1], dtype=object)
         nodal_stresses = np.zeros([1, 1], dtype=object)
 
-        nodal_disp[0, 0] = structure.limits["load_limit"][0] * analysis.elastic_nodal_disp[0, 0]
+        nodal_disp[0, 0] = structure.limits["load_limit"][0] * initial_analysis.elastic_nodal_disp[0, 0]
         for i in range(structure.members_count):
-            members_disps[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_disps[i, 0]
-            members_nodal_forces[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_forces[i, 0]
-            members_nodal_strains[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_strains[i, 0]
-            members_nodal_stresses[0, i] = structure.limits["load_limit"][0] * analysis.elastic_members_nodal_stresses[i, 0]
+            members_disps[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_disps[i, 0]
+            members_nodal_forces[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_forces[i, 0]
+            members_nodal_strains[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_strains[i, 0]
+            members_nodal_stresses[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_stresses[i, 0]
 
         if has_any_response(members_nodal_strains):
             nodal_strains[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains)
@@ -143,6 +146,7 @@ def calculate_static_responses(analysis):
             )
     return responses
 
+
 def average_nodal_responses(structure, members_responses):
     comp_count = 3  # response_components_count
     nodes_map = structure.nodes_map
@@ -158,8 +162,9 @@ def average_nodal_responses(structure, members_responses):
         nodal_responses[comp_count * node.num:comp_count * (node.num + 1), 0] = node_average_response
     return nodal_responses
 
-def calculate_dynamic_responses(analysis):
-    structure = analysis.structure
+
+def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
+    structure = initial_analysis.structure
     if structure.is_inelastic:
         plastic_vars_history = analysis.plastic_vars_history
         nodal_disp_sensitivity_history = analysis.nodal_disp_sensitivity_history

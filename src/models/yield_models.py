@@ -5,22 +5,48 @@ from typing import List
 
 @dataclass
 class YieldPiece:
-    local_num: int
-    selected: bool
+    ref_yield_point_num: int
+    num_in_yield_point: int
+    num_in_structure: int
+    score: float
+
+
+@dataclass
+class SelectedYieldPiece:
+    ref_yield_point_num: int
+    num_in_yield_point: int
+    num_in_structure: int
 
 
 @dataclass
 class YieldPoint:
-    selected: bool
-    member_num: int
+    min_sifted_pieces_count: int
+    ref_member_num: int
+    num_in_member: int
+    num_in_structure: int
     components_count: int
-    all_pieces: List[YieldPiece]
-    all_pieces_count: int
-    intact_phi: np.matrix
-    sifted_pieces: List[YieldPiece]
-    sifted_pieces_count: int
-    sifted_phi: np.matrix
-    softening_properties: object
+    pieces: List[YieldPiece]
+    pieces_count: int
+    phi: np.matrix
+    q: np.matrix
+    h: np.matrix
+    w: np.matrix
+    cs: np.matrix
+
+
+@dataclass
+class SelectedYieldPoint:
+    ref_member_num: int
+    num_in_member: int
+    num_in_structure: int
+    components_count: int
+    pieces: List[YieldPiece]
+    pieces_count: int
+    phi: np.matrix
+    q: np.matrix
+    h: np.matrix
+    w: np.matrix
+    cs: np.matrix
 
 
 class MemberYieldSpecs:
@@ -32,29 +58,31 @@ class MemberYieldSpecs:
 
     def get_yield_points(self):
         yield_points = []
-        for _ in range(self.points_count):
+        for point_num in range(self.points_count):
             yield_pieces = []
-            yield_piece_num = 0
-            for _ in range(self.section.yield_specs.pieces_count):
+            for piece_num in range(self.section.yield_specs.pieces_count):
                 yield_pieces.append(
                     YieldPiece(
-                        local_num=yield_piece_num,
-                        selected=True,
+                        ref_yield_point_num=-1,
+                        num_in_yield_point=piece_num,
+                        num_in_structure=-1,
+                        score=-1
                     )
                 )
-                yield_piece_num += 1
             yield_points.append(
                 YieldPoint(
-                    selected=True,
-                    member_num=-1,
+                    min_sifted_pieces_count=self.section.yield_specs.sifted_pieces_count,
+                    ref_member_num=-1,
+                    num_in_member=point_num,
+                    num_in_structure=-1,
                     components_count=self.section.yield_specs.components_count,
-                    all_pieces=yield_pieces,
-                    all_pieces_count=self.section.yield_specs.pieces_count,
-                    intact_phi=self.section.yield_specs.phi,
-                    sifted_pieces=[],
-                    sifted_pieces_count=self.section.yield_specs.sifted_pieces_count,
-                    sifted_phi=np.matrix(np.zeros((1, 1))),
-                    softening_properties=self.section.softening,
+                    pieces=yield_pieces,
+                    pieces_count=self.section.yield_specs.pieces_count,
+                    phi=self.section.yield_specs.phi,
+                    q=self.section.softening.q,
+                    h=self.section.softening.h,
+                    w=self.section.softening.w,
+                    cs=self.section.softening.cs,
                 )
             )
         return yield_points
@@ -63,11 +91,12 @@ class MemberYieldSpecs:
 class StructureYieldSpecs:
     def __init__(self, members):
         self.members = members
-        self.all_yield_points_stats: tuple = self.get_all_yield_points_stats()
-        self.all_yield_points: list = self.all_yield_points_stats[0]
-        self.all_components_count = self.all_yield_points_stats[1]
-        self.all_pieces_count = self.all_yield_points_stats[2]
-        self.all_points_count = len(self.all_yield_points)
+        self.all_points_stats: tuple = self.get_all_points_stats()
+        self.all_points: list = self.all_points_stats[0]
+        self.all_pieces: list = self.all_points_stats[1]
+        self.all_components_count = self.all_points_stats[2]
+        self.all_points_count = len(self.all_points)
+        self.all_pieces_count = len(self.all_pieces)
         self.intact_phi = self.create_intact_phi()
         self.intact_q = self.create_intact_q()
         self.intact_h = self.create_intact_h()
@@ -75,26 +104,34 @@ class StructureYieldSpecs:
         self.intact_cs = self.create_intact_cs()
         self.yield_points_indices = self.get_yield_points_indices()
 
-    def get_all_yield_points_stats(self):
-        all_yield_points = []
+    def get_all_points_stats(self):
+        all_points = []
+        all_pieces = []
         all_components_count = 0
-        all_pieces_count = 0
+        point_num = 0
+        piece_num = 0
         for member_num, member in enumerate(self.members):
-            for yield_point in member.yield_specs.yield_points:
-                yield_point.member_num = member_num
-                all_yield_points.append(yield_point)
-                all_components_count += yield_point.components_count
-                all_pieces_count += yield_point.all_pieces_count
-        return all_yield_points, all_components_count, all_pieces_count
+            for point in member.yield_specs.yield_points:
+                point.ref_member_num = member_num
+                point.num_in_structure = point_num
+                all_points.append(point)
+                for piece in point.pieces:
+                    piece.ref_yield_point_num = point.num_in_structure
+                    piece.num_in_structure = piece_num
+                    all_pieces.append(piece)
+                    piece_num += 1
+                all_components_count += point.components_count
+                point_num += 1
+        return all_points, all_pieces, all_components_count
 
     def create_intact_phi(self):
         intact_phi = np.matrix(np.zeros((self.all_components_count, self.all_pieces_count)))
         current_row_start = 0
         current_column_start = 0
-        for yield_point in self.all_yield_points:
+        for yield_point in self.all_points:
             current_row_end = current_row_start + yield_point.components_count
-            current_column_end = current_column_start + yield_point.all_pieces_count
-            intact_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.intact_phi
+            current_column_end = current_column_start + yield_point.pieces_count
+            intact_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.phi
             current_row_start = current_row_end
             current_column_start = current_column_end
         return intact_phi
@@ -102,41 +139,41 @@ class StructureYieldSpecs:
     def create_intact_q(self):
         intact_q = np.matrix(np.zeros((2 * self.all_points_count, self.all_pieces_count)))
         pieces_counter = 0
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.all_pieces_count] = yield_point.softening_properties.q
-            pieces_counter += yield_point.all_pieces_count
+        for i, yield_point in enumerate(self.all_points):
+            intact_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
+            pieces_counter += yield_point.pieces_count
         return intact_q
 
     def create_intact_h(self):
         intact_h = np.matrix(np.zeros((self.all_pieces_count, 2 * self.all_points_count)))
         pieces_counter = 0
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_h[pieces_counter:pieces_counter + yield_point.all_pieces_count, 2 * i:2 * i + 2] = yield_point.softening_properties.h
-            pieces_counter += yield_point.all_pieces_count
+        for i, yield_point in enumerate(self.all_points):
+            intact_h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
+            pieces_counter += yield_point.pieces_count
         return intact_h
 
     def create_intact_w(self):
         intact_w = np.matrix(np.zeros((2 * self.all_points_count, 2 * self.all_points_count)))
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.softening_properties.w
+        for i, yield_point in enumerate(self.all_points):
+            intact_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
         return intact_w
 
     def create_intact_cs(self):
         intact_cs = np.matrix(np.zeros((2 * self.all_points_count, 1)))
-        for i, yield_point in enumerate(self.all_yield_points):
-            intact_cs[2 * i:2 * i + 2, 0] = yield_point.softening_properties.cs
+        for i, yield_point in enumerate(self.all_points):
+            intact_cs[2 * i:2 * i + 2, 0] = yield_point.cs
         return intact_cs
 
     # TODO: can't we get yield point piece numbers from yield_points data?
     def get_yield_points_indices(self):
         yield_points_indices = []
         index_counter = 0
-        for yield_point in self.all_yield_points:
+        for yield_point in self.all_points:
             yield_points_indices.append(
                 {
                     "begin": index_counter,
-                    "end": index_counter + yield_point.all_pieces_count - 1,
+                    "end": index_counter + yield_point.pieces_count - 1,
                 }
             )
-            index_counter += yield_point.all_pieces_count
+            index_counter += yield_point.pieces_count
         return yield_points_indices

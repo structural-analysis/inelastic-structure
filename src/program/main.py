@@ -1,27 +1,37 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from src.settings import settings
 from src.program.models import FPM, SlackCandidate
 from src.program.functions import zero_out_small_values
+from src.analysis.initial_analysis import InitialData, AnalysisData
 
 
 class MahiniMethod:
-    def __init__(self, raw_data):
-        self.raw_data = raw_data
-        self.primary_vars_count = raw_data.primary_vars_count
-        self.slack_vars_count = raw_data.slack_vars_count
-        self.total_vars_count = raw_data.total_vars_count
-        self.plastic_vars_count = raw_data.plastic_vars_count
-        self.softening_vars_count = raw_data.softening_vars_count
-        self.constraints_count = raw_data.constraints_count
-        self.yield_points_indices = raw_data.yield_points_indices
-        self.disp_limits = raw_data.disp_limits
-        self.landa_var = raw_data.landa_var
-        self.limits_slacks = raw_data.limits_slacks
-        self.d0 = raw_data.d0
-        self.b = raw_data.b
-        self.c = raw_data.c
+    def __init__(self, initial_data: InitialData, analysis_data: AnalysisData):
+        self.primary_vars_count = initial_data.primary_vars_count
+        self.slack_vars_count = initial_data.slack_vars_count
+        self.total_vars_count = initial_data.total_vars_count
+        self.plastic_vars_count = initial_data.plastic_vars_count
+        self.softening_vars_count = initial_data.softening_vars_count
+        self.constraints_count = initial_data.constraints_count
+        self.yield_points_indices = initial_data.yield_points_indices
+        self.disp_limits = initial_data.disp_limits
+        self.disp_limits_count = initial_data.disp_limits_count
+        self.landa_var = initial_data.landa_var
+        self.limits_slacks = initial_data.limits_slacks
+        self.b = initial_data.b
+        self.c = initial_data.c
+
+        self.phi = initial_data.phi
+        self.q = initial_data.q
+        self.h = initial_data.h
+        self.w = initial_data.w
+
+        self.p0 = analysis_data.p0
+        self.pv = analysis_data.pv
+        self.d0 = analysis_data.d0
+        self.dv = analysis_data.dv
+
         self.table = self._create_table()
 
         self.is_two_phase = True if any(self.b < 0) else False
@@ -306,37 +316,47 @@ class MahiniMethod:
         return result
 
     def _create_table(self):
-        raw_data = self.raw_data
-        disp_limits_count = raw_data.disp_limits_count
-        phi_p0 = raw_data.phi_p0
-        phi_pv_phi = raw_data.phi_pv_phi
-
+        disp_limits = self.disp_limits
         constraints_count = self.constraints_count
         yield_pieces_count = self.plastic_vars_count
         softening_vars_count = self.softening_vars_count
         primary_vars_count = self.primary_vars_count
+        slack_vars_count = self.slack_vars_count
+        disp_limits_count = self.disp_limits_count
+        phi = self.phi
+        p0 = self.p0
+        pv = self.pv
+        d0 = self.d0
+        dv = self.dv
+        q = self.q
+        h = self.h
+        w = self.w
+
+        phi_p0 = phi.T * p0
+        phi_pv_phi = phi.T * pv * phi
+
         landa_base_num = yield_pieces_count + softening_vars_count
-        dv_phi = raw_data.dv * raw_data.phi
+        dv_phi = dv * phi
 
         raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
         raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
         raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
         if softening_vars_count:
-            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = raw_data.q
-            raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - raw_data.h
-            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = raw_data.w
+            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = q
+            raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - h
+            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = w
         raw_a[landa_base_num, landa_base_num] = 1.0
 
-        if self.disp_limits.any():
+        if disp_limits.any():
             disp_limit_base_num = yield_pieces_count + softening_vars_count + 1
             raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), 0:yield_pieces_count] = dv_phi
             raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), 0:yield_pieces_count] = - dv_phi
 
-            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = self.d0
-            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - self.d0
+            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = d0
+            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - d0
 
         a_matrix = np.array(raw_a)
-        columns_count = primary_vars_count + self.slack_vars_count
+        columns_count = primary_vars_count + slack_vars_count
         table = np.zeros((constraints_count, columns_count))
         table[0:constraints_count, 0:primary_vars_count] = a_matrix
 
