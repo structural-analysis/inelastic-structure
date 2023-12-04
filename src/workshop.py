@@ -433,7 +433,6 @@ def get_structure_input(example_name):
         node_dofs_count=node_dofs_count,
     )
 
-
     limits = {
         "load_limit": load_limit,
         "disp_limits": disp_limits
@@ -449,7 +448,7 @@ def get_structure_input(example_name):
         "structure_type": structure_type,
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
-        "node_dofs_count": node_dofs_count, 
+        "node_dofs_count": node_dofs_count,
         "members": frame2d_members + frame3d_members + plate_members + wall_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,

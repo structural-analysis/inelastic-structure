@@ -46,17 +46,17 @@ class Sifting:
                 piece.score = self.scores[piece.num_in_structure]
             point.pieces.sort(key=lambda x: x.score, reverse=True)
             point_sifted_yield_pieces = []
-            sifted_yield_pieces_nums = []
-            for piece_num, piece in enumerate(point.pieces[0:point.min_sifted_pieces_count]):
+            sifted_yield_pieces_nums_in_intact_yield_point = []
+            for piece in point.pieces[0:point.min_sifted_pieces_count]:
                 sifted_yield_piece = SiftedYieldPiece(
                     ref_yield_point_num=point.num_in_structure,
-                    sifted_num_in_yield_point=piece_num,
+                    sifted_num_in_yield_point=piece.num_in_yield_point,
                     sifted_num_in_structure=piece_num_in_structure,
                     intact_num_in_structure=piece.num_in_structure,
                 )
                 point_sifted_yield_pieces.append(sifted_yield_piece)
                 structure_sifted_yield_pieces.append(sifted_yield_piece)
-                sifted_yield_pieces_nums.append(piece_num)
+                sifted_yield_pieces_nums_in_intact_yield_point.append(piece.num_in_yield_point)
                 piece_num_in_structure += 1
             sifted_yield_points.append(
                 SiftedYieldPoint(
@@ -66,9 +66,9 @@ class Sifting:
                     components_count=point.components_count,
                     pieces=point_sifted_yield_pieces,
                     pieces_count=len(point_sifted_yield_pieces),
-                    phi=point.phi[:, sifted_yield_pieces_nums],
-                    q=point.q[:, sifted_yield_pieces_nums],
-                    h=point.h[sifted_yield_pieces_nums, :],
+                    phi=point.phi[:, sifted_yield_pieces_nums_in_intact_yield_point],
+                    q=point.q[:, sifted_yield_pieces_nums_in_intact_yield_point],
+                    h=point.h[sifted_yield_pieces_nums_in_intact_yield_point, :],
                     w=point.w,
                     cs=point.cs,
                 )

@@ -8,8 +8,8 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "3story-static-inelastic-perfect-justm"
-    sifting_type: SiftingType = SiftingType.not_used
+    example_name: str = "3story-static-inelastic-perfect"
+    sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10

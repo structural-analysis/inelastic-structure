@@ -344,7 +344,6 @@ class MahiniMethod:
             cb=cb,
         )
         landa_row = will_out_row
-
         while self.limits_slacks.issubset(set(basic_variables)):
             sorted_slack_candidates = self.get_sorted_slack_candidates(
                 basic_variables=basic_variables,
