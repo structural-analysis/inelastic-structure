@@ -48,10 +48,10 @@ class MahiniMethod:
             initial_scores = self.load_limit * self.intact_phi.T * self.p0
             self.sifting = Sifting(intact_points=self.intact_points, scores=initial_scores)
             self.phi = self.sifting.sifted_phi
-            # self.q =
-            # self.h =
-            # self.w =
-            # self.cs =
+            self.q = self.sifting.sifted_q
+            self.h = self.sifting.sifted_h
+            self.w = self.sifting.sifted_w
+            self.cs = self.sifting.sifted_cs
             self.points = self.sifting.sifted_yield_points
             self.points_count = self.sifting.sifted_points_count
             self.components_count = self.sifting.sifted_components_count
@@ -345,6 +345,21 @@ class MahiniMethod:
         )
         landa_row = will_out_row
         while self.limits_slacks.issubset(set(basic_variables)):
+            if settings.sifting_type is SiftingType.mahini:
+                intact_phi_pms, load_level = self.get_unsifted_pms(
+                    x=x_cumulative,
+                    landa_var=self.landa_var
+                )
+                scores = self.calc_violation_scores(intact_phi_pms, load_level)
+                violated_pieces = self.sifting.check_violation(scores)
+                print(scores[violated_pieces])
+
+                # bbar_prev = bbar
+                # b_matrix_inv_prev = b_matrix_inv
+                # cb_prev = cb
+                # cbar_prev = cbar
+                # sifted_phi_prev = self.sifting.sifted_phi
+
             sorted_slack_candidates = self.get_sorted_slack_candidates(
                 basic_variables=basic_variables,
                 b_matrix_inv=b_matrix_inv,
@@ -353,7 +368,6 @@ class MahiniMethod:
             will_in_col = fpm.var
             abar = self.calculate_abar(will_in_col, b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
-
             will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
 
@@ -418,14 +432,11 @@ class MahiniMethod:
                 phi_pms_history.append(phi_pms)
                 load_level_history.append(load_level)
         if settings.sifting_type is SiftingType.mahini:
-            structure_sifted_yield_pieces = self.sifting.structure_sifted_yield_pieces
             for x in x_history:
-                pms = x[0:self.plastic_vars_count]
-                intact_pms = np.matrix(np.zeros((self.intact_plastic_vars_count, 1)))
-                for piece in structure_sifted_yield_pieces:
-                    intact_pms[piece.intact_num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
-                intact_phi_pms = self.intact_phi * intact_pms
-                load_level = x[self.landa_var][0, 0]
+                intact_phi_pms, load_level = self.get_unsifted_pms(
+                    x=x,
+                    landa_var=self.landa_var
+                )
                 phi_pms_history.append(intact_phi_pms)
                 load_level_history.append(load_level)
         result = {
@@ -858,3 +869,15 @@ class MahiniMethod:
         d = np.zeros(self.total_vars_count + self.negative_b_count)
         d[:self.total_vars_count] = table.sum(axis=0)[:self.total_vars_count]
         return d
+
+    def get_unsifted_pms(self, x, landa_var):
+        intact_pms = np.matrix(np.zeros((self.intact_plastic_vars_count, 1)))
+        for piece in self.sifting.structure_sifted_yield_pieces:
+            intact_pms[piece.intact_num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
+        intact_phi_pms = self.intact_phi * intact_pms
+        load_level = x[landa_var][0, 0]
+        return intact_phi_pms, load_level
+
+    def calc_violation_scores(self, intact_phi_pms, load_level):
+        scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - np.matrix(np.ones((self.intact_pieces_count, 1)))
+        return scores

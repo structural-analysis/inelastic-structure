@@ -33,7 +33,12 @@ class Sifting:
         self.sifted_components_count = self.sifted_results.sifted_components_count
         self.sifted_pieces_count = self.sifted_results.sifted_pieces_count
         self.sifted_points_count = len(self.sifted_yield_points)
+        # TODO: calculate all phi, q, ... in one loop of yield points.
         self.sifted_phi = self.get_sifted_phi()
+        self.sifted_q = self.get_sifted_q()
+        self.sifted_h = self.get_sifted_h()
+        self.sifted_w = self.get_sifted_w()
+        self.sifted_cs = self.get_sifted_cs()
 
     def get_sifted_results(self):
         piece_num_in_structure = 0
@@ -93,3 +98,36 @@ class Sifting:
             current_row_start = current_row_end
             current_column_start = current_column_end
         return sifted_phi
+
+    def get_sifted_q(self):
+        sifted_q = np.matrix(np.zeros((2 * self.sifted_points_count, self.sifted_pieces_count)))
+        pieces_counter = 0
+        for i, yield_point in enumerate(self.sifted_yield_points):
+            sifted_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
+            pieces_counter += yield_point.pieces_count
+        return sifted_q
+
+    def get_sifted_h(self):
+        sifted_h = np.matrix(np.zeros((self.sifted_pieces_count, 2 * self.sifted_points_count)))
+        pieces_counter = 0
+        for i, yield_point in enumerate(self.sifted_yield_points):
+            sifted_h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
+            pieces_counter += yield_point.pieces_count
+        return sifted_h
+
+    def get_sifted_w(self):
+        sifted_w = np.matrix(np.zeros((2 * self.sifted_points_count, 2 * self.sifted_points_count)))
+        for i, yield_point in enumerate(self.sifted_yield_points):
+            sifted_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
+        return sifted_w
+
+    def get_sifted_cs(self):
+        sifted_cs = np.matrix(np.zeros((2 * self.sifted_points_count, 1)))
+        for i, yield_point in enumerate(self.sifted_yield_points):
+            sifted_cs[2 * i:2 * i + 2, 0] = yield_point.cs
+        return sifted_cs
+
+    def check_violation(self, scores):
+        violated_pieces = np.array(np.where(scores > 0)[0], dtype=int).flatten().tolist()
+        print(f"{violated_pieces=}")
+        return violated_pieces
