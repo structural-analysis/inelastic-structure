@@ -37,11 +37,11 @@ class InelasticAnalysis:
             self.a2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.b2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
             self.p0_history = np.zeros((time_steps, 1), dtype=object)
-            self.p0_history[0, 0] = np.matrix(np.zeros((structure.yield_specs.all_components_count, 1)))
+            self.p0_history[0, 0] = np.matrix(np.zeros((structure.yield_specs.intact_components_count, 1)))
             self.d0_history = np.zeros((time_steps, 1), dtype=object)
             self.pv_history = np.zeros((time_steps, 1), dtype=object)
             initial_pv = np.matrix(np.zeros((
-                structure.yield_specs.all_components_count, structure.yield_specs.all_components_count
+                structure.yield_specs.intact_components_count, structure.yield_specs.intact_components_count
             )))
             self.pv_history[0, 0] = initial_pv
             self.load_level = 0
@@ -240,27 +240,27 @@ class InelasticAnalysis:
         # fv: equivalent global force vector for a yield component's udef
         members = structure.members
         pv = np.matrix(np.zeros((
-            structure.yield_specs.all_components_count, structure.yield_specs.all_components_count
+            structure.yield_specs.intact_components_count, structure.yield_specs.intact_components_count
         )))
         pv_column = 0
 
         members_nodal_forces_sensitivity = np.matrix(np.zeros((
-            structure.members_count, structure.yield_specs.all_components_count), dtype=object
+            structure.members_count, structure.yield_specs.intact_components_count), dtype=object
         ))
         members_disps_sensitivity = np.matrix(np.zeros((
-            structure.members_count, structure.yield_specs.all_components_count), dtype=object
+            structure.members_count, structure.yield_specs.intact_components_count), dtype=object
         ))
         nodal_disp_sensitivity = np.matrix(np.zeros((
-            1, structure.yield_specs.all_components_count), dtype=object
+            1, structure.yield_specs.intact_components_count), dtype=object
         ))
         modal_load_sensitivity = np.matrix(np.zeros((
-            1, structure.yield_specs.all_components_count), dtype=object
+            1, structure.yield_specs.intact_components_count), dtype=object
         ))
         a2_sensitivity = np.matrix(np.zeros((
-            1, structure.yield_specs.all_components_count), dtype=object
+            1, structure.yield_specs.intact_components_count), dtype=object
         ))
         b2_sensitivity = np.matrix(np.zeros((
-            1, structure.yield_specs.all_components_count), dtype=object
+            1, structure.yield_specs.intact_components_count), dtype=object
         ))
 
         for member_num, member in enumerate(members):

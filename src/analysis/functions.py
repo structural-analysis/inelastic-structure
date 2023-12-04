@@ -2,8 +2,6 @@ import numpy as np
 from scipy.linalg import cho_solve
 from dataclasses import dataclass
 
-from ..models.yield_models import SelectedYieldPiece, SelectedYieldPoint
-
 
 @dataclass
 class InternalResponses:
@@ -22,43 +20,6 @@ class StaticSensitivity:
     members_disps: np.matrix
     members_nodal_strains: np.matrix
     members_nodal_stresses: np.matrix
-
-
-def get_selected_yield_points(all_points, scores):
-    selected_yield_points = []
-    piece_num_in_structure = 0
-    for point in enumerate(all_points):
-        for piece in point.pieces:
-            piece.score = scores[piece.num_in_structure]
-        point.pieces.sort(key=lambda x: x.score, reverse=True)
-        selected_yield_pieces = []
-        selected_yield_pieces_nums = []
-        for piece_num, piece in enumerate(point.pieces[0:point.min_sifted_pieces_count]):
-            selected_yield_pieces.append(
-                SelectedYieldPiece(
-                    ref_yield_point_num=point.num_in_structure,
-                    num_in_yield_point=piece_num,
-                    num_in_structure=piece_num_in_structure,
-                )
-            )
-            selected_yield_pieces_nums.append(piece_num)
-            piece_num_in_structure += 1
-        selected_yield_points.append(
-            SelectedYieldPoint(
-                ref_member_num=point.member_num,
-                num_in_member=point.num_in_member,
-                num_in_structure=point.num_in_structure,
-                components_count=point.components_count,
-                pieces=selected_yield_pieces,
-                pieces_count=len(selected_yield_pieces),
-                phi=point.phi[:, selected_yield_pieces_nums],
-                q=point.q[:, selected_yield_pieces_nums],
-                h=point.h[selected_yield_pieces_nums, :],
-                w=point.w,
-                cs=point.cs,
-            )
-        )
-    return selected_yield_points
 
 
 def get_nodal_disp(structure, loads, total_load):
@@ -101,7 +62,7 @@ def get_internal_responses(structure, members_disps):
     members_nodal_strains = np.matrix(np.zeros((structure.members_count, 1), dtype=object))
     members_nodal_stresses = np.matrix(np.zeros((structure.members_count, 1), dtype=object))
     members_nodal_moments = np.matrix(np.zeros((structure.members_count, 1), dtype=object))
-    p0 = np.matrix(np.zeros((structure.yield_specs.all_components_count, 1)))
+    p0 = np.matrix(np.zeros((structure.yield_specs.intact_components_count, 1)))
     base_p0_row = 0
 
     for i, member in enumerate(structure.members):
@@ -147,12 +108,12 @@ def get_nodal_disp_limits(structure, elastic_nodal_disp):
 def get_sensitivity(structure, loads):
     # fv: equivalent global force vector for a yield component's udef
     members = structure.members
-    pv = np.matrix(np.zeros((structure.yield_specs.all_components_count, structure.yield_specs.all_components_count)))
-    members_nodal_forces_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.all_components_count), dtype=object))
-    nodal_disp_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.all_components_count), dtype=object))
-    members_disps_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.all_components_count), dtype=object))
-    members_nodal_strains_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.all_components_count), dtype=object))
-    members_nodal_stresses_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.all_components_count), dtype=object))
+    pv = np.matrix(np.zeros((structure.yield_specs.intact_components_count, structure.yield_specs.intact_components_count)))
+    members_nodal_forces_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
+    nodal_disp_sensitivity = np.matrix(np.zeros((1, structure.yield_specs.intact_components_count), dtype=object))
+    members_disps_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
+    members_nodal_strains_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
+    members_nodal_stresses_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
     pv_column = 0
 
     for member_num, member in enumerate(members):
@@ -220,11 +181,11 @@ def get_sensitivity(structure, loads):
 def get_nodal_disp_limits_sensitivity_rows(structure, nodal_disp_sensitivity):
     disp_limits = structure.limits["disp_limits"]
     disp_limits_count = disp_limits.shape[0]
-    dv = np.matrix(np.zeros((disp_limits_count, structure.yield_specs.all_components_count)))
+    dv = np.matrix(np.zeros((disp_limits_count, structure.yield_specs.intact_components_count)))
     for i, disp_limit in enumerate(disp_limits):
         node = disp_limit[0]
         node_dof = disp_limit[1]
         dof = structure.get_global_dof(node, node_dof)
-        for j in range(structure.yield_specs.all_components_count):
+        for j in range(structure.yield_specs.intact_components_count):
             dv[i, j] = nodal_disp_sensitivity[0, j][dof, 0]
     return dv

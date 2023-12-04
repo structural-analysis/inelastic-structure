@@ -85,6 +85,7 @@ class WallSection:
                             [0, 0, (1 - self.material.nu) / 2]])
         self.ce = (self.material.e / (1 - self.material.nu ** 2)) * self.c
 
+
 # FIXME: FIX OPTIMIZED NOT WITH CACHING
 @lru_cache
 def get_von_mises_matrix(sy):

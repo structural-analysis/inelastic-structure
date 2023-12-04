@@ -2,9 +2,7 @@ import numpy as np
 import enum
 from dataclasses import dataclass
 
-from ..settings import settings
 from .functions import (
-    get_selected_yield_points,
     get_nodal_disp_limits_sensitivity_rows,
     get_nodal_disp,
     get_members_disps,
@@ -33,31 +31,19 @@ class AnalysisData:
 class InitialData:
     load_limit: float
     disp_limits: list
-    all_points: np.matrix
-    all_pieces: np.matrix
-    all_components_count: int
-    all_points_count: int
-    all_pieces_count: int
     disp_limits_count: int
-    limits_count: int
-    softening_vars_count: int
-    plastic_vars_count: int
-    primary_vars_count: int
-    constraints_count: int
-    slack_vars_count: int
-    total_vars_count: int
-    landa_var: int
-    landa_bar_var: int
-    limits_slacks: set
-    b: np.array
-    c: np.array
-    intact_phi: np.matrix
-    phi: np.matrix
-    q: np.matrix
-    h: np.matrix
-    w: np.matrix
-    cs: np.matrix
+    include_softening: bool
+    intact_points: np.matrix
+    intact_pieces: np.matrix
+    intact_points_count: int
+    intact_components_count: int
+    intact_pieces_count: int
     yield_points_indices: list
+    intact_phi: np.matrix
+    intact_q: np.matrix
+    intact_h: np.matrix
+    intact_w: np.matrix
+    intact_cs: np.matrix
 
 
 class InitialAnalysis:
@@ -68,38 +54,22 @@ class InitialAnalysis:
         self.initial_data = InitialData
         self.analysis_data = AnalysisData
 
-        self.initial_data.load_limit = self.structure.limits["load_limit"]
+        self.initial_data.load_limit = self.structure.limits["load_limit"][0]
         self.initial_data.disp_limits = self.structure.limits["disp_limits"]
-        self.initial_data.all_points = self.structure.yield_specs.all_points
-        self.initial_data.all_pieces = self.structure.yield_specs.all_pieces
-        self.initial_data.all_components_count = self.structure.yield_specs.all_components_count
-        self.initial_data.all_points_count = self.structure.yield_specs.all_points_count
-        self.initial_data.all_pieces_count = self.structure.yield_specs.all_pieces_count
         self.initial_data.disp_limits_count = self.initial_data.disp_limits.shape[0]
-        self.initial_data.limits_count = 1 + self.initial_data.disp_limits_count * 2
-        self.initial_data.softening_vars_count = 2 * self.structure.yield_specs.all_points_count if self.structure.include_softening else 0
-        self.initial_data.plastic_vars_count = self.structure.yield_specs.all_pieces_count
-        self.initial_data.yield_points_indices = self.structure.yield_specs.yield_points_indices
-        self.initial_data.primary_vars_count = self.initial_data.plastic_vars_count + self.initial_data.softening_vars_count + 1
-        self.initial_data.constraints_count = self.initial_data.plastic_vars_count + self.initial_data.softening_vars_count + self.initial_data.limits_count
-        self.initial_data.slack_vars_count = self.initial_data.constraints_count
-        self.initial_data.total_vars_count = self.initial_data.primary_vars_count + self.initial_data.slack_vars_count
-        self.initial_data.landa_var = self.initial_data.plastic_vars_count + self.initial_data.softening_vars_count
-        self.initial_data.landa_bar_var = 2 * self.initial_data.landa_var + 1
-        self.initial_data.limits_slacks = set(range(self.initial_data.landa_bar_var, self.initial_data.landa_bar_var + self.initial_data.limits_count))
-        self.initial_data.intact_phi = self.structure.yield_specs.intact_phi
-        if not settings.sifting_type:
-            self.initial_data.phi = self.structure.yield_specs.intact_phi
-            self.initial_data.q = self.structure.yield_specs.intact_q
-            self.initial_data.h = self.structure.yield_specs.intact_h
-            self.initial_data.w = self.structure.yield_specs.intact_w
-            self.initial_data.cs = self.structure.yield_specs.intact_cs
-        else:
-            self.initial_scores = self.load_limit * self.intact_phi.T * self.p0
-            self.selected_yield_points = get_selected_yield_points(all_points=self.all_points, scores=self.initial_scores)
+        self.initial_data.include_softening = self.structure.include_softening
 
-        self.initial_data.b = self._get_b_column()
-        self.initial_data.c = self._get_costs_row()
+        self.initial_data.intact_points = self.structure.yield_specs.intact_points
+        self.initial_data.intact_pieces = self.structure.yield_specs.intact_pieces
+        self.initial_data.intact_points_count = self.structure.yield_specs.intact_points_count
+        self.initial_data.intact_components_count = self.structure.yield_specs.intact_components_count
+        self.initial_data.intact_pieces_count = self.structure.yield_specs.intact_pieces_count
+        self.initial_data.yield_points_indices = self.structure.yield_specs.yield_points_indices
+        self.initial_data.intact_phi = self.structure.yield_specs.intact_phi
+        self.initial_data.intact_q = self.structure.yield_specs.intact_q
+        self.initial_data.intact_h = self.structure.yield_specs.intact_h
+        self.initial_data.intact_w = self.structure.yield_specs.intact_w
+        self.initial_data.intact_cs = self.structure.yield_specs.intact_cs
 
         if self.analysis_type is AnalysisType.STATIC:
             self.total_load = self.loads.get_total_load(self.structure, self.loads)
@@ -172,32 +142,3 @@ class InitialAnalysis:
         else:
             type = AnalysisType.STATIC
         return type
-
-    def _get_b_column(self):
-        yield_pieces_count = self.initial_data.plastic_vars_count
-        disp_limits_count = self.initial_data.disp_limits_count
-
-        b = np.ones((self.initial_data.constraints_count))
-        b[yield_pieces_count + self.initial_data.softening_vars_count] = self.initial_data.load_limit
-        if self.initial_data.softening_vars_count:
-            b[yield_pieces_count:(yield_pieces_count + self.initial_data.softening_vars_count)] = np.array(self.initial_data.cs)[:, 0]
-
-        if self.initial_data.disp_limits.any():
-            disp_limit_base_num = yield_pieces_count + self.initial_data.softening_vars_count + 1
-            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.initial_data.disp_limits[:, 2])
-            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.initial_data.disp_limits[:, 2])
-
-        return b
-
-    def _get_costs_row(self):
-        c = np.zeros(self.initial_data.total_vars_count)
-        c[0:self.initial_data.plastic_vars_count] = 1.0
-        return -1 * c
-
-    def update_b_for_dynamic_analysis(self, pv_prev, plastic_multipliers_prev):
-        self.initial_data.b[0:self.initial_data.plastic_vars_count] = (
-            self.initial_data.b[0:self.initial_data.plastic_vars_count] -
-            np.array(
-                self.initial_data.phi.T * pv_prev * self.initial_data.phi * plastic_multipliers_prev
-            ).flatten()
-        )

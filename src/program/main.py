@@ -1,40 +1,146 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from src.program.models import FPM, SlackCandidate
-from src.program.functions import zero_out_small_values
-from src.analysis.initial_analysis import InitialData, AnalysisData
+from .models import FPM, SlackCandidate, Sifting
+from .functions import zero_out_small_values
+from ..analysis.initial_analysis import InitialData, AnalysisData
+from ..settings import settings, SiftingType
 
 
 class MahiniMethod:
     def __init__(self, initial_data: InitialData, analysis_data: AnalysisData):
-        self.primary_vars_count = initial_data.primary_vars_count
-        self.slack_vars_count = initial_data.slack_vars_count
-        self.total_vars_count = initial_data.total_vars_count
-        self.plastic_vars_count = initial_data.plastic_vars_count
-        self.softening_vars_count = initial_data.softening_vars_count
-        self.constraints_count = initial_data.constraints_count
-        self.yield_points_indices = initial_data.yield_points_indices
+        self.load_limit = initial_data.load_limit
         self.disp_limits = initial_data.disp_limits
         self.disp_limits_count = initial_data.disp_limits_count
-        self.landa_var = initial_data.landa_var
-        self.limits_slacks = initial_data.limits_slacks
-        self.b = initial_data.b
-        self.c = initial_data.c
+        self.include_softening = initial_data.include_softening
 
-        self.phi = initial_data.phi
-        self.q = initial_data.q
-        self.h = initial_data.h
-        self.w = initial_data.w
+        self.intact_points = initial_data.intact_points
+        self.intact_pieces = initial_data.intact_pieces
+        self.intact_points_count = initial_data.intact_points_count
+        self.intact_components_count = initial_data.intact_components_count
+        self.intact_pieces_count = initial_data.intact_pieces_count
+        self.intact_plastic_vars_count = self.intact_pieces_count
+
+        self.yield_points_indices = initial_data.yield_points_indices
+        self.intact_phi = initial_data.intact_phi
+        self.intact_q = initial_data.intact_q
+        self.intact_h = initial_data.intact_h
+        self.intact_w = initial_data.intact_w
+        self.intact_cs = initial_data.intact_cs
 
         self.p0 = analysis_data.p0
         self.pv = analysis_data.pv
         self.d0 = analysis_data.d0
         self.dv = analysis_data.dv
 
+        if settings.sifting_type is SiftingType.not_used:
+            self.phi = self.intact_phi
+            self.q = self.intact_q
+            self.h = self.intact_h
+            self.w = self.intact_w
+            self.cs = self.intact_cs
+            self.points = self.intact_points
+            self.points_count = self.intact_points_count
+            self.components_count = self.intact_components_count
+            self.pieces_count = self.intact_pieces_count
+
+        elif settings.sifting_type is SiftingType.mahini:
+            initial_scores = self.load_limit * self.intact_phi.T * self.p0
+            self.sifting = Sifting(intact_points=self.intact_points, scores=initial_scores)
+            self.phi = self.sifting.sifted_phi
+            # self.q =
+            # self.h =
+            # self.w =
+            # self.cs =
+            self.points = self.sifting.sifted_yield_points
+            self.points_count = self.sifting.sifted_points_count
+            self.components_count = self.sifting.sifted_components_count
+            self.pieces_count = self.sifting.sifted_pieces_count
+
+        self.limits_count = 1 + self.disp_limits_count * 2
+        self.softening_vars_count = 2 * self.points_count if self.include_softening else 0
+        self.plastic_vars_count = self.pieces_count
+        self.primary_vars_count = self.plastic_vars_count + self.softening_vars_count + 1
+        self.constraints_count = self.plastic_vars_count + self.softening_vars_count + self.limits_count
+        self.slack_vars_count = self.constraints_count
+        self.total_vars_count = self.primary_vars_count + self.slack_vars_count
+        self.landa_var = self.plastic_vars_count + self.softening_vars_count
+        self.landa_bar_var = 2 * self.landa_var + 1
+        self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
+
+        # IMPORTANT: must be placed after sifted variables
+        self.b = self._get_b_column()
+        self.c = self._get_costs_row()
         self.table = self._create_table()
 
         self.is_two_phase = True if any(self.b < 0) else False
+
+    def _get_b_column(self):
+        yield_pieces_count = self.plastic_vars_count
+        disp_limits_count = self.disp_limits_count
+
+        b = np.ones((self.constraints_count))
+        b[yield_pieces_count + self.softening_vars_count] = self.load_limit
+        if self.include_softening:
+            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:, 0]
+
+        if self.disp_limits.any():
+            disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
+            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.disp_limits[:, 2])
+            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.disp_limits[:, 2])
+
+        return b
+
+    def _get_costs_row(self):
+        c = np.zeros(self.total_vars_count)
+        c[0:self.plastic_vars_count] = 1.0
+        return -1 * c
+
+    def _create_table(self):
+        phi_p0 = self.phi.T * self.p0
+        phi_pv_phi = self.phi.T * self.pv * self.phi
+
+        landa_base_num = self.plastic_vars_count + self.softening_vars_count
+        dv_phi = self.dv * self.phi
+
+        raw_a = np.matrix(np.zeros((self.constraints_count, self.primary_vars_count)))
+        raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
+        raw_a[0:self.plastic_vars_count, landa_base_num] = phi_p0
+
+        if self.include_softening:
+            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), 0:self.plastic_vars_count] = self.q
+            raw_a[0:self.plastic_vars_count, self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = - self.h
+            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = self.w
+        raw_a[landa_base_num, landa_base_num] = 1.0
+
+        if self.disp_limits.any():
+            disp_limit_base_num = self.plastic_vars_count + self.softening_vars_count + 1
+            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), 0:self.plastic_vars_count] = dv_phi
+            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), 0:self.plastic_vars_count] = - dv_phi
+
+            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
+            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
+
+        a_matrix = np.array(raw_a)
+        columns_count = self.primary_vars_count + self.slack_vars_count
+        table = np.zeros((self.constraints_count, columns_count))
+        table[0:self.constraints_count, 0:self.primary_vars_count] = a_matrix
+
+        # Assigning diagonal arrays of slack variables.
+        # TODO: use np.eye instead
+        j = self.primary_vars_count
+        for i in range(self.constraints_count):
+            table[i, j] = 1.0
+            j += 1
+        return table
+
+    def update_b_for_dynamic_analysis(self, pv_prev, plastic_multipliers_prev):
+        self.b[0:self.plastic_vars_count] = (
+            self.b[0:self.plastic_vars_count] -
+            np.array(
+                self.phi.T * pv_prev * self.phi * plastic_multipliers_prev
+            ).flatten()
+        )
 
     def solve_dynamic(self):
         basic_variables = self.get_initial_basic_variables()
@@ -299,74 +405,35 @@ class MahiniMethod:
                             abar=abar,
                         )
                         break
+
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
-        pms_history = []
+        phi_pms_history = []
         load_level_history = []
-        for x in x_history:
-            pms = x[0:self.plastic_vars_count]
-            load_level = x[self.landa_var][0, 0]
-            pms_history.append(pms)
-            load_level_history.append(load_level)
+        if settings.sifting_type is SiftingType.not_used:
+            for x in x_history:
+                pms = x[0:self.plastic_vars_count]
+                phi_pms = self.intact_phi * pms
+                load_level = x[self.landa_var][0, 0]
+                phi_pms_history.append(phi_pms)
+                load_level_history.append(load_level)
+        if settings.sifting_type is SiftingType.mahini:
+            structure_sifted_yield_pieces = self.sifting.structure_sifted_yield_pieces
+            for x in x_history:
+                pms = x[0:self.plastic_vars_count]
+                intact_pms = np.matrix(np.zeros((self.intact_plastic_vars_count, 1)))
+                for piece in structure_sifted_yield_pieces:
+                    intact_pms[piece.intact_num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
+                intact_phi_pms = self.intact_phi * intact_pms
+                load_level = x[self.landa_var][0, 0]
+                phi_pms_history.append(intact_phi_pms)
+                load_level_history.append(load_level)
         result = {
-            "pms_history": pms_history,
+            "phi_pms_history": phi_pms_history,
             "load_level_history": load_level_history
         }
         return result
-
-    def _create_table(self):
-        disp_limits = self.disp_limits
-        constraints_count = self.constraints_count
-        yield_pieces_count = self.plastic_vars_count
-        softening_vars_count = self.softening_vars_count
-        primary_vars_count = self.primary_vars_count
-        slack_vars_count = self.slack_vars_count
-        disp_limits_count = self.disp_limits_count
-        phi = self.phi
-        p0 = self.p0
-        pv = self.pv
-        d0 = self.d0
-        dv = self.dv
-        q = self.q
-        h = self.h
-        w = self.w
-
-        phi_p0 = phi.T * p0
-        phi_pv_phi = phi.T * pv * phi
-
-        landa_base_num = yield_pieces_count + softening_vars_count
-        dv_phi = dv * phi
-
-        raw_a = np.matrix(np.zeros((constraints_count, primary_vars_count)))
-        raw_a[0:yield_pieces_count, 0:yield_pieces_count] = phi_pv_phi
-        raw_a[0:yield_pieces_count, landa_base_num] = phi_p0
-        if softening_vars_count:
-            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), 0:yield_pieces_count] = q
-            raw_a[0:yield_pieces_count, yield_pieces_count:(yield_pieces_count + softening_vars_count)] = - h
-            raw_a[yield_pieces_count:(yield_pieces_count + softening_vars_count), yield_pieces_count:(yield_pieces_count + softening_vars_count)] = w
-        raw_a[landa_base_num, landa_base_num] = 1.0
-
-        if disp_limits.any():
-            disp_limit_base_num = yield_pieces_count + softening_vars_count + 1
-            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), 0:yield_pieces_count] = dv_phi
-            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), 0:yield_pieces_count] = - dv_phi
-
-            raw_a[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = d0
-            raw_a[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - d0
-
-        a_matrix = np.array(raw_a)
-        columns_count = primary_vars_count + slack_vars_count
-        table = np.zeros((constraints_count, columns_count))
-        table[0:constraints_count, 0:primary_vars_count] = a_matrix
-
-        # Assigning diagonal arrays of slack variables.
-        # TODO: use np.eye instead
-        j = primary_vars_count
-        for i in range(constraints_count):
-            table[i, j] = 1.0
-            j += 1
-        return table
 
     def get_slack_var(self, primary_var):
         if primary_var < self.primary_vars_count:

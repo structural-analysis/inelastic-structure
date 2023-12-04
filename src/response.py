@@ -19,10 +19,9 @@ def calculate_responses(initial_analysis, inelastic_analysis=None):
 def calculate_static_responses(initial_analysis, inelastic_analysis=None):
     structure = initial_analysis.structure
     if structure.is_inelastic:
-        pms_history = inelastic_analysis.plastic_vars["pms_history"]
+        phi_x_history = inelastic_analysis.plastic_vars["phi_pms_history"]
         load_level_history = inelastic_analysis.plastic_vars["load_level_history"]
         increments_count = len(load_level_history)
-        phi = structure.yield_specs.intact_phi
 
         load_levels = np.zeros([increments_count, 1], dtype=object)
 
@@ -44,10 +43,8 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
 
         for i in range(increments_count):
-            pms = pms_history[i]
+            phi_x = phi_x_history[i]
             load_level = load_level_history[i]
-            phi_x = phi * pms
-
             load_levels[i, 0] = np.matrix([[load_level]])
 
             elastoplastic_nodal_disp = get_elastoplastic_response(

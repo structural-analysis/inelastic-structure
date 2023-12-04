@@ -1,9 +1,15 @@
+from enum import Enum
 from pydantic import BaseSettings
 
 
+class SiftingType(str, Enum):
+    mahini = "mahini"
+    not_used = None
+
+
 class Settings(BaseSettings):
-    example_name: str = "3story-static-inelastic-softening"
-    sifting_type: str = None
+    example_name: str = "3story-static-inelastic-perfect-justm"
+    sifting_type: SiftingType = SiftingType.not_used
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10

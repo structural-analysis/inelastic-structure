@@ -1,0 +1,4 @@
+- use sparse matrix where applicable
+- fix: softening matrices created even if have no softening
+- current sensitivity calculations use all yield pieces, in sifting we can use just sifted yield pieces in sensitivity calcs.
+- multiprocess in sensitivity calculation
