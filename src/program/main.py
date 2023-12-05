@@ -345,6 +345,7 @@ class MahiniMethod:
         )
         landa_row = will_out_row
         while self.limits_slacks.issubset(set(basic_variables)):
+            print(f"increment: {len(x_history)}")
             if settings.sifting_type is SiftingType.mahini:
                 intact_phi_pms, load_level = self.get_unsifted_pms(
                     x=x_cumulative,
@@ -418,7 +419,7 @@ class MahiniMethod:
                             abar=abar,
                         )
                         break
-
+        print(f"increment: {len(x_history)}")
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
