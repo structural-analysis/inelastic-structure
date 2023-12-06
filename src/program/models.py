@@ -2,6 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from ..models.yield_models import SiftedYieldPiece, SiftedYieldPoint
+from ..settings import settings
 
 
 class FPM():
@@ -13,6 +14,9 @@ class SlackCandidate():
     def __init__(self, var, cost):
         self.var = var
         self.cost = cost
+
+    def __repr__(self):
+        return f"SlackCandidate(var={self.var!r}, cost={self.cost!r})"
 
 
 @dataclass
@@ -128,6 +132,5 @@ class Sifting:
         return sifted_cs
 
     def check_violation(self, scores):
-        violated_pieces = np.array(np.where(scores > 0)[0], dtype=int).flatten().tolist()
-        print(f"{violated_pieces=}")
+        violated_pieces = np.array(np.where(scores > settings.computational_zero)[0], dtype=int).flatten().tolist()
         return violated_pieces

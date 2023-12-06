@@ -5,6 +5,7 @@ __pycache__/
 .flake8
 *.prof
 
+compare/**
 phiP0.csv
 phiPvPhi.csv
 

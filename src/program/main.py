@@ -198,7 +198,7 @@ class MahiniMethod:
                     db=db,
                 )
             else:
-                sorted_slack_candidates = self.get_sorted_slack_candidates(
+                sorted_slack_candidates, cbar = self.get_sorted_slack_candidates(
                     basic_variables=basic_variables,
                     b_matrix_inv=b_matrix_inv,
                     cb=cb,
@@ -214,7 +214,7 @@ class MahiniMethod:
             #     break
             # print("not unbounded")
             # input()
-            will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
+            will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
             x_history.append(x_cumulative.copy())
@@ -344,8 +344,27 @@ class MahiniMethod:
             cb=cb,
         )
         landa_row = will_out_row
+        # np.set_printoptions(threshold=np.inf, precision=4)
+        # for piece in self.sifting.structure_sifted_yield_pieces:
+        #     print(f"{piece.intact_num_in_structure}")
+
         while self.limits_slacks.issubset(set(basic_variables)):
+            print("-------------------------------")
             print(f"increment: {len(x_history)}")
+            sorted_slack_candidates, cbar = self.get_sorted_slack_candidates(
+                basic_variables=basic_variables,
+                b_matrix_inv=b_matrix_inv,
+                cb=cb,
+            )
+
+            will_in_col = fpm.var
+            abar = self.calculate_abar(will_in_col, b_matrix_inv)
+            bbar = self.calculate_bbar(b_matrix_inv, bbar)
+            will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
+            will_out_var = basic_variables[will_out_row]
+            x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
+            x_history.append(x_cumulative.copy())
+
             if settings.sifting_type is SiftingType.mahini:
                 intact_phi_pms, load_level = self.get_unsifted_pms(
                     x=x_cumulative,
@@ -353,7 +372,7 @@ class MahiniMethod:
                 )
                 scores = self.calc_violation_scores(intact_phi_pms, load_level)
                 violated_pieces = self.sifting.check_violation(scores)
-                print(scores[violated_pieces])
+                print(f"{violated_pieces=}")
 
                 # bbar_prev = bbar
                 # b_matrix_inv_prev = b_matrix_inv
@@ -361,20 +380,29 @@ class MahiniMethod:
                 # cbar_prev = cbar
                 # sifted_phi_prev = self.sifting.sifted_phi
 
-            sorted_slack_candidates = self.get_sorted_slack_candidates(
-                basic_variables=basic_variables,
-                b_matrix_inv=b_matrix_inv,
-                cb=cb,
-            )
-            will_in_col = fpm.var
-            abar = self.calculate_abar(will_in_col, b_matrix_inv)
-            bbar = self.calculate_bbar(b_matrix_inv, bbar)
-            will_out_row = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
-            will_out_var = basic_variables[will_out_row]
+            if settings.sifting_type is SiftingType.mahini:
+                ba_intacts = []
+                for index in range(sorted_zipped_ba.shape[1]):
+                    if int(sorted_zipped_ba[0, index]) < self.plastic_vars_count:
+                        ba_intacts.append(
+                            (self.sifting.structure_sifted_yield_pieces[int(sorted_zipped_ba[0, index])].intact_num_in_structure, sorted_zipped_ba[1, index])
+                        )
 
-            x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
+                print(f"{will_in_col=}")
+                print(f"{cbar[will_in_col]=}")
+                print(f"{will_out_row=}")
+                print(f"{will_out_var=}")
+                print(f"{sorted_zipped_ba[:, 0:5]}")
 
-            x_history.append(x_cumulative.copy())
+            # if settings.sifting_type is SiftingType.mahini:
+            #     if will_out_row < self.plastic_vars_count:
+            #         will_out_row_sifted_piece = self.sifting.structure_sifted_yield_pieces[will_out_row]
+            #         will_in_col_sifted_piece = self.sifting.structure_sifted_yield_pieces[will_in_col]
+            #         will_out_row_intact_piece = will_out_row_sifted_piece.intact_num_in_structure
+            #         will_in_col_intact_piece = will_in_col_sifted_piece.intact_num_in_structure
+            #         print(f"{will_out_row_intact_piece=}")
+            #         print(f"{will_in_col_intact_piece=}")
+
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
                     spm_var = self.get_primary_var(slack_candidate.var)
@@ -419,10 +447,27 @@ class MahiniMethod:
                             abar=abar,
                         )
                         break
+
+        print("-------------------------------")
         print(f"increment: {len(x_history)}")
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
+        if settings.sifting_type is SiftingType.mahini:
+            intact_phi_pms, load_level = self.get_unsifted_pms(
+                x=x_cumulative,
+                landa_var=self.landa_var
+            )
+            scores = self.calc_violation_scores(intact_phi_pms, load_level)
+            violated_pieces = self.sifting.check_violation(scores)
+            print(f"{violated_pieces=}")
+
+            # bbar_prev = bbar
+            # b_matrix_inv_prev = b_matrix_inv
+            # cb_prev = cb
+            # cbar_prev = cbar
+            # sifted_phi_prev = self.sifting.sifted_phi
+
         phi_pms_history = []
         load_level_history = []
         if settings.sifting_type is SiftingType.not_used:
@@ -466,7 +511,7 @@ class MahiniMethod:
         will_in_col = fpm.var
         a = self.table[:, will_in_col]
         print("enter landa")
-        will_out_row = self.get_will_out(a, self.b)
+        will_out_row, sorted_zipped_ba = self.get_will_out(a, self.b)
         will_out_var = basic_variables[will_out_row]
         basic_variables = self.update_basic_variables(basic_variables, will_out_row, will_in_col)
         b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, a, will_out_row)
@@ -483,9 +528,14 @@ class MahiniMethod:
     def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb):
         will_in_col = fpm.var
         a = self.table[:, will_in_col]
-        print("enter landa")
-        will_out_row = self.get_will_out(a, self.b)
+        will_out_row, sorted_zipped_ba = self.get_will_out(a, self.b)
         will_out_var = basic_variables[will_out_row]
+        print("-------------------------------")
+        print("increment: enter")
+        print(f"{will_in_col=}")
+        print(f"{will_out_row=}")
+        print(f"{will_out_var=}")
+        print("enter landa")
         basic_variables = self.update_basic_variables(basic_variables, will_out_row, will_in_col)
         b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, a, will_out_row)
         cb = self.update_cb(cb, will_in_col, will_out_row)
@@ -641,7 +691,6 @@ class MahiniMethod:
 
                     if element["column"] == self.landa_var:
                         landa_row = element["row"]
-
         return basic_variables, b_matrix_inv, cb, landa_row
 
     def get_pm_var_family(self, pm_var):
@@ -727,7 +776,7 @@ class MahiniMethod:
                         if will_in_col_yield_point != will_out_yield_point:
                             will_out_row = int(sorted_zipped_ba[0, i])
                             break
-        return will_out_row
+        return will_out_row, sorted_zipped_ba
 
     def get_initial_basic_variables(self):
         basic_variables = np.zeros(self.constraints_count, dtype=int)
@@ -783,7 +832,7 @@ class MahiniMethod:
                 )
                 slack_candidates.append(slack_candidate)
         slack_candidates.sort(key=lambda y: y.cost)
-        return slack_candidates
+        return slack_candidates, cbar
 
     def get_sorted_slack_d_candidates(self, basic_variables, b_matrix_inv, db):
         dbar = self.calculate_dbar(db, b_matrix_inv)
