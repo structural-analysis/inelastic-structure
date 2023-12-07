@@ -1,7 +1,12 @@
 import numpy as np
 from dataclasses import dataclass
 
-from ..models.yield_models import SiftedYieldPiece, SiftedYieldPoint
+from ..models.yield_models import (
+    SiftedYieldPiece,
+    SiftedYieldPoint,
+    ViolatedYieldPiece,
+    ViolatedYieldPoint,
+)
 from ..settings import settings
 
 
@@ -28,10 +33,16 @@ class SiftedResults:
 
 
 class Sifting:
-    def __init__(self, intact_points, intact_phi, scores):
+    # NOTE: SIFTING+: len(sifted_yield_points) != len(intact_yield_points)
+    # so in advanced sifting we cannot loop through sifted yield points.
+    # better to use unique id's for piece and points in sifted+
+    def __init__(self, intact_points, intact_pieces, intact_phi, scores, violated_pieces=[]):
         self.intact_points = intact_points
+        self.intact_pieces = intact_pieces
         self.intact_phi = intact_phi
         self.scores = scores
+        self.violated_pieces = violated_pieces
+        self.violated_points = self.get_violated_points()
         self.sifted_results = self.get_sifted_results()
         self.sifted_yield_points = self.sifted_results.sifted_yield_points
         self.structure_sifted_yield_pieces = self.sifted_results.structure_sifted_yield_pieces
@@ -45,6 +56,18 @@ class Sifting:
         self.sifted_w = self.get_sifted_w()
         self.sifted_cs = self.get_sifted_cs()
 
+    def get_violated_points(self):
+        violated_points_dict = {}
+        for piece in self.violated_pieces:
+            if piece.ref_yield_point_num not in violated_points_dict:
+                violated_points_dict[piece.ref_yield_point_num] = []
+            violated_points_dict[piece.ref_yield_point_num].append(piece)
+        violated_points = [
+            ViolatedYieldPoint(num_in_structure=num, violated_pieces=pieces)
+            for num, pieces in violated_points_dict.items()
+        ]
+        return violated_points
+
     def get_sifted_results(self):
         piece_num_in_structure = 0
         sifted_yield_points = []
@@ -52,15 +75,26 @@ class Sifting:
         sifted_components_count = 0
         sifted_pieces_count = 0
         for point in self.intact_points:
+            for violated_point in self.violated_points:
+                if violated_point.num_in_structure == point.num_in_structure:
+                    violated_pieces = violated_point.violated_pieces
             for piece in point.pieces:
                 piece.score = self.scores[piece.num_in_structure]
+
             point.pieces.sort(key=lambda x: x.score, reverse=True)
+            selected_pieces = point.pieces[0:point.min_sifted_pieces_count]
             point_sifted_yield_pieces = []
             sifted_yield_pieces_nums_in_intact_yield_point = []
-            for piece in point.pieces[0:point.min_sifted_pieces_count]:
+            for piece in selected_pieces:
+                if violated_pieces and piece in violated_pieces:
+                    violated_common_pieces = []
+                    violated_uncommon_pieces = []
+                    
+                    pass
+                else:
+
                 sifted_yield_piece = SiftedYieldPiece(
                     ref_yield_point_num=point.num_in_structure,
-                    sifted_num_in_yield_point=piece.num_in_yield_point,
                     sifted_num_in_structure=piece_num_in_structure,
                     intact_num_in_structure=piece.num_in_structure,
                 )
@@ -133,7 +167,15 @@ class Sifting:
         return sifted_cs
 
     def check_violation(self, scores):
-        violated_pieces = np.array(np.where(scores > settings.computational_zero)[0], dtype=int).flatten().tolist()
+        violated_pieces = []
+        violated_piece_nums = np.array(np.where(scores > settings.computational_zero)[0], dtype=int).flatten().tolist()
+        for violated_piece_num in violated_piece_nums:
+            violated_pieces.append(
+                ViolatedYieldPiece(
+                    ref_yield_point_num=self.intact_pieces[violated_piece_num].ref_yield_point_num,
+                    num_in_structure=violated_piece_num,
+                )
+            )
         return violated_pieces
 
     def get_unsifted_pms(self, x):

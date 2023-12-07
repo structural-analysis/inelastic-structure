@@ -48,6 +48,7 @@ class MahiniMethod:
             initial_scores = self.load_limit * self.intact_phi.T * self.p0
             self.sifting = Sifting(
                 intact_points=self.intact_points,
+                intact_pieces=self.intact_pieces,
                 intact_phi=self.intact_phi,
                 scores=initial_scores
             )
@@ -315,6 +316,7 @@ class MahiniMethod:
         return result
 
     def solve(self):
+        check_violation: bool
         basic_variables = self.get_initial_basic_variables()
         if any(self.b < 0):
             new_table = self.create_new_table()
@@ -408,6 +410,7 @@ class MahiniMethod:
                             cb=cb,
                             landa_row=landa_row,
                         )
+                        check_violation = False
                         break
                 else:
                     if self.is_will_out_var_opm(will_out_var):
@@ -420,6 +423,7 @@ class MahiniMethod:
                             cb=cb,
                             landa_row=landa_row,
                         )
+                        check_violation = False
                         break
                     else:
                         print("enter fpm")
@@ -431,6 +435,7 @@ class MahiniMethod:
                             will_in_col=will_in_col,
                             abar=abar,
                         )
+                        check_violation = True
                         break
 
             will_in_col = fpm.var
@@ -452,29 +457,38 @@ class MahiniMethod:
                 load_level = x[self.landa_var][0, 0]
                 phi_pms_cumulative += intact_phi_pms
                 load_level_cumulative += load_level
+                if check_violation:
+                    scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
+                    violated_pieces = self.sifting.check_violation(scores_current)
+                    print(f"{violated_pieces=}")
+                    if violated_pieces:
+                        print(f"{basic_variables=}")
+                        # NOTE: in current increment some pieces are violated
+                        # we want to roll back table to previous increment
+                        # so we use previous increment plastic multipliers and load level to get sifted data and sorted pieces
+                        # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
+                        scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
+                        self.sifting = Sifting(
+                            intact_points=self.intact_points,
+                            intact_pieces=self.intact_pieces,
+                            intact_phi=self.intact_phi,
+                            scores=scores_prev,
+                            violated_pieces=violated_pieces,
+                        )
 
-                scores = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
-                violated_pieces = self.sifting.check_violation(scores)
-                print(f"{violated_pieces=}")
-                if violated_pieces:
-                    print(f"{basic_variables=}")
-                    self.sifting = Sifting(
-                        intact_points=self.intact_points,
-                        intact_phi=self.intact_phi,
-                        scores=scores,
-                    )
-                    b_matrix_inv = b_matrix_inv_prev
-                    cb = cb_prev
-                    bbar = bbar_prev
-                    print(f"{will_in_col=}")
-                    print(f"{will_out_row=}")
-                    print(f"{will_out_var=}")
-                    basic_variables[will_in_col] = self.get_slack_var(will_in_col)
-                    print(f"{self.sifting.sifted_yield_points=}")
-                    input()
-                else:
-                    phi_pms_history.append(phi_pms_cumulative.copy())
-                    load_level_history.append(load_level_cumulative)
+                        b_matrix_inv = b_matrix_inv_prev
+                        cb = cb_prev
+                        bbar = bbar_prev
+                        print(f"{will_in_col=}")
+                        print(f"{will_out_row=}")
+                        print(f"{will_out_var=}")
+                        basic_variables[will_in_col] = self.get_slack_var(will_in_col)
+                        print(f"{self.sifting.sifted_yield_points=}")
+                        input()
+                    else:
+                        pass
+                phi_pms_history.append(phi_pms_cumulative.copy())
+                load_level_history.append(load_level_cumulative)
 
                 # ba_intacts = []
                 # for index in range(sorted_zipped_ba.shape[1]):

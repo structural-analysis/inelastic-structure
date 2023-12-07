@@ -12,14 +12,6 @@ class YieldPiece:
 
 
 @dataclass
-class SiftedYieldPiece:
-    ref_yield_point_num: int
-    sifted_num_in_yield_point: int
-    sifted_num_in_structure: int
-    intact_num_in_structure: int
-
-
-@dataclass
 class YieldPoint:
     min_sifted_pieces_count: int
     ref_member_num: int
@@ -36,18 +28,37 @@ class YieldPoint:
 
 
 @dataclass
+class SiftedYieldPiece:
+    ref_yield_point_num: int
+    sifted_num_in_structure: int
+    intact_num_in_structure: int
+
+
+@dataclass
 class SiftedYieldPoint:
     ref_member_num: int
     num_in_member: int
     num_in_structure: int
     components_count: int
-    pieces: List[YieldPiece]
+    pieces: List[SiftedYieldPiece]
     pieces_count: int
     phi: np.matrix
     q: np.matrix
     h: np.matrix
     w: np.matrix
     cs: np.matrix
+
+
+@dataclass
+class ViolatedYieldPiece:
+    ref_yield_point_num: int
+    num_in_structure: int
+
+
+@dataclass
+class ViolatedYieldPoint:
+    num_in_structure: int
+    violated_pieces: List[ViolatedYieldPiece] = []
 
 
 @dataclass
