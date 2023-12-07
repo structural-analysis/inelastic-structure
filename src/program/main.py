@@ -475,15 +475,17 @@ class MahiniMethod:
                             scores=scores_prev,
                             violated_pieces=violated_pieces,
                         )
-
-                        b_matrix_inv = b_matrix_inv_prev
+                        # print(f"{self.sifting.sifted_yield_points=}")
+                        # print(f"{self.sifting.structure_sifted_yield_pieces=}")
+                        print(f"{self.sifting.sifted_components_count=}")
+                        print(f"{self.sifting.sifted_pieces_count=}")
+                        print(f"{b_matrix_inv=}")
                         cb = cb_prev
                         bbar = bbar_prev
                         print(f"{will_in_col=}")
                         print(f"{will_out_row=}")
                         print(f"{will_out_var=}")
                         basic_variables[will_in_col] = self.get_slack_var(will_in_col)
-                        print(f"{self.sifting.sifted_yield_points=}")
                         input()
                     else:
                         pass

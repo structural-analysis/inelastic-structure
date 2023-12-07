@@ -74,10 +74,13 @@ class Sifting:
         structure_sifted_yield_pieces = []
         sifted_components_count = 0
         sifted_pieces_count = 0
+        violated_pieces = []
         for point in self.intact_points:
             for violated_point in self.violated_points:
                 if violated_point.num_in_structure == point.num_in_structure:
                     violated_pieces = violated_point.violated_pieces
+                else:
+                    violated_pieces = []
             for piece in point.pieces:
                 piece.score = self.scores[piece.num_in_structure]
 
@@ -85,23 +88,34 @@ class Sifting:
             selected_pieces = point.pieces[0:point.min_sifted_pieces_count]
             point_sifted_yield_pieces = []
             sifted_yield_pieces_nums_in_intact_yield_point = []
-            for piece in selected_pieces:
-                if violated_pieces and piece in violated_pieces:
-                    violated_common_pieces = []
-                    violated_uncommon_pieces = []
-                    
-                    pass
-                else:
 
+            # all violated pieces must be considered, so first fill the sifted yield pieces with violated.
+            for violated_piece in violated_pieces:
                 sifted_yield_piece = SiftedYieldPiece(
                     ref_yield_point_num=point.num_in_structure,
                     sifted_num_in_structure=piece_num_in_structure,
-                    intact_num_in_structure=piece.num_in_structure,
+                    intact_num_in_structure=violated_piece.num_in_structure,
                 )
                 point_sifted_yield_pieces.append(sifted_yield_piece)
                 structure_sifted_yield_pieces.append(sifted_yield_piece)
-                sifted_yield_pieces_nums_in_intact_yield_point.append(piece.num_in_yield_point)
+                sifted_yield_pieces_nums_in_intact_yield_point.append(violated_piece.num_in_yield_point)
                 piece_num_in_structure += 1
+
+            # now add top scored selected pieces after the violateds to sifted yield pieces if it is not in violated pieces.
+            for selected_piece in selected_pieces:
+                if selected_piece not in structure_sifted_yield_pieces:
+                    sifted_yield_piece = SiftedYieldPiece(
+                        ref_yield_point_num=point.num_in_structure,
+                        sifted_num_in_structure=piece_num_in_structure,
+                        intact_num_in_structure=selected_piece.num_in_structure,
+                    )
+                    point_sifted_yield_pieces.append(sifted_yield_piece)
+                    structure_sifted_yield_pieces.append(sifted_yield_piece)
+                    sifted_yield_pieces_nums_in_intact_yield_point.append(selected_piece.num_in_yield_point)
+                    piece_num_in_structure += 1
+                if len(point_sifted_yield_pieces) == point.min_sifted_pieces_count:
+                    break
+
             sifted_yield_points.append(
                 SiftedYieldPoint(
                     ref_member_num=point.ref_member_num,
@@ -174,6 +188,7 @@ class Sifting:
                 ViolatedYieldPiece(
                     ref_yield_point_num=self.intact_pieces[violated_piece_num].ref_yield_point_num,
                     num_in_structure=violated_piece_num,
+                    num_in_yield_point=self.intact_pieces[violated_piece_num].num_in_yield_point
                 )
             )
         return violated_pieces

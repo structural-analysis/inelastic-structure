@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 from typing import List
 
@@ -52,13 +52,14 @@ class SiftedYieldPoint:
 @dataclass
 class ViolatedYieldPiece:
     ref_yield_point_num: int
+    num_in_yield_point: int
     num_in_structure: int
 
 
 @dataclass
 class ViolatedYieldPoint:
     num_in_structure: int
-    violated_pieces: List[ViolatedYieldPiece] = []
+    violated_pieces: List[ViolatedYieldPiece] = field(default_factory=list)
 
 
 @dataclass
