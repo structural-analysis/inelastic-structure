@@ -8,7 +8,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-4element-inelastic-q8r"
+    example_name: str = "simple-beam-static-inelastic"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
@@ -23,21 +23,21 @@ class Settings(BaseSettings):
         "3story-static-elastic",
         "3story-static-inelastic-perfect",
         "3story-static-inelastic-softening",
-        "torre-dynamic-elastic",
-        "simple-beam-dynamic-elastic",
-        "1story-dynamic-elastic",
-        "2story-dynamic-elastic",
-        "simple-beam-dynamic-inelastic-1phase",
-        "1story-dynamic-inelastic-ll1.0-ap400k",
-        "2story-dynamic-inelastic",
+        # "torre-dynamic-elastic",
+        # "simple-beam-dynamic-elastic",
+        # "1story-dynamic-elastic",
+        # "2story-dynamic-elastic",
+        # "simple-beam-dynamic-inelastic-1phase",
+        # "1story-dynamic-inelastic-ll1.0-ap400k",
+        # "2story-dynamic-inelastic",
         "3d-2side-static-elastic",
         "3d-simple-beam-static-elastic",
-        "3d-2side-dynamic-elastic",
-        "3d-simple-beam-dynamic-elastic",
-        "3d-simple-beam-dynamic-inelastic",
+        # "3d-2side-dynamic-elastic",
+        # "3d-simple-beam-dynamic-elastic",
+        # "3d-simple-beam-dynamic-inelastic",
         "3d-simple-beam-static-inelastic",
         "3d-2side-static-inelastic",
-        "3d-2side-dynamic-inelastic",
+        # "3d-2side-dynamic-inelastic",
         "wall-1element-elastic",
         "wall-1element-elastic-q8r",
         "wall-9element-elastic",

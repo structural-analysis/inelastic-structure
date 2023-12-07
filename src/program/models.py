@@ -28,8 +28,9 @@ class SiftedResults:
 
 
 class Sifting:
-    def __init__(self, intact_points, scores):
+    def __init__(self, intact_points, intact_phi, scores):
         self.intact_points = intact_points
+        self.intact_phi = intact_phi
         self.scores = scores
         self.sifted_results = self.get_sifted_results()
         self.sifted_yield_points = self.sifted_results.sifted_yield_points
@@ -134,3 +135,10 @@ class Sifting:
     def check_violation(self, scores):
         violated_pieces = np.array(np.where(scores > settings.computational_zero)[0], dtype=int).flatten().tolist()
         return violated_pieces
+
+    def get_unsifted_pms(self, x):
+        intact_pms = np.matrix(np.zeros((self.intact_phi.shape[1], 1)))
+        for piece in self.structure_sifted_yield_pieces:
+            intact_pms[piece.intact_num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
+        intact_phi_pms = self.intact_phi * intact_pms
+        return intact_phi_pms
