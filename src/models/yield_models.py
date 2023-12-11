@@ -10,6 +10,15 @@ class YieldPiece:
     num_in_structure: int
     score: float
 
+    def __eq__(self, other):
+        return self.ref_yield_point_num == other.ref_yield_point_num and self.num_in_structure == other.num_in_structure
+
+    def __hash__(self):
+        return hash((
+            'ref_yield_point_num', self.ref_yield_point_num,
+            'num_in_structure', self.num_in_structure
+        ))
+
 
 @dataclass
 class YieldPoint:
@@ -30,8 +39,18 @@ class YieldPoint:
 @dataclass
 class SiftedYieldPiece:
     ref_yield_point_num: int
+    num_in_yield_point: int
     sifted_num_in_structure: int
-    intact_num_in_structure: int
+    num_in_structure: int
+
+    def __eq__(self, other):
+        return self.ref_yield_point_num == other.ref_yield_point_num and self.num_in_structure == other.num_in_structure
+
+    def __hash__(self):
+        return hash((
+            'ref_yield_point_num', self.ref_yield_point_num,
+            'num_in_structure', self.num_in_structure
+        ))
 
 
 @dataclass
@@ -42,6 +61,7 @@ class SiftedYieldPoint:
     components_count: int
     pieces: List[SiftedYieldPiece]
     pieces_count: int
+    sifted_yield_pieces_nums_in_intact_yield_point: list
     phi: np.matrix
     q: np.matrix
     h: np.matrix

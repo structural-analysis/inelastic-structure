@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from .models import FPM, SlackCandidate, Sifting
-from .functions import zero_out_small_values
+from .models import FPM, SlackCandidate, Sifting, SiftedResults
+from .functions import zero_out_small_values, print_specific_properties
 from ..analysis.initial_analysis import InitialData, AnalysisData
 from ..settings import settings, SiftingType
 
@@ -50,17 +50,17 @@ class MahiniMethod:
                 intact_points=self.intact_points,
                 intact_pieces=self.intact_pieces,
                 intact_phi=self.intact_phi,
-                scores=initial_scores
             )
-            self.phi = self.sifting.sifted_phi
-            self.q = self.sifting.sifted_q
-            self.h = self.sifting.sifted_h
-            self.w = self.sifting.sifted_w
-            self.cs = self.sifting.sifted_cs
-            self.points = self.sifting.sifted_yield_points
-            self.points_count = self.sifting.sifted_points_count
-            self.components_count = self.sifting.sifted_components_count
-            self.pieces_count = self.sifting.sifted_pieces_count
+            self.sifted_results_current: SiftedResults = self.sifting.create(scores=initial_scores)
+            self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
+            self.phi = self.sifted_results_current.structure_sifted_phi
+            # self.q
+            # self.h
+            # self.w
+            # self.cs
+            self.points_count = len(self.sifted_results_current.sifted_yield_points)
+            self.components_count = self.sifted_results_current.sifted_components_count
+            self.pieces_count = self.sifted_results_current.sifted_pieces_count
 
         self.limits_count = 1 + self.disp_limits_count * 2
         self.softening_vars_count = 2 * self.points_count if self.include_softening else 0
@@ -80,6 +80,7 @@ class MahiniMethod:
 
         self.is_two_phase = True if any(self.b < 0) else False
 
+    # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
     def _get_b_column(self):
         yield_pieces_count = self.plastic_vars_count
         disp_limits_count = self.disp_limits_count
@@ -367,7 +368,10 @@ class MahiniMethod:
             phi_pms_history.append(phi_pms_cumulative.copy())
             load_level_history.append(load_level_cumulative)
         if settings.sifting_type is SiftingType.mahini:
-            intact_phi_pms = self.sifting.get_unsifted_pms(x=x)
+            intact_phi_pms = self.get_unsifted_pms(
+                x=x,
+                structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
+            )
             load_level = x[self.landa_var][0, 0]
             phi_pms_cumulative += intact_phi_pms
             load_level_cumulative += load_level
@@ -375,7 +379,7 @@ class MahiniMethod:
             load_level_history.append(load_level_cumulative)
         # np.set_printoptions(threshold=np.inf, precision=4)
         # for piece in self.sifting.structure_sifted_yield_pieces:
-        #     print(f"{piece.intact_num_in_structure}")
+        #     print(f"{piece.num_in_structure}")
 
         while self.limits_slacks.issubset(set(basic_variables)):
             print("-------------------------------")
@@ -386,9 +390,12 @@ class MahiniMethod:
                 cb=cb,
             )
 
-            b_matrix_inv_prev = b_matrix_inv
-            cb_prev = cb
-            bbar_prev = bbar
+            basic_variables_prev = basic_variables.copy()
+            b_matrix_inv_prev = b_matrix_inv.copy()
+            cb_prev = cb.copy()
+            bbar_prev = bbar.copy()
+            x_prev = x.copy()
+            fpm_prev = fpm
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -444,6 +451,7 @@ class MahiniMethod:
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x, bbar = self.reset(basic_variables, bbar)
+
             if settings.sifting_type is SiftingType.not_used:
                 pms = x[0:self.plastic_vars_count]
                 phi_pms = self.intact_phi * pms
@@ -452,43 +460,86 @@ class MahiniMethod:
                 load_level_cumulative += load_level
                 phi_pms_history.append(phi_pms_cumulative.copy())
                 load_level_history.append(load_level_cumulative)
+
             if settings.sifting_type is SiftingType.mahini:
-                intact_phi_pms = self.sifting.get_unsifted_pms(x=x)
-                load_level = x[self.landa_var][0, 0]
+                intact_phi_pms = self.get_unsifted_pms(
+                    x=x,
+                    structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
+                )
                 phi_pms_cumulative += intact_phi_pms
+                load_level = x[self.landa_var][0, 0]
                 load_level_cumulative += load_level
+
                 if check_violation:
                     scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
-                    violated_pieces = self.sifting.check_violation(scores_current)
-                    print(f"{violated_pieces=}")
+                    sifted_results_prev = self.sifted_results_current
+                    structure_sifted_yield_pieces_prev = self.structure_sifted_yield_pieces_current
+                    violated_pieces = self.sifting.check_violation(
+                        scores=scores_current,
+                        structure_sifted_yield_pieces_prev=structure_sifted_yield_pieces_prev,
+                    )
                     if violated_pieces:
-                        print(f"{basic_variables=}")
                         # NOTE: in current increment some pieces are violated
                         # we want to roll back table to previous increment
                         # so we use previous increment plastic multipliers and load level to get sifted data and sorted pieces
                         # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
                         scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
-                        self.sifting = Sifting(
-                            intact_points=self.intact_points,
-                            intact_pieces=self.intact_pieces,
-                            intact_phi=self.intact_phi,
+                        self.sifted_results_current: SiftedResults = self.sifting.update(
                             scores=scores_prev,
+                            sifted_results_prev=sifted_results_prev,
                             violated_pieces=violated_pieces,
+                            bbar_prev=bbar_prev,
+                            cb_prev=cb_prev,
                         )
-                        # print(f"{self.sifting.sifted_yield_points=}")
-                        # print(f"{self.sifting.structure_sifted_yield_pieces=}")
-                        print(f"{self.sifting.sifted_components_count=}")
-                        print(f"{self.sifting.sifted_pieces_count=}")
-                        print(f"{b_matrix_inv=}")
-                        cb = cb_prev
-                        bbar = bbar_prev
-                        print(f"{will_in_col=}")
-                        print(f"{will_out_row=}")
-                        print(f"{will_out_var=}")
-                        basic_variables[will_in_col] = self.get_slack_var(will_in_col)
+                        self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
+                        self.phi = self.sifted_results_current.structure_sifted_phi
+                        # self.q
+                        # self.h
+                        # self.w
+                        # self.cs
+
+                        active_pms, active_pms_rows = self.get_active_pms_stats(basic_variables_prev)
+
+                        # NOTE:
+                        # j: indices of previous phi matrix columns which contents are updated
+                        # m: active pms for phi columns
+                        # v: original unsorted active pm rows used for b_inv columns including landa row
+                        # u: sorted active pm rows and landa row as last member
+
+                        j = self.sifted_results_current.modified_structure_sifted_yield_pieces_indices
+                        m = active_pms
+                        m.remove(self.landa_var)
+                        v = active_pms_rows
+                        u = active_pms_rows[:]
+                        u.remove(landa_row)
+                        u.sort()
+                        u.append(landa_row)
+
+                        a_updated = self.phi.T[j, :] * self.pv * self.phi[:, m] + self.phi.T[j, :] * self.p0
+                        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[u, v]
+                        b_matrix_inv = b_matrix_inv_prev
+                        bbar = self.sifted_results_current.bbar_updated
+                        print(f"{bbar=}")
+
+                        # cb = cb_prev
+                        # fpm = fpm_prev
+                        # will_in_col = fpm.var
+                        # self.table = self._create_table()
+
+                        # abar = self.calculate_abar(will_in_col, b_matrix_inv)
+                        # bbar = bbar_prev
+                        # x = x_prev
+                        # will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
+                        # will_out_var = basic_variables[will_out_row]
+
+                        # phi_pms_cumulative -= intact_phi_pms
+                        # load_level_cumulative -= load_level
+                        # x, bbar = self.reset(basic_variables, bbar)
                         input()
                     else:
                         pass
+
+                # IMPORTANT: can we append to histories in violated form?
                 phi_pms_history.append(phi_pms_cumulative.copy())
                 load_level_history.append(load_level_cumulative)
 
@@ -496,7 +547,7 @@ class MahiniMethod:
                 # for index in range(sorted_zipped_ba.shape[1]):
                 #     if int(sorted_zipped_ba[0, index]) < self.plastic_vars_count:
                 #         ba_intacts.append(
-                #             (self.sifting.structure_sifted_yield_pieces[int(sorted_zipped_ba[0, index])].intact_num_in_structure, sorted_zipped_ba[1, index])
+                #             (self.sifting.structure_sifted_yield_pieces[int(sorted_zipped_ba[0, index])].num_in_structure, sorted_zipped_ba[1, index])
                 #         )
 
                 print(f"{will_in_col=}")
@@ -504,14 +555,6 @@ class MahiniMethod:
                 print(f"{will_out_row=}")
                 print(f"{will_out_var=}")
                 print(f"{sorted_zipped_ba[:, 0:5]}")
-
-            #     if will_out_row < self.plastic_vars_count:
-            #         will_out_row_sifted_piece = self.sifting.structure_sifted_yield_pieces[will_out_row]
-            #         will_in_col_sifted_piece = self.sifting.structure_sifted_yield_pieces[will_in_col]
-            #         will_out_row_intact_piece = will_out_row_sifted_piece.intact_num_in_structure
-            #         will_in_col_intact_piece = will_in_col_sifted_piece.intact_num_in_structure
-            #         print(f"{will_out_row_intact_piece=}")
-            #         print(f"{will_in_col_intact_piece=}")
 
         result = {
             "phi_pms_history": phi_pms_history,
@@ -952,3 +995,19 @@ class MahiniMethod:
     def calc_violation_scores(self, intact_phi_pms, load_level):
         scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - np.matrix(np.ones((self.intact_pieces_count, 1)))
         return scores
+
+    def get_active_pms_stats(self, basic_variables):
+        active_pms = []
+        active_pms_rows = []
+        for index, basic_variable in enumerate(basic_variables):
+            if basic_variable <= self.landa_var:
+                active_pms.append(basic_variable)
+                active_pms_rows.append(index)
+        return active_pms, active_pms_rows
+
+    def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
+        intact_pms = np.matrix(np.zeros((self.intact_phi.shape[1], 1)))
+        for piece in structure_sifted_yield_pieces:
+            intact_pms[piece.num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
+        intact_phi_pms = self.intact_phi * intact_pms
+        return intact_phi_pms
