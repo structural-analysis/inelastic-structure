@@ -8,12 +8,12 @@ from ..models.yield_models import (
     ViolatedYieldPoint,
 )
 from ..settings import settings
-from .functions import print_specific_properties
 
 
 class FPM():
-    var: int
-    cost: float
+    def __init__(self, var, cost):
+        self.var: int = var
+        self.cost: float = cost
 
 
 class SlackCandidate():
@@ -118,6 +118,7 @@ class Sifting:
         # NOTE: SIFTING+:
         # we can not use intact_points anymore
         # insead of using point_num we should use num_in_structure somehow
+
         for point_num, point in enumerate(self.intact_points):
             point_violated_pieces = self.get_point_violated_pieces(
                 point=point,
@@ -153,7 +154,7 @@ class Sifting:
                 modified_structure_sifted_yield_pieces_indices.append(
                     prev_changed_index + cumulative_point_pieces_count
                 )
-                bbar_updated[prev_changed_index + cumulative_point_pieces_count] = scores[
+                bbar_updated[prev_changed_index + cumulative_point_pieces_count] = -scores[
                     current_piece_to_change.num_in_structure
                 ]
 

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from .models import FPM, SlackCandidate, Sifting, SiftedResults
-from .functions import zero_out_small_values, print_specific_properties
+from .functions import zero_out_small_values
 from ..analysis.initial_analysis import InitialData, AnalysisData
 from ..settings import settings, SiftingType
 
@@ -343,9 +343,11 @@ class MahiniMethod:
         load_level_cumulative = 0
         phi_pms_history = []
         load_level_history = []
-        fpm = FPM
-        fpm.var = self.landa_var
-        fpm.cost = 0
+        fpm = FPM(
+            var=self.landa_var,
+            cost=0,
+        )
+
         fpm, b_matrix_inv, basic_variables, cb, will_out_row, will_out_var = self.enter_landa(
             fpm=fpm,
             b_matrix_inv=b_matrix_inv,
@@ -380,7 +382,6 @@ class MahiniMethod:
         # np.set_printoptions(threshold=np.inf, precision=4)
         # for piece in self.sifting.structure_sifted_yield_pieces:
         #     print(f"{piece.num_in_structure}")
-
         while self.limits_slacks.issubset(set(basic_variables)):
             print("-------------------------------")
             print(f"increment: {len(phi_pms_history)}")
@@ -395,7 +396,7 @@ class MahiniMethod:
             cb_prev = cb.copy()
             bbar_prev = bbar.copy()
             x_prev = x.copy()
-            fpm_prev = fpm
+            fpm_prev = FPM(var=fpm.var, cost=fpm.cost)
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -479,6 +480,8 @@ class MahiniMethod:
                         structure_sifted_yield_pieces_prev=structure_sifted_yield_pieces_prev,
                     )
                     if violated_pieces:
+                        # print(f"{violated_pieces=}")
+                        print("zaaaaaaaaaaaaaaaaaaaaaaaart")
                         # NOTE: in current increment some pieces are violated
                         # we want to roll back table to previous increment
                         # so we use previous increment plastic multipliers and load level to get sifted data and sorted pieces
@@ -499,7 +502,7 @@ class MahiniMethod:
                         # self.cs
 
                         active_pms, active_pms_rows = self.get_active_pms_stats(basic_variables_prev)
-
+                        basic_variables = basic_variables_prev
                         # NOTE:
                         # j: indices of previous phi matrix columns which contents are updated
                         # m: active pms for phi columns
@@ -519,43 +522,32 @@ class MahiniMethod:
                         b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[u, v]
                         b_matrix_inv = b_matrix_inv_prev
                         bbar = self.sifted_results_current.bbar_updated
-                        print(f"{bbar=}")
+                        cb = cb_prev
+                        fpm = fpm_prev
+                        print(f"////// after violation: {fpm.var=}")
+                        will_in_col = fpm.var
 
-                        # cb = cb_prev
-                        # fpm = fpm_prev
-                        # will_in_col = fpm.var
-                        # self.table = self._create_table()
+                        # NOTE: not done for softening
+                        # NOTE: SIFTING+: var nums should change
+                        # TODO: check sifting with violation with disp limits
+                        # disp limits are calculated in table creation.
+                        # in mahini name is C_LastRows and updated after violation
 
-                        # abar = self.calculate_abar(will_in_col, b_matrix_inv)
-                        # bbar = bbar_prev
-                        # x = x_prev
-                        # will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
-                        # will_out_var = basic_variables[will_out_row]
+                        self.table = self._create_table()
+                        abar = self.calculate_abar(will_in_col, b_matrix_inv)
 
-                        # phi_pms_cumulative -= intact_phi_pms
-                        # load_level_cumulative -= load_level
-                        # x, bbar = self.reset(basic_variables, bbar)
-                        input()
+                        will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
+                        will_out_var = basic_variables[will_out_row]
+                        x = x_prev
+                        phi_pms_cumulative -= intact_phi_pms
+                        load_level_cumulative -= load_level
+
                     else:
-                        pass
-
-                # IMPORTANT: can we append to histories in violated form?
-                phi_pms_history.append(phi_pms_cumulative.copy())
-                load_level_history.append(load_level_cumulative)
-
-                # ba_intacts = []
-                # for index in range(sorted_zipped_ba.shape[1]):
-                #     if int(sorted_zipped_ba[0, index]) < self.plastic_vars_count:
-                #         ba_intacts.append(
-                #             (self.sifting.structure_sifted_yield_pieces[int(sorted_zipped_ba[0, index])].num_in_structure, sorted_zipped_ba[1, index])
-                #         )
-
-                print(f"{will_in_col=}")
-                print(f"{cbar[will_in_col]=}")
-                print(f"{will_out_row=}")
-                print(f"{will_out_var=}")
-                print(f"{sorted_zipped_ba[:, 0:5]}")
-
+                        phi_pms_history.append(phi_pms_cumulative.copy())
+                        load_level_history.append(load_level_cumulative)
+                else:
+                    phi_pms_history.append(phi_pms_cumulative.copy())
+                    load_level_history.append(load_level_cumulative)
         result = {
             "phi_pms_history": phi_pms_history,
             "load_level_history": load_level_history
@@ -779,6 +771,9 @@ class MahiniMethod:
         return pm_var_family
 
     def calculate_abar(self, col, b_matrix_inv):
+        # TODO: no need to calculate all table, just calculate a every time,
+        # like cprow in mahini code.
+
         a = self.table[:, col]
         abar = np.dot(b_matrix_inv, a)
         return abar
@@ -788,6 +783,10 @@ class MahiniMethod:
         return bbar
 
     def calculate_cbar(self, cb, b_matrix_inv):
+        # TODO: it seems we can calculate costs along with b_matrix_inv
+        # and last member of selected a column, this will cause no need for full table calcs.
+        # it seems fpm cost is Cprow(m + 4) in mahini code, check again.
+
         pi_transpose = np.dot(cb, b_matrix_inv)
         cbar = np.zeros(self.total_vars_count)
         for i in range(self.total_vars_count):
