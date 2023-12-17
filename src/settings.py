@@ -8,7 +8,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-4element-inelastic-q8r-88"
+    example_name: str = "wall-4element-inelastic-q8r"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
@@ -51,10 +51,10 @@ class Settings(BaseSettings):
         "plate-1element-inelastic-q8r",
         "plate-check-inelastic-q8r",
         "plate-square-inelastic-q8r",
-        # "wall-4element-inelastic-q8r", # time-consuming
-        # "plate-4element-inelastic-q8r", # time-consuming
-        # "plate-9element-confined-inelastic", # time-consuming
-        # "plate-confined-inelastic", # time-consuming
+        "wall-4element-inelastic-q8r",  # time-consuming
+        "plate-4element-inelastic-q8r",  # time-consuming
+        "plate-9element-confined-inelastic",  # time-consuming
+        "plate-confined-inelastic",  # time-consuming
         # "plate-semiconfined-inelastic", # time-consuming
     ]
 

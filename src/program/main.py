@@ -6,6 +6,8 @@ from .functions import zero_out_small_values
 from ..analysis.initial_analysis import InitialData, AnalysisData
 from ..settings import settings, SiftingType
 
+# np.set_printoptions(threshold=np.inf, precision=4)
+
 
 class MahiniMethod:
     def __init__(self, initial_data: InitialData, analysis_data: AnalysisData):
@@ -347,13 +349,16 @@ class MahiniMethod:
             var=self.landa_var,
             cost=0,
         )
-
+        increment = 0
+        print("-------------------------------")
+        print(f"{increment=}")
         fpm, b_matrix_inv, basic_variables, cb, will_out_row, will_out_var = self.enter_landa(
             fpm=fpm,
             b_matrix_inv=b_matrix_inv,
             basic_variables=basic_variables,
             cb=cb,
         )
+
         landa_row = will_out_row
         will_in_col = fpm.var
         abar = self.calculate_abar(will_in_col, b_matrix_inv)
@@ -361,6 +366,7 @@ class MahiniMethod:
         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
         will_out_var = basic_variables[will_out_row]
         x, bbar = self.reset(basic_variables, bbar)
+
         if settings.sifting_type is SiftingType.not_used:
             pms = x[0:self.plastic_vars_count]
             phi_pms = self.intact_phi * pms
@@ -379,12 +385,16 @@ class MahiniMethod:
             load_level_cumulative += load_level
             phi_pms_history.append(phi_pms_cumulative.copy())
             load_level_history.append(load_level_cumulative)
-        # np.set_printoptions(threshold=np.inf, precision=4)
-        # for piece in self.sifting.structure_sifted_yield_pieces:
-        #     print(f"{piece.num_in_structure}")
+
         while self.limits_slacks.issubset(set(basic_variables)):
+            increment += 1
             print("-------------------------------")
-            print(f"increment: {len(phi_pms_history)}")
+            print(f"{increment=}")
+            print(f"{load_level_cumulative=}")
+            print(f"{will_in_col=}")
+            print(f"{will_out_row=}")
+            print(f"{will_out_var=}")
+
             sorted_slack_candidates, cbar = self.get_sorted_slack_candidates(
                 basic_variables=basic_variables,
                 b_matrix_inv=b_matrix_inv,
@@ -480,13 +490,16 @@ class MahiniMethod:
                         structure_sifted_yield_pieces_prev=structure_sifted_yield_pieces_prev,
                     )
                     if violated_pieces:
-                        # print(f"{violated_pieces=}")
-                        print("zaaaaaaaaaaaaaaaaaaaaaaaart")
                         # NOTE: in current increment some pieces are violated
                         # we want to roll back table to previous increment
                         # so we use previous increment plastic multipliers and load level to get sifted data and sorted pieces
                         # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
                         scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
+                        print("++++ piece violation ++++")
+                        print(f"{len(violated_pieces)=}")
+                        print(f"{violated_pieces[0:2]=}")
+                        print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
+                        print(f"top violated prev score={scores_prev[violated_pieces[0].num_in_structure]}")
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             scores=scores_prev,
                             sifted_results_prev=sifted_results_prev,
@@ -518,13 +531,14 @@ class MahiniMethod:
                         u.sort()
                         u.append(landa_row)
 
-                        a_updated = self.phi.T[j, :] * self.pv * self.phi[:, m] + self.phi.T[j, :] * self.p0
-                        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[u, v]
+                        a_sensitivity_part = self.phi.T[j, :] * self.pv * self.phi[:, m]
+                        a_elastic_part = self.phi.T[j, :] * self.p0
+                        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part), axis=1)
+                        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[np.ix_(u, v)]
                         b_matrix_inv = b_matrix_inv_prev
                         bbar = self.sifted_results_current.bbar_updated
                         cb = cb_prev
                         fpm = fpm_prev
-                        print(f"////// after violation: {fpm.var=}")
                         will_in_col = fpm.var
 
                         # NOTE: not done for softening
@@ -535,13 +549,11 @@ class MahiniMethod:
 
                         self.table = self._create_table()
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
-
                         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
                         will_out_var = basic_variables[will_out_row]
                         x = x_prev
                         phi_pms_cumulative -= intact_phi_pms
                         load_level_cumulative -= load_level
-
                     else:
                         phi_pms_history.append(phi_pms_cumulative.copy())
                         load_level_history.append(load_level_cumulative)
@@ -593,8 +605,6 @@ class MahiniMethod:
         a = self.table[:, will_in_col]
         will_out_row, sorted_zipped_ba = self.get_will_out(a, self.b)
         will_out_var = basic_variables[will_out_row]
-        print("-------------------------------")
-        print("increment: enter")
         print(f"{will_in_col=}")
         print(f"{will_out_row=}")
         print(f"{will_out_var=}")
