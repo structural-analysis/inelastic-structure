@@ -34,6 +34,7 @@ class SiftedResults:
     structure_sifted_phi: np.matrix
     modified_structure_sifted_yield_pieces_indices: list = field(default_factory=list)
     bbar_updated: np.array = np.zeros((1, 1))
+    b_matrix_inv_updated: np.array = np.zeros((1, 1))
 
 
 class Sifting:
@@ -106,7 +107,19 @@ class Sifting:
             structure_sifted_phi=structure_sifted_phi,
         )
 
-    def update(self, scores, sifted_results_prev, violated_pieces, bbar_prev, cb_prev):
+    def update(
+            self,
+            scores,
+            sifted_results_prev,
+            violated_pieces,
+            bbar_prev,
+            b_matrix_inv_prev,
+            basic_variables_prev,
+            landa_row,
+            landa_var,
+            pv,
+            p0):
+
         violated_points = self.get_violated_points(violated_pieces)
         sifted_yield_points_updated = sifted_results_prev.sifted_yield_points
         structure_sifted_yield_pieces_updated = sifted_results_prev.structure_sifted_yield_pieces
@@ -196,6 +209,16 @@ class Sifting:
             structure_sifted_phi=structure_sifted_phi,
             modified_structure_sifted_yield_pieces_indices=modified_structure_sifted_yield_pieces_indices,
             bbar_updated=bbar_updated,
+            b_matrix_inv_updated=self.get_b_matrix_inv_updated(
+                b_matrix_inv_prev=b_matrix_inv_prev,
+                modified_structure_sifted_yield_pieces_indices=modified_structure_sifted_yield_pieces_indices,
+                basic_variables_prev=basic_variables_prev,
+                landa_row=landa_row,
+                landa_var=landa_var,
+                phi=structure_sifted_phi,
+                pv=pv,
+                p0=p0,
+            )
         )
 
     def get_violated_points(self, violated_pieces):
@@ -300,3 +323,48 @@ class Sifting:
                 final_pieces[-counter] = violated_piece
                 counter += 1
         return final_pieces
+
+    def get_b_matrix_inv_updated(
+            self,
+            b_matrix_inv_prev,
+            modified_structure_sifted_yield_pieces_indices,
+            basic_variables_prev,
+            landa_var,
+            landa_row,
+            phi,
+            pv,
+            p0,):
+
+        # NOTE:
+        # j: indices of previous phi matrix columns which contents are updated
+        # m: active pms for phi columns
+        # v: original unsorted active pm rows used for b_inv columns including landa row
+        # u: sorted active pm rows and landa row as last member
+
+        active_pms, active_pms_rows = self.get_active_pms_stats(
+            basic_variables_prev=basic_variables_prev,
+            landa_var=landa_var,
+        )
+        j = modified_structure_sifted_yield_pieces_indices
+        m = active_pms
+        m.remove(landa_var)
+        v = active_pms_rows
+        u = active_pms_rows[:]
+        u.remove(landa_row)
+        u.sort()
+        u.append(landa_row)
+
+        a_sensitivity_part = phi.T[j, :] * pv * phi[:, m]
+        a_elastic_part = phi.T[j, :] * p0
+        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part), axis=1)
+        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[np.ix_(u, v)]
+        return b_matrix_inv_prev
+
+    def get_active_pms_stats(self, basic_variables_prev, landa_var):
+        active_pms = []
+        active_pms_rows = []
+        for index, basic_variable in enumerate(basic_variables_prev):
+            if basic_variable <= landa_var:
+                active_pms.append(basic_variable)
+                active_pms_rows.append(index)
+        return active_pms, active_pms_rows

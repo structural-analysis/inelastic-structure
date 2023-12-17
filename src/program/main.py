@@ -401,8 +401,8 @@ class MahiniMethod:
                 cb=cb,
             )
 
-            basic_variables_prev = basic_variables.copy()
             b_matrix_inv_prev = b_matrix_inv.copy()
+            basic_variables_prev = basic_variables.copy()
             cb_prev = cb.copy()
             bbar_prev = bbar.copy()
             x_prev = x.copy()
@@ -505,7 +505,12 @@ class MahiniMethod:
                             sifted_results_prev=sifted_results_prev,
                             violated_pieces=violated_pieces,
                             bbar_prev=bbar_prev,
-                            cb_prev=cb_prev,
+                            b_matrix_inv_prev=b_matrix_inv_prev,
+                            basic_variables_prev=basic_variables_prev,
+                            landa_row=landa_row,
+                            landa_var=self.landa_var,
+                            pv=self.pv,
+                            p0=self.p0,
                         )
                         self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
                         self.phi = self.sifted_results_current.structure_sifted_phi
@@ -514,29 +519,9 @@ class MahiniMethod:
                         # self.w
                         # self.cs
 
-                        active_pms, active_pms_rows = self.get_active_pms_stats(basic_variables_prev)
-                        basic_variables = basic_variables_prev
-                        # NOTE:
-                        # j: indices of previous phi matrix columns which contents are updated
-                        # m: active pms for phi columns
-                        # v: original unsorted active pm rows used for b_inv columns including landa row
-                        # u: sorted active pm rows and landa row as last member
-
-                        j = self.sifted_results_current.modified_structure_sifted_yield_pieces_indices
-                        m = active_pms
-                        m.remove(self.landa_var)
-                        v = active_pms_rows
-                        u = active_pms_rows[:]
-                        u.remove(landa_row)
-                        u.sort()
-                        u.append(landa_row)
-
-                        a_sensitivity_part = self.phi.T[j, :] * self.pv * self.phi[:, m]
-                        a_elastic_part = self.phi.T[j, :] * self.p0
-                        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part), axis=1)
-                        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[np.ix_(u, v)]
-                        b_matrix_inv = b_matrix_inv_prev
+                        b_matrix_inv = self.sifted_results_current.b_matrix_inv_updated
                         bbar = self.sifted_results_current.bbar_updated
+                        basic_variables = basic_variables_prev
                         cb = cb_prev
                         fpm = fpm_prev
                         will_in_col = fpm.var
@@ -1004,15 +989,6 @@ class MahiniMethod:
     def calc_violation_scores(self, intact_phi_pms, load_level):
         scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - np.matrix(np.ones((self.intact_pieces_count, 1)))
         return scores
-
-    def get_active_pms_stats(self, basic_variables):
-        active_pms = []
-        active_pms_rows = []
-        for index, basic_variable in enumerate(basic_variables):
-            if basic_variable <= self.landa_var:
-                active_pms.append(basic_variable)
-                active_pms_rows.append(index)
-        return active_pms, active_pms_rows
 
     def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
         intact_pms = np.matrix(np.zeros((self.intact_phi.shape[1], 1)))
