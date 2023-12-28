@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 from .models import FPM, SlackCandidate, Sifting, SiftedResults
-from .functions import zero_out_small_values
+from .functions import zero_out_small_values, print_specific_properties
 from ..analysis.initial_analysis import InitialData, AnalysisData
 from ..settings import settings, SiftingType
 
@@ -387,13 +387,43 @@ class MahiniMethod:
             load_level_history.append(load_level_cumulative)
 
         while self.limits_slacks.issubset(set(basic_variables)):
-            increment += 1
+            increment = len(load_level_history)
             print("-------------------------------")
             print(f"{increment=}")
             print(f"{load_level_cumulative=}")
             print(f"{will_in_col=}")
             print(f"{will_out_row=}")
             print(f"{will_out_var=}")
+            if settings.sifting_type == SiftingType.mahini:
+                primary_will_out_var = self.get_primary_var(will_out_var)
+                if primary_will_out_var < 0:
+                    primary_will_out_var = will_out_var
+                print(f"{primary_will_out_var=}")
+                print("global_will_out_var: ")
+                print(f"{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+                print_specific_properties(self.structure_sifted_yield_pieces_current, ["num_in_structure", "sifted_num_in_structure"])
+            print(f"{bbar[will_out_row]=}")
+            # print(f"{sorted_zipped_ba=}")
+            # print(f"{abar[27]=}")
+            # print(f"{bbar[27]=}")
+            # print(f"{bbar[27]/abar[27]=}")
+
+            # print(f"{abar[25]=}")
+            # print(f"{bbar[25]=}")
+            # print(f"{bbar[25]/abar[25]=}")
+
+            print(f"{basic_variables[2705]=}")
+            print(f"{basic_variables[2745]=}")
+
+            print(f"{abar[2705]=}")
+            print(f"{bbar[2705]=}")
+            print(f"{bbar[2705]/abar[2705]=}")
+
+            # var 3298 is in 2745 row
+            print(f"{abar[2745]=}")
+            print(f"{bbar[2745]=}")
+            print(f"{bbar[2745]/abar[2745]=}")
+            input()
 
             sorted_slack_candidates, cbar = self.get_sorted_slack_candidates(
                 basic_variables=basic_variables,
@@ -462,7 +492,12 @@ class MahiniMethod:
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x, bbar = self.reset(basic_variables, bbar)
-
+            # print(f"{will_out_row=}")
+            # print(f"{bbar[will_out_row]=}")
+            # print(f"{abar[will_out_row]=}")
+            # print(f"{bbar[2705]=}")
+            # print(f"{abar[2705]=}")
+            # input()
             if settings.sifting_type is SiftingType.not_used:
                 pms = x[0:self.plastic_vars_count]
                 phi_pms = self.intact_phi * pms
@@ -497,9 +532,10 @@ class MahiniMethod:
                         scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
                         print("++++ piece violation ++++")
                         print(f"{len(violated_pieces)=}")
-                        print(f"{violated_pieces[0:2]=}")
-                        print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
-                        print(f"top violated prev score={scores_prev[violated_pieces[0].num_in_structure]}")
+                        # print_specific_properties(violated_pieces, ["num_in_structure"])
+                        # print(f"{violated_pieces=}")
+                        # print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
+                        # print(f"top violated prev score={scores_prev[violated_pieces[0].num_in_structure]}")
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             scores=scores_prev,
                             sifted_results_prev=sifted_results_prev,
@@ -536,6 +572,9 @@ class MahiniMethod:
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
                         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
                         will_out_var = basic_variables[will_out_row]
+                        # primary_will_out_var = self.get_primary_var(will_out_var)
+                        # if primary_will_out_var < 0:
+                        #     primary_will_out_var = will_out_var
                         x = x_prev
                         phi_pms_cumulative -= intact_phi_pms
                         load_level_cumulative -= load_level

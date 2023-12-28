@@ -143,7 +143,8 @@ class Sifting:
                 selected_pieces=point_selected_pieces,
                 violated_pieces=point_violated_pieces,
             )
-
+            # print(f"{point_pieces_current=}")
+            # print("============")
             point_updated = sifted_yield_points_updated[point_num]
             point_pieces_updated = point_updated.pieces
             point_sifted_yield_pieces_nums_in_intact_yield_point_updated = point_updated.sifted_yield_pieces_nums_in_intact_yield_point
@@ -201,6 +202,8 @@ class Sifting:
             sifted_pieces_count=sifted_pieces_count
         )
 
+        # print(f"{structure_sifted_yield_pieces_updated[27]=}")
+        # print(f"{bbar_updated[27]=}")
         return SiftedResults(
             sifted_yield_points=sifted_yield_points_updated,
             sifted_components_count=sifted_components_count,
@@ -279,12 +282,14 @@ class Sifting:
 
         violated_pieces = []
         violated_piece_nums = np.array(np.where(scores > settings.computational_zero)[0], dtype=int).flatten().tolist()
+
         for violated_piece_num in violated_piece_nums:
             violated_pieces.append(
                 ViolatedYieldPiece(
                     ref_yield_point_num=self.intact_pieces[violated_piece_num].ref_yield_point_num,
                     num_in_structure=violated_piece_num,
-                    num_in_yield_point=self.intact_pieces[violated_piece_num].num_in_yield_point
+                    num_in_yield_point=self.intact_pieces[violated_piece_num].num_in_yield_point,
+                    score=scores[violated_piece_num],
                 )
             )
         return violated_pieces
@@ -305,6 +310,8 @@ class Sifting:
         for violated_point in violated_points:
             if violated_point.num_in_structure == point.num_in_structure:
                 point_violated_pieces = violated_point.violated_pieces
+        point_violated_pieces.sort(key=lambda x: x.score, reverse=True)
+        # print(f"{point_violated_pieces=}")
         return point_violated_pieces
 
     def get_point_selected_pieces(self, point, scores):

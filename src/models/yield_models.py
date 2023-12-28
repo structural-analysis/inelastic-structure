@@ -74,6 +74,7 @@ class ViolatedYieldPiece:
     ref_yield_point_num: int
     num_in_yield_point: int
     num_in_structure: int
+    score: float
 
 
 @dataclass
