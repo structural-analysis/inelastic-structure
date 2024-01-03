@@ -1,5 +1,6 @@
 import numpy as np
 from dataclasses import dataclass, field
+from .functions import print_specific_properties
 
 from ..models.yield_models import (
     SiftedYieldPiece,
@@ -118,7 +119,8 @@ class Sifting:
             landa_row,
             landa_var,
             pv,
-            p0):
+            p0,
+            will_in_col_piece_num_in_structure):
 
         violated_points = self.get_violated_points(violated_pieces)
         sifted_yield_points_updated = sifted_results_prev.sifted_yield_points
@@ -142,7 +144,36 @@ class Sifting:
                 point=point,
                 selected_pieces=point_selected_pieces,
                 violated_pieces=point_violated_pieces,
+                will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
             )
+            if point_num == 6:
+                print("point selected pieces: ")
+                print_specific_properties(
+                    obj_list=point_selected_pieces,
+                    properties=[
+                        "num_in_structure",
+                        "ref_yield_point_num",
+                        "num_in_yield_point",
+                    ],
+                )
+                print("point violated pieces: ")
+                print_specific_properties(
+                    obj_list=point_violated_pieces,
+                    properties=[
+                        "num_in_structure",
+                        "ref_yield_point_num",
+                        "num_in_yield_point",
+                    ],
+                )
+                print("point final pieces: ")
+                print_specific_properties(
+                    obj_list=point_pieces_current,
+                    properties=[
+                        "num_in_structure",
+                        "ref_yield_point_num",
+                        "num_in_yield_point",
+                    ],
+                )
             # print(f"{point_pieces_current=}")
             # print("============")
             point_updated = sifted_yield_points_updated[point_num]
@@ -322,13 +353,17 @@ class Sifting:
         point_selected_pieces = point.pieces[0:point.min_sifted_pieces_count]
         return point_selected_pieces
 
-    def get_point_final_pieces(self, point, selected_pieces, violated_pieces):
+    def get_point_final_pieces(self, point, selected_pieces, violated_pieces, will_in_col_piece_num_in_structure):
         final_pieces = selected_pieces[:]
         counter = 1
         for violated_piece in violated_pieces[:point.min_sifted_pieces_count]:
-            if violated_piece not in final_pieces:
-                final_pieces[-counter] = violated_piece
-                counter += 1
+            if violated_piece not in final_pieces and counter <= point.min_sifted_pieces_count:
+                if final_pieces[-counter].num_in_structure != will_in_col_piece_num_in_structure:
+                    final_pieces[-counter] = violated_piece
+                    counter += 1
+                elif final_pieces[-counter].num_in_structure == will_in_col_piece_num_in_structure and counter < point.min_sifted_pieces_count:
+                    final_pieces[-counter - 1] = violated_piece
+                    counter += 2
         return final_pieces
 
     def get_b_matrix_inv_updated(

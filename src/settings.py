@@ -9,7 +9,7 @@ class SiftingType(str, Enum):
 
 class Settings(BaseSettings):
     example_name: str = "plate-semiconfined-inelastic"
-    sifting_type: SiftingType = SiftingType.not_used
+    sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
