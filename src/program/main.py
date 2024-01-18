@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -392,9 +393,9 @@ class MahiniMethod:
             print(f"{increment=}")
             print(f"{load_level_cumulative=}")
             print(f"will_in_col=x-{will_in_col}")
-            print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
+            # print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
             print(f"{will_out_row=}")
-            print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
+            # print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
             # print(f"{will_out_var=}")
             if settings.sifting_type == SiftingType.mahini:
                 primary_will_out_var = self.get_primary_var(will_out_var)
@@ -406,6 +407,7 @@ class MahiniMethod:
                     print(f"will_out_var=y-{primary_will_out_var}")
                     print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
                 # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
+                # input()
 
             # print(f"{bbar[will_out_row]=}")
             # print(f"{sorted_zipped_ba=}")
@@ -492,25 +494,40 @@ class MahiniMethod:
                         break
 
             will_in_col = fpm.var
+            # inc 22
+            # updated_indices=[105, 106, 65, 66, 718, 759, 719, 758, 1081, 1042, 1041, 1040, 1396, 1435, 1394, 1395, 2130, 2091, 2133, 2132, 2307, 2306, 2267, 2266, 2704, 2745, 2706, 2705, 3297, 3298, 3257, 3258, 3643, 3644, 3645, 3684, 4174, 4135, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+            # inc 5
+            # inc 14
+            #updated_indices = [105, 106, 65, 66, 718, 678, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+            # if increment == 13:
+            #     updated_indices = [105, 106, 65, 66, 718, 678, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+            #     # print(f"{b_matrix_inv[updated_indices, updated_indices]=}")
+            #     # print(f"{self.phi[:, updated_indices]=}")
+            #     # print(f"{self.table[updated_indices, updated_indices]=}")
+
+                # np.savetxt(f"table_{increment}.csv", self.table[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
+                # np.savetxt(f"phi_{increment}.csv", self.phi[:, updated_indices], delimiter=", ", fmt='%1.4e')
+                # np.savetxt(f"b_matrix_inv_{increment}.csv", b_matrix_inv[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
+                # input()
             abar = self.calculate_abar(will_in_col, b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x, bbar = self.reset(basic_variables, bbar)
-            print("abar: ")
-            for num, el in enumerate(abar):
-                print(num, ":", el)
-            print("current sifted yield pieces:")
-            print_specific_properties(
-                obj_list=self.structure_sifted_yield_pieces_current,
-                properties=[
-                    "sifted_num_in_structure",
-                    "num_in_structure",
-                    "ref_yield_point_num",
-                    "num_in_yield_point",
-                ],
-            )
-            input()
+            # print("abar: ")
+            # for num, el in enumerate(abar):
+            #     print(num, ":", el)
+            # print("current sifted yield pieces:")
+            # print_specific_properties(
+            #     obj_list=self.structure_sifted_yield_pieces_current,
+            #     properties=[
+            #         "sifted_num_in_structure",
+            #         "num_in_structure",
+            #         "ref_yield_point_num",
+            #         "num_in_yield_point",
+            #     ],
+            # )
+            # input()
             if settings.sifting_type is SiftingType.not_used:
                 pms = x[0:self.plastic_vars_count]
                 phi_pms = self.intact_phi * pms
@@ -586,8 +603,20 @@ class MahiniMethod:
                         # TODO: check sifting with violation with disp limits
                         # disp limits are calculated in table creation.
                         # in mahini name is C_LastRows and updated after violation
-
+                        updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
                         self.table = self._create_table()
+                        # if increment == 14:
+                        #     print(f"{will_in_col=}")
+                        #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
+                            # print(f"{updated_indices=}")
+                        #     # !!!!!!!!!!!! these values must check with increment 21 vaules,
+                        #     # beacause values are updated based on increment 21 values !!!!!!!!!!!!!!!!!!!!
+
+                            # np.savetxt("table.csv", self.table, delimiter=", ", fmt='%1.4e')
+                            # np.savetxt("phi.csv", self.phi, delimiter=", ", fmt='%1.4e')
+                            # np.savetxt("b_matrix_inv.csv", b_matrix_inv, delimiter=", ", fmt='%1.4e')
+                            # input()
+
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
                         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
                         will_out_var = basic_variables[will_out_row]

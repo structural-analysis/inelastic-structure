@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from dataclasses import dataclass, field
 from .functions import print_specific_properties
@@ -36,6 +37,29 @@ class SiftedResults:
     modified_structure_sifted_yield_pieces_indices: list = field(default_factory=list)
     bbar_updated: np.array = np.zeros((1, 1))
     b_matrix_inv_updated: np.array = np.zeros((1, 1))
+    # def __copy__(self):
+    #     # Create a new instance of the class
+    #     new_obj = SiftedResults(
+    #         copy.copy(self.sifted_yield_points),
+    #         copy.copy(self.structure_sifted_yield_pieces),
+    #         copy.copy(self.structure_sifted_phi),
+    #         copy.copy(self.modified_structure_sifted_yield_pieces_indices),
+    #         copy.copy(self.bbar_updated),
+    #         copy.copy(self.b_matrix_inv_updated)
+    #     )
+    #     return new_obj
+
+    # def __deepcopy__(self, memo):
+    #     # Create a new instance of the class
+    #     new_obj = SiftedResults(
+    #         copy.deepcopy(self.sifted_yield_points, memo),
+    #         copy.deepcopy(self.structure_sifted_yield_pieces, memo),
+    #         copy.deepcopy(self.structure_sifted_phi, memo),
+    #         copy.deepcopy(self.modified_structure_sifted_yield_pieces_indices, memo),
+    #         copy.deepcopy(self.bbar_updated, memo),
+    #         copy.deepcopy(self.b_matrix_inv_updated, memo)
+    #     )
+    #     return new_obj
 
 
 class Sifting:
@@ -146,36 +170,6 @@ class Sifting:
                 violated_pieces=point_violated_pieces,
                 will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
             )
-            if point_num == 6:
-                print("point selected pieces: ")
-                print_specific_properties(
-                    obj_list=point_selected_pieces,
-                    properties=[
-                        "num_in_structure",
-                        "ref_yield_point_num",
-                        "num_in_yield_point",
-                    ],
-                )
-                print("point violated pieces: ")
-                print_specific_properties(
-                    obj_list=point_violated_pieces,
-                    properties=[
-                        "num_in_structure",
-                        "ref_yield_point_num",
-                        "num_in_yield_point",
-                    ],
-                )
-                print("point final pieces: ")
-                print_specific_properties(
-                    obj_list=point_pieces_current,
-                    properties=[
-                        "num_in_structure",
-                        "ref_yield_point_num",
-                        "num_in_yield_point",
-                    ],
-                )
-            # print(f"{point_pieces_current=}")
-            # print("============")
             point_updated = sifted_yield_points_updated[point_num]
             point_pieces_updated = point_updated.pieces
             point_sifted_yield_pieces_nums_in_intact_yield_point_updated = point_updated.sifted_yield_pieces_nums_in_intact_yield_point
@@ -183,6 +177,47 @@ class Sifting:
                 sifted_pieces_prev=point_pieces_updated,
                 sifted_pieces_current=point_pieces_current,
             )
+            if point_num == 6:
+                print(f"{point_pieces_updated[0].num_in_structure=}")
+                print(f"{point_pieces_updated[1].num_in_structure=}")
+                print(f"{point_pieces_updated[2].num_in_structure=}")
+                print(f"{point_pieces_updated[3].num_in_structure=}")
+                print("-----")
+                print(f"{point_pieces_current[0].num_in_structure=}")
+                print(f"{point_pieces_current[1].num_in_structure=}")
+                print(f"{point_pieces_current[2].num_in_structure=}")
+                print(f"{point_pieces_current[3].num_in_structure=}")
+                print(f"{changed_indices_prev=}")
+                print(f"{changed_indices_current=}")
+            #     print("point selected pieces: ")
+            #     print_specific_properties(
+            #         obj_list=point_selected_pieces,
+            #         properties=[
+            #             "num_in_structure",
+            #             "ref_yield_point_num",
+            #             "num_in_yield_point",
+            #         ],
+            #     )
+            #     print("point violated pieces: ")
+            #     print_specific_properties(
+            #         obj_list=point_violated_pieces,
+            #         properties=[
+            #             "num_in_structure",
+            #             "ref_yield_point_num",
+            #             "num_in_yield_point",
+            #         ],
+            #     )
+            #     print("point final pieces: ")
+            #     print_specific_properties(
+            #         obj_list=point_pieces_current,
+            #         properties=[
+            #             "num_in_structure",
+            #             "ref_yield_point_num",
+            #             "num_in_yield_point",
+            #         ],
+            #     )
+            # print(f"{point_pieces_current=}")
+            # print("============")
 
             for i, prev_changed_index in enumerate(changed_indices_prev):
                 current_piece_to_change = point_pieces_current[changed_indices_current[i]]
@@ -195,6 +230,8 @@ class Sifting:
                 )
                 point_pieces_updated[prev_changed_index] = sifted_yield_piece
                 point_sifted_yield_pieces_nums_in_intact_yield_point_updated[prev_changed_index] = current_piece_to_change.num_in_yield_point
+                print(f"{len(structure_sifted_yield_pieces_updated)=}")
+                print(f"{sifted_num_in_structure=}")
                 structure_sifted_yield_pieces_updated[sifted_num_in_structure] = sifted_yield_piece
                 modified_structure_sifted_yield_pieces_indices.append(
                     prev_changed_index + cumulative_point_pieces_count
@@ -202,7 +239,9 @@ class Sifting:
                 bbar_updated[prev_changed_index + cumulative_point_pieces_count] = -scores[
                     current_piece_to_change.num_in_structure
                 ]
-
+            in_structure_indices = [num.num_in_structure for num in structure_sifted_yield_pieces_updated]
+            # print(f"##################{in_structure_indices}")
+            # input()
             cumulative_point_pieces_count += point.min_sifted_pieces_count
             point_phi_updated = point.phi[:, point_sifted_yield_pieces_nums_in_intact_yield_point_updated]
             point_q_updated = point.q[:, point_sifted_yield_pieces_nums_in_intact_yield_point_updated]
@@ -226,15 +265,12 @@ class Sifting:
             )
             sifted_components_count += point.components_count
             sifted_pieces_count += len(point_pieces_updated)
-
         structure_sifted_phi = self.get_structure_sifted_phi(
             sifted_yield_points=sifted_yield_points_updated,
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count
         )
 
-        # print(f"{structure_sifted_yield_pieces_updated[27]=}")
-        # print(f"{bbar_updated[27]=}")
         return SiftedResults(
             sifted_yield_points=sifted_yield_points_updated,
             sifted_components_count=sifted_components_count,
