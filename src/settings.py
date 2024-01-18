@@ -46,6 +46,7 @@ class Settings(BaseSettings):
         "plate-1element-inelastic-q8r",
         "plate-check-inelastic-q8r",
         "plate-square-inelastic-q8r",
+        "truss-kassimali-115-static-elastic",
         # "wall-4element-inelastic-q8r", # time-consuming
         # "plate-4element-inelastic-q8r", # time-consuming
         # "plate-9element-confined-inelastic", # time-consuming
