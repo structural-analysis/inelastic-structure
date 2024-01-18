@@ -1,0 +1,4 @@
+joint_number,dof_of_load(0:x|1:y),load_magnitude
+2,1,-400000
+3,0,800000
+3,1,-400000

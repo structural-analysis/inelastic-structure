@@ -6,10 +6,12 @@ from enum import Enum
 
 from src.models.points import Node
 from src.models.boundaries import NodalBoundary, LinearBoundary
+from src.models.sections.truss2d import Truss2DSection
 from src.models.sections.frame2d import Frame2DSection
 from src.models.sections.frame3d import Frame3DSection
 from src.models.sections.plate import PlateSection
 from src.models.sections.wall import WallSection
+from src.models.members.truss2d import Truss2DMember
 from src.models.members.frame2d import Frame2DMember, Mass
 from src.models.members.frame3d import Frame3DMember
 from src.models.members.plate import PlateMember
@@ -22,10 +24,12 @@ nodes_file = "nodes.csv"
 nodal_boundaries_file = "boundaries/nodal.csv"
 linear_boundaries_file = "boundaries/linear.csv"
 static_joint_loads_file = "loads/static/joint_loads.csv"
+truss2d_sections_file = "sections/trusses2d.yaml"
 frame2d_sections_file = "sections/frames2d.yaml"
 frame3d_sections_file = "sections/frames3d.yaml"
 plate_sections_file = "sections/plates.yaml"
 wall_sections_file = "sections/walls.yaml"
+truss2d_members_file = "members/trusses2d.csv"
 frame2d_members_file = "members/frames2d.csv"
 frame3d_members_file = "members/frames3d.csv"
 plate_members_file = "members/plates.csv"
@@ -39,6 +43,7 @@ output_dir = "output/examples/"
 
 
 class StructureNodeDOF(int, Enum):
+    TRUSS2D = 2
     FRAME2D = 3
     FRAME3D = 6
     WALL2D = 2
@@ -105,6 +110,31 @@ def create_linear_boundaries(example_name, initial_nodes):
     except FileNotFoundError:
         pass
     return linear_boundaries
+
+
+def create_truss2d_sections(example_name, general_properties):
+    truss2d_sections = {}
+    truss2d_sections_path = os.path.join(examples_dir, example_name, truss2d_sections_file)
+    is_inelastic = general_properties["inelastic"]["enabled"]
+    try:
+        with open(truss2d_sections_path, "r") as path:
+            truss2d_sections_dict = yaml.safe_load(path)
+
+        if is_inelastic:
+            nonlinear_capacity_dir = f"{output_dir}/{example_name}/nonlinear_capacity"
+            if not os.path.exists(nonlinear_capacity_dir):
+                os.makedirs(nonlinear_capacity_dir)
+
+        for key, value in truss2d_sections_dict.items():
+            truss2d_sections[key] = Truss2DSection(input=value)
+            if is_inelastic:
+                with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
+                    ff.write(f"0,ap,{truss2d_sections[key].nonlinear.ap}\n")
+
+        return truss2d_sections
+    except FileNotFoundError:
+        logging.warning("truss2d sections input file not found")
+        return {}
 
 
 def create_frame2d_sections(example_name, general_properties):
@@ -188,6 +218,20 @@ def create_wall_sections(example_name):
         return {}
 
 
+def create_truss2d_masses(example_name):
+    # mass per length is applied in global direction so there is no need to transform.
+    truss2d_masses = {}
+    masses_path = os.path.join(examples_dir, example_name, masses_file)
+    try:
+        masses_array = np.loadtxt(fname=masses_path, usecols=range(2), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+    except FileNotFoundError:
+        logging.warning("mass input file not found")
+        return {}
+    for i in range(masses_array.shape[0]):
+        truss2d_masses[int(masses_array[i][0])] = masses_array[i][1]
+    return truss2d_masses
+
+
 def create_frame2d_masses(example_name):
     # mass per length is applied in global direction so there is no need to transform.
     frame_masses = {}
@@ -214,6 +258,38 @@ def create_frame3d_masses(example_name):
     for i in range(masses_array.shape[0]):
         frame_masses[int(masses_array[i][0])] = masses_array[i][1]
     return frame_masses
+
+
+def create_truss2d_members(example_name, node_dofs_count, nodes, general_properties):
+    truss2d_members_path = os.path.join(examples_dir, example_name, truss2d_members_file)
+    truss2d_sections = create_truss2d_sections(example_name, general_properties)
+    truss2d_masses = create_truss2d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
+    truss2d_members = []
+
+    try:
+        truss2ds_array = np.loadtxt(fname=truss2d_members_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=str)
+    except FileNotFoundError:
+        logging.warning("truss2d members input file not found")
+        return []
+
+    if truss2d_sections:
+        for i in range(truss2ds_array.shape[0]):
+            member_num = int(truss2ds_array[i, 0])
+            truss2d_section = truss2d_sections[truss2ds_array[i, 1]]
+            member_nodes = truss2ds_array[i, 2]
+            split_nodes = member_nodes.split("-")
+            truss2d_members.append(
+                Truss2DMember(
+                    num=member_num,
+                    section=truss2d_section,
+                    nodes=(
+                        nodes[int(split_nodes[0])],
+                        nodes[int(split_nodes[1])],
+                    ),
+                    mass=Mass(magnitude=truss2d_masses.get(i)) if truss2d_masses.get(i) else None,
+                )
+            )
+    return truss2d_members
 
 
 def create_frame2d_members(example_name, node_dofs_count, nodes, general_properties):
@@ -407,6 +483,14 @@ def get_structure_input(example_name):
     initial_nodes = create_initial_nodes(example_name, structure_dim=general_properties["structure_dim"])
     nodal_boundaries = create_nodal_boundaries(example_name, initial_nodes=initial_nodes)
     linear_boundaries = create_linear_boundaries(example_name, initial_nodes=initial_nodes)
+
+    truss2d_members = create_truss2d_members(
+        example_name=example_name,
+        nodes=initial_nodes,
+        general_properties=general_properties,
+        node_dofs_count=node_dofs_count,
+    )
+
     frame2d_members = create_frame2d_members(
         example_name=example_name,
         nodes=initial_nodes,
@@ -450,7 +534,7 @@ def get_structure_input(example_name):
         "general_properties": general_properties,
         "initial_nodes": initial_nodes,
         "node_dofs_count": node_dofs_count, 
-        "members": frame2d_members + frame3d_members + plate_members + wall_members,
+        "members": truss2d_members + frame2d_members + frame3d_members + plate_members + wall_members,
         "nodal_boundaries": nodal_boundaries,
         "linear_boundaries": linear_boundaries,
         "loads": loads,

@@ -570,7 +570,13 @@ class Structure:
 
     def map_member_node_dofs(self, member):
         member_type = member.__class__.__name__
-        if self.type == "FRAME2D":
+        if self.type == "TRUSS2D":
+            if member_type == "Truss2DMember":
+                mapped_node_dofs = [0, 1]
+
+        elif self.type == "FRAME2D":
+            if member_type == "Truss2DMember":
+                mapped_node_dofs = [0, 1]
             if member_type == "WallMember":
                 mapped_node_dofs = [0, 1]
             if member_type == "Frame2DMember":
