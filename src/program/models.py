@@ -37,6 +37,7 @@ class SiftedResults:
     modified_structure_sifted_yield_pieces_indices: list = field(default_factory=list)
     bbar_updated: np.array = np.zeros((1, 1))
     b_matrix_inv_updated: np.array = np.zeros((1, 1))
+    plastic_vars_in_basic_variables: list = field(default_factory=list)
     # def __copy__(self):
     #     # Create a new instance of the class
     #     new_obj = SiftedResults(
@@ -134,6 +135,8 @@ class Sifting:
 
     def update(
             self,
+            increment,
+            plastic_vars_in_basic_variables_prev,
             scores,
             sifted_results_prev,
             violated_pieces,
@@ -169,7 +172,12 @@ class Sifting:
                 selected_pieces=point_selected_pieces,
                 violated_pieces=point_violated_pieces,
                 will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
+                plastic_vars_in_basic_variables=plastic_vars_in_basic_variables_prev
             )
+            final_num_in_structures = [piece.num_in_structure for piece in point_pieces_current]
+            print(f"{point_num=}")
+            print(final_num_in_structures)
+            print("--------")
             point_updated = sifted_yield_points_updated[point_num]
             point_pieces_updated = point_updated.pieces
             point_sifted_yield_pieces_nums_in_intact_yield_point_updated = point_updated.sifted_yield_pieces_nums_in_intact_yield_point
@@ -177,18 +185,21 @@ class Sifting:
                 sifted_pieces_prev=point_pieces_updated,
                 sifted_pieces_current=point_pieces_current,
             )
-            if point_num == 6:
-                print(f"{point_pieces_updated[0].num_in_structure=}")
-                print(f"{point_pieces_updated[1].num_in_structure=}")
-                print(f"{point_pieces_updated[2].num_in_structure=}")
-                print(f"{point_pieces_updated[3].num_in_structure=}")
-                print("-----")
-                print(f"{point_pieces_current[0].num_in_structure=}")
-                print(f"{point_pieces_current[1].num_in_structure=}")
-                print(f"{point_pieces_current[2].num_in_structure=}")
-                print(f"{point_pieces_current[3].num_in_structure=}")
-                print(f"{changed_indices_prev=}")
-                print(f"{changed_indices_current=}")
+            # if point_num == 6:
+            #     print(f"{point_pieces_updated[0].num_in_structure=}")
+            #     print(f"{point_pieces_updated[1].num_in_structure=}")
+            #     print(f"{point_pieces_updated[2].num_in_structure=}")
+            #     print(f"{point_pieces_updated[3].num_in_structure=}")
+            #     print("-----")
+            #     print(f"{point_pieces_current[0].num_in_structure=}")
+            #     print(f"{point_pieces_current[1].num_in_structure=}")
+            #     print(f"{point_pieces_current[2].num_in_structure=}")
+            #     print(f"{point_pieces_current[3].num_in_structure=}")
+            #     print(f"{changed_indices_prev=}")
+            #     print(f"{changed_indices_current=}")
+
+
+
             #     print("point selected pieces: ")
             #     print_specific_properties(
             #         obj_list=point_selected_pieces,
@@ -270,6 +281,27 @@ class Sifting:
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count
         )
+        if increment == 22:  # use when sifted
+            pass
+            # print(f"{will_in_col=}")
+            # print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
+            # print(f"{updated_indices=}")
+            # !!!!!!!!!!!! these values must check with increment 21 vaules,
+            # beacause values are updated based on increment 21 values !!!!!!!!!!!!!!!!!!!!
+
+            # np.savetxt("table.csv", self.table, delimiter=", ", fmt='%1.4e')
+            # np.savetxt("phi.csv", self.phi, delimiter=", ", fmt='%1.4e')
+            # np.savetxt("b_matrix_inv.csv", b_matrix_inv, delimiter=", ", fmt='%1.4e')
+            # scores,
+            # b_matrix_inv_prev,
+            # basic_variables_prev,
+            # landa_row,
+            # landa_var,
+            # pv,
+            # p0,
+            # will_in_col_piece_num_in_structure
+            # input()
+        plastic_vars_in_basic_variables = self.get_plastic_vars_in_basic_variables(basic_variables_prev, landa_var, structure_sifted_yield_pieces_updated)
 
         return SiftedResults(
             sifted_yield_points=sifted_yield_points_updated,
@@ -288,7 +320,8 @@ class Sifting:
                 phi=structure_sifted_phi,
                 pv=pv,
                 p0=p0,
-            )
+            ),
+            plastic_vars_in_basic_variables=plastic_vars_in_basic_variables,
         )
 
     def get_violated_points(self, violated_pieces):
@@ -389,18 +422,27 @@ class Sifting:
         point_selected_pieces = point.pieces[0:point.min_sifted_pieces_count]
         return point_selected_pieces
 
-    def get_point_final_pieces(self, point, selected_pieces, violated_pieces, will_in_col_piece_num_in_structure):
+    def get_point_final_pieces(self, point, selected_pieces, violated_pieces, will_in_col_piece_num_in_structure, plastic_vars_in_basic_variables):
+        unchanged_vars = [will_in_col_piece_num_in_structure] #+ plastic_vars_in_basic_variables
         final_pieces = selected_pieces[:]
         counter = 1
         for violated_piece in violated_pieces[:point.min_sifted_pieces_count]:
             if violated_piece not in final_pieces and counter <= point.min_sifted_pieces_count:
-                if final_pieces[-counter].num_in_structure != will_in_col_piece_num_in_structure:
+                if final_pieces[-counter].num_in_structure not in unchanged_vars:
                     final_pieces[-counter] = violated_piece
                     counter += 1
-                elif final_pieces[-counter].num_in_structure == will_in_col_piece_num_in_structure and counter < point.min_sifted_pieces_count:
+                elif final_pieces[-counter].num_in_structure in unchanged_vars and counter < point.min_sifted_pieces_count:
                     final_pieces[-counter - 1] = violated_piece
                     counter += 2
         return final_pieces
+
+    def get_plastic_vars_in_basic_variables(self, basic_variables, landa_var, structure_sifted_yield_pieces):
+        plastic_vars = []
+        for basic_variable in basic_variables:
+            if basic_variable < landa_var:
+                plastic_vars.append(structure_sifted_yield_pieces[basic_variable].num_in_structure)
+        print(f"{plastic_vars=}")
+        return plastic_vars
 
     def get_b_matrix_inv_updated(
             self,
