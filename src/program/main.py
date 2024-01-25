@@ -397,17 +397,16 @@ class MahiniMethod:
             print(f"{will_out_row=}")
             # print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
             # print(f"{will_out_var=}")
-            if settings.sifting_type == SiftingType.mahini:
-                primary_will_out_var = self.get_primary_var(will_out_var)
-                if primary_will_out_var < 0:
-                    primary_will_out_var = will_out_var
-                    print(f"will_out_var=x-{primary_will_out_var}")
-                    print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
-                else:
-                    print(f"will_out_var=y-{primary_will_out_var}")
-                    print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
-                # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
-                input()
+            # if settings.sifting_type == SiftingType.mahini:
+            #     primary_will_out_var = self.get_primary_var(will_out_var)
+            #     if primary_will_out_var < 0:
+            #         primary_will_out_var = will_out_var
+            #         print(f"will_out_var=x-{primary_will_out_var}")
+            #         print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+            #     else:
+            #         print(f"will_out_var=y-{primary_will_out_var}")
+            #         print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+            #     # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
 
             # print(f"{bbar[will_out_row]=}")
             # print(f"{sorted_zipped_ba=}")
@@ -444,7 +443,12 @@ class MahiniMethod:
             bbar_prev = bbar.copy()
             x_prev = x.copy()
             fpm_prev = FPM(var=fpm.var, cost=fpm.cost)
-            plastic_vars_in_basic_variables_prev = self.sifted_results_current.plastic_vars_in_basic_variables.copy()
+            plastic_vars_in_basic_variables_prev = self.get_plastic_vars_in_basic_variables(
+                basic_variables_prev,
+                self.landa_var,
+                self.structure_sifted_yield_pieces_current,
+            )
+            print(f"input {plastic_vars_in_basic_variables_prev=}")
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -494,24 +498,58 @@ class MahiniMethod:
                         check_violation = True
                         break
 
-            will_in_col = fpm.var
-            if settings.sifting_type == SiftingType.not_used:
-                if increment == 21:  # use when unsifted
-                    # inc 22
-                    # updated_indices=[105, 106, 65, 66, 718, 759, 719, 758, 1081, 1042, 1041, 1040, 1396, 1435, 1394, 1395, 2130, 2091, 2133, 2132, 2307, 2306, 2267, 2266, 2704, 2745, 2706, 2705, 3297, 3298, 3257, 3258, 3643, 3644, 3645, 3684, 4174, 4135, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
-                    # inc 5
-                    # inc 14
-                    #updated_indices = [105, 106, 65, 66, 718, 678, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
-                    # updated_indices = [105, 106, 65, 66, 718, 678, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+            # checking basic variables after 21 increment
+            if increment == 21:  # use when unsifted
+                if settings.sifting_type == SiftingType.not_used:
                     unsifted_primary_vars = []
-                    for basic_variable in basic_variables_prev:
+                    for basic_variable in basic_variables:
                         if basic_variable < self.landa_var:
                             unsifted_primary_vars.append(basic_variable)
-                    # np.savetxt(f"table_{increment}.csv", self.table[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
-                    # np.savetxt(f"phi_{increment}.csv", self.phi[:, updated_indices], delimiter=", ", fmt='%1.4e')
-                    # np.savetxt(f"b_matrix_inv_{increment}.csv", b_matrix_inv[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
-                    # print(f"{unsifted_primary_vars=}")
-                    # input()
+                    print(f"{unsifted_primary_vars=}")
+                elif settings.sifting_type == SiftingType.mahini:
+                    basics_primary_vars = []
+                    primary_or_slack = []
+                    only_primary_basics = []
+                    for basic_variable in basic_variables:
+                        if basic_variable < self.landa_var:
+                            primary_var = basic_variable
+                            print(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
+                            basics_primary_vars.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
+                            primary_or_slack.append("primary")
+                            only_primary_basics.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
+                        else:
+                            primary_var = self.get_primary_var(basic_variable)
+                            if primary_var != self.landa_var:
+                                print(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
+                                basics_primary_vars.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
+                                primary_or_slack.append("slack")
+                    # print(f"{basics_primary_vars=}")
+                    # print(f"{primary_or_slack=}")
+                    print(f"{only_primary_basics=}")
+                    print("--------------------------")
+                input()
+
+                # updated_indices=[105, 106, 65, 66, 718, 759, 719, 758, 1081, 1042, 1041, 1040, 1396, 1435, 1394, 1395, 2130, 2091, 2133, 2132, 2307, 2306, 2267, 2266, 2704, 2745, 2706, 2705, 3297, 3298, 3257, 3258, 3643, 3644, 3645, 3684, 4174, 4135, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+                # inc 5
+                # inc 14
+                # updated_indices = [105, 106, 65, 66, 718, 678, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+                # updated_indices = [105, 106, 65, 66, 718, 6-78, 719, 679, 1081, 1080, 1041, 1040, 1434, 1435, 1433, 1474, 2051, 2091, 2090, 2092, 2307, 2306, 2267, 2266, 2746, 2745, 2747, 2786, 3297, 3298, 3337, 3338, 3643, 3644, 3683, 3642, 4174, 4173, 4134, 4133, 4538, 4539, 4578, 4537, 4975, 4976, 4974, 4973, 5547, 5507, 5546, 5506, 5840, 5841, 5839, 5880, 6277, 6276, 6278, 6275, 6752, 6712, 6753, 6713]
+                # np.savetxt(f"table_{increment}.csv", self.table[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
+                # np.savetxt(f"phi_{increment}.csv", self.phi[:, updated_indices], delimiter=", ", fmt='%1.4e')
+                # np.savetxt(f"b_matrix_inv_{increment}.csv", b_matrix_inv[np.ix_(updated_indices, updated_indices)], delimiter=", ", fmt='%1.4e')
+                # input()
+                #     print(f"{will_in_col=}")
+                #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
+                # print(f"{updated_indices=}")
+                #     # !!!!!!!!!!!! these values must check with increment 21 vaules,
+                #     # beacause values are updated based on increment 21 values !!!!!!!!!!!!!!!!!!!!
+
+                # np.savetxt("table.csv", self.table, delimiter=", ", fmt='%1.4e')
+                # np.savetxt("phi.csv", self.phi, delimiter=", ", fmt='%1.4e')
+                # np.savetxt("b_matrix_inv.csv", b_matrix_inv, delimiter=", ", fmt='%1.4e')
+                # input()
+
+            will_in_col = fpm.var
             abar = self.calculate_abar(will_in_col, b_matrix_inv)
             bbar = self.calculate_bbar(b_matrix_inv, bbar)
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
@@ -551,11 +589,11 @@ class MahiniMethod:
 
                 if check_violation:
                     scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
-                    sifted_results_prev = self.sifted_results_current
-                    structure_sifted_yield_pieces_prev = self.structure_sifted_yield_pieces_current
+                    sifted_results_old = self.sifted_results_current
+                    structure_sifted_yield_pieces_old = self.structure_sifted_yield_pieces_current
                     violated_pieces = self.sifting.check_violation(
                         scores=scores_current,
-                        structure_sifted_yield_pieces_prev=structure_sifted_yield_pieces_prev,
+                        structure_sifted_yield_pieces_old=structure_sifted_yield_pieces_old,
                     )
                     if violated_pieces:
                         # NOTE: in current increment some pieces are violated
@@ -572,14 +610,16 @@ class MahiniMethod:
 
                         fpm = fpm_prev
                         will_in_col = fpm.var
-                        will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_prev[will_in_col].num_in_structure
+                        will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
                         print(f"{will_in_col=}")
                         print(f"{will_in_col_piece_num_in_structure=}")
+                        print(f"before update {plastic_vars_in_basic_variables_prev=}")
+                        input()
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             increment=increment,
                             plastic_vars_in_basic_variables_prev=plastic_vars_in_basic_variables_prev,
                             scores=scores_prev,
-                            sifted_results_prev=sifted_results_prev,
+                            sifted_results_old=sifted_results_old,
                             violated_pieces=violated_pieces,
                             bbar_prev=bbar_prev,
                             b_matrix_inv_prev=b_matrix_inv_prev,
@@ -594,7 +634,6 @@ class MahiniMethod:
                         self.phi = self.sifted_results_current.structure_sifted_phi
                         b_matrix_inv = self.sifted_results_current.b_matrix_inv_updated
                         bbar = self.sifted_results_current.bbar_updated
-                        print(f"{self.sifted_results_current.plastic_vars_in_basic_variables=}")
                         # self.q
                         # self.h
                         # self.w
@@ -602,7 +641,12 @@ class MahiniMethod:
 
                         basic_variables = basic_variables_prev
                         cb = cb_prev
-
+                        plastic_vars_in_basic_variables = self.get_plastic_vars_in_basic_variables(
+                            basic_variables,
+                            self.landa_var,
+                            self.structure_sifted_yield_pieces_current,
+                        )
+                        print(f"{plastic_vars_in_basic_variables=}")
                         # NOTE: not done for softening
                         # NOTE: SIFTING+: var nums should change
                         # TODO: check sifting with violation with disp limits
@@ -610,40 +654,6 @@ class MahiniMethod:
                         # in mahini name is C_LastRows and updated after violation
                         updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
                         self.table = self._create_table()
-                        if increment == 22:  # use when sifted
-                            print(f"{basic_variables=}")
-                            print(f"basics primary vars:")
-                            basics_primary_vars = []
-                            primary_or_slack = []
-                            only_primary_basics = []
-                            for basic_variable in basic_variables_prev:
-                                if basic_variable < self.landa_var:
-                                    primary_var = basic_variable
-                                    print(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
-                                    basics_primary_vars.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
-                                    primary_or_slack.append("primary")
-                                    only_primary_basics.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
-                                else:
-                                    primary_var = self.get_primary_var(basic_variable)
-                                    if primary_var != self.landa_var:
-                                        print(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
-                                        basics_primary_vars.append(self.structure_sifted_yield_pieces_current[primary_var].num_in_structure)
-                                        primary_or_slack.append("slack")
-                            print(f"{basics_primary_vars=}")
-                            print(f"{primary_or_slack=}")
-                            print(f"{only_primary_basics=}")
-                            print("--------------------------")
-                            # input()
-                        #     print(f"{will_in_col=}")
-                        #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
-                            # print(f"{updated_indices=}")
-                        #     # !!!!!!!!!!!! these values must check with increment 21 vaules,
-                        #     # beacause values are updated based on increment 21 values !!!!!!!!!!!!!!!!!!!!
-
-                            # np.savetxt("table.csv", self.table, delimiter=", ", fmt='%1.4e')
-                            # np.savetxt("phi.csv", self.phi, delimiter=", ", fmt='%1.4e')
-                            # np.savetxt("b_matrix_inv.csv", b_matrix_inv, delimiter=", ", fmt='%1.4e')
-                            # input()
 
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
                         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
@@ -1111,3 +1121,10 @@ class MahiniMethod:
             intact_pms[piece.num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
         intact_phi_pms = self.intact_phi * intact_pms
         return intact_phi_pms
+
+    def get_plastic_vars_in_basic_variables(self, basic_variables, landa_var, structure_sifted_yield_pieces):
+        plastic_vars = []
+        for basic_variable in basic_variables:
+            if basic_variable < landa_var:
+                plastic_vars.append(structure_sifted_yield_pieces[basic_variable].num_in_structure)
+        return plastic_vars
