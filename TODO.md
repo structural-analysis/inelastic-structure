@@ -26,3 +26,10 @@ and if a corner happens in that point and all 4 pieces got activated
 or 3 pieces got activated and will in col was in selected pieces
 then there is no space to include violated pieces.
 so isn't it better to select 6 pieces instead of 4 for good measure?
+
+possible bifurcation:
+in plate-semiconfined-inelastic example in mahini-sifted type in increment 23 there is multiple row with same b/a and b/c we change the order of piece numbers in final_pieces selection, the selected piece differs from unsifted version and this cause some change in results.
+sifted pieces nums was 16 and 18 and num_in_structures was: 2132 and 2131
+check b/a in increment 22 b/c will_out of increment 23 computed in inc 22.
+
+and in example: 3d-simple beam sifted and unsifted results was different b/c there is two yield points exactly in one point of structure.

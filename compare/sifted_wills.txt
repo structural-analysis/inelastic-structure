@@ -9,6 +9,9 @@ increment=1
 load_level_cumulative=832182.6116381552
 will_in_col=x-16
 will_out_row=20
+will_out_var=85
+global_will_in_col=x-2051
+global_will_out_row=2307
 input plastic_vars_in_basic_variables_prev=[]
 enter fpm
 -------------------------------
@@ -16,6 +19,9 @@ increment=2
 load_level_cumulative=941831.009798774
 will_in_col=x-20
 will_out_row=17
+will_out_var=82
+global_will_in_col=x-2307
+global_will_out_row=2091
 input plastic_vars_in_basic_variables_prev=[2051]
 enter fpm
 -------------------------------
@@ -23,6 +29,9 @@ increment=3
 load_level_cumulative=1011176.0723221581
 will_in_col=x-17
 will_out_row=20
+will_out_var=16
+global_will_in_col=x-2091
+global_will_out_row=2307
 input plastic_vars_in_basic_variables_prev=[2307, 2051]
 unload spm
 -------------------------------
@@ -30,6 +39,9 @@ increment=4
 load_level_cumulative=1011176.0723221581
 will_in_col=x-17
 will_out_row=0
+will_out_var=65
+global_will_in_col=x-2091
+global_will_out_row=105
 input plastic_vars_in_basic_variables_prev=[2307]
 enter fpm
 -------------------------------
@@ -37,6 +49,9 @@ increment=5
 load_level_cumulative=1133092.5375925156
 will_in_col=x-0
 will_out_row=28
+will_out_var=93
+global_will_in_col=x-105
+global_will_out_row=3297
 input plastic_vars_in_basic_variables_prev=[2091, 2307]
 enter fpm
 ++++ piece violation ++++
@@ -50,6 +65,9 @@ increment=5
 load_level_cumulative=1133092.5375925156
 will_in_col=x-0
 will_out_row=23
+will_out_var=88
+global_will_in_col=x-105
+global_will_out_row=2267
 input plastic_vars_in_basic_variables_prev=[2091, 2307]
 enter fpm
 -------------------------------
@@ -57,6 +75,9 @@ increment=6
 load_level_cumulative=1170751.3912759847
 will_in_col=x-23
 will_out_row=28
+will_out_var=93
+global_will_in_col=x-2267
+global_will_out_row=3297
 input plastic_vars_in_basic_variables_prev=[2091, 2307, 105]
 enter fpm
 -------------------------------
@@ -64,6 +85,9 @@ increment=7
 load_level_cumulative=1181127.5484835966
 will_in_col=x-28
 will_out_row=5
+will_out_var=70
+global_will_in_col=x-3297
+global_will_out_row=678
 input plastic_vars_in_basic_variables_prev=[2091, 2307, 105, 2267]
 enter fpm
 -------------------------------
@@ -71,6 +95,9 @@ increment=8
 load_level_cumulative=1191744.5878178324
 will_in_col=x-5
 will_out_row=8
+will_out_var=73
+global_will_in_col=x-678
+global_will_out_row=1081
 input plastic_vars_in_basic_variables_prev=[2091, 3297, 2307, 105, 2267]
 enter fpm
 -------------------------------
@@ -78,41 +105,59 @@ increment=9
 load_level_cumulative=1262616.4051732172
 will_in_col=x-8
 will_out_row=4
+will_out_var=69
+global_will_in_col=x-1081
+global_will_out_row=718
 input plastic_vars_in_basic_variables_prev=[2091, 3297, 678, 2307, 105, 2267]
 enter fpm
 -------------------------------
 increment=10
-load_level_cumulative=1280918.4975728872
+load_level_cumulative=1280918.4975728868
 will_in_col=x-4
 will_out_row=24
+will_out_var=89
+global_will_in_col=x-718
+global_will_out_row=2746
 input plastic_vars_in_basic_variables_prev=[2091, 1081, 3297, 678, 2307, 105, 2267]
 unload spm
 -------------------------------
 increment=11
-load_level_cumulative=1280918.4975728872
+load_level_cumulative=1280918.4975728868
 will_in_col=x-4
 will_out_row=24
+will_out_var=89
+global_will_in_col=x-718
+global_will_out_row=2746
 input plastic_vars_in_basic_variables_prev=[2091, 1081, 3297, 2307, 105, 2267]
 enter fpm
 -------------------------------
 increment=12
-load_level_cumulative=1283082.8394605732
+load_level_cumulative=1283082.839460573
 will_in_col=x-24
 will_out_row=10
+will_out_var=75
+global_will_in_col=x-2746
+global_will_out_row=1041
 input plastic_vars_in_basic_variables_prev=[2091, 1081, 3297, 2307, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=13
-load_level_cumulative=1289455.9725630847
+load_level_cumulative=1289455.9725630824
 will_in_col=x-10
 will_out_row=4
+will_out_var=8
+global_will_in_col=x-1041
+global_will_out_row=718
 input plastic_vars_in_basic_variables_prev=[2091, 1081, 3297, 2746, 2307, 105, 718, 2267]
 unload spm
 -------------------------------
 increment=14
-load_level_cumulative=1289455.9725630847
+load_level_cumulative=1289455.9725630824
 will_in_col=x-10
 will_out_row=21
+will_out_var=86
+global_will_in_col=x-1041
+global_will_out_row=2306
 input plastic_vars_in_basic_variables_prev=[2091, 3297, 2746, 2307, 105, 718, 2267]
 enter fpm
 ++++ piece violation ++++
@@ -123,23 +168,32 @@ before update plastic_vars_in_basic_variables_prev=[2091, 3297, 2746, 2307, 105,
 plastic_vars_in_basic_variables=[2091, 3297, 2746, 2307, 105, 718, 2267]
 -------------------------------
 increment=14
-load_level_cumulative=1289455.9725630847
+load_level_cumulative=1289455.9725630824
 will_in_col=x-10
 will_out_row=3
+will_out_var=68
+global_will_in_col=x-1041
+global_will_out_row=65
 input plastic_vars_in_basic_variables_prev=[2091, 3297, 2746, 2307, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=15
-load_level_cumulative=1298336.42348828
+load_level_cumulative=1298336.4234882803
 will_in_col=x-3
 will_out_row=21
+will_out_var=86
+global_will_in_col=x-65
+global_will_out_row=2306
 input plastic_vars_in_basic_variables_prev=[2091, 1041, 3297, 2746, 2307, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=16
-load_level_cumulative=1309493.9014360593
+load_level_cumulative=1309493.901436059
 will_in_col=x-21
 will_out_row=1
+will_out_var=66
+global_will_in_col=x-2306
+global_will_out_row=106
 input plastic_vars_in_basic_variables_prev=[2091, 1041, 3297, 2746, 2307, 65, 105, 718, 2267]
 enter fpm
 -------------------------------
@@ -147,41 +201,59 @@ increment=17
 load_level_cumulative=1383742.2407936938
 will_in_col=x-1
 will_out_row=6
+will_out_var=71
+global_will_in_col=x-106
+global_will_out_row=719
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 2746, 2307, 65, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=18
-load_level_cumulative=1388475.971118526
+load_level_cumulative=1388475.9711184911
 will_in_col=x-6
 will_out_row=13
+will_out_var=78
+global_will_in_col=x-719
+global_will_out_row=1435
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 2307, 65, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=19
-load_level_cumulative=1402396.9352739677
+load_level_cumulative=1402396.9352739654
 will_in_col=x-13
 will_out_row=19
+will_out_var=84
+global_will_in_col=x-1435
+global_will_out_row=2092
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 65, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=20
-load_level_cumulative=1420948.2279105885
+load_level_cumulative=1420948.2279105862
 will_in_col=x-19
 will_out_row=29
+will_out_var=94
+global_will_in_col=x-2092
+global_will_out_row=3298
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 2267]
 enter fpm
 -------------------------------
 increment=21
-load_level_cumulative=1479230.8627162639
+load_level_cumulative=1479230.862716261
 will_in_col=x-29
 will_out_row=25
+will_out_var=90
+global_will_in_col=x-3298
+global_will_out_row=2745
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 2267, 2092]
 enter fpm
 -------------------------------
 increment=22
-load_level_cumulative=1487553.0025615485
+load_level_cumulative=1487553.002561548
 will_in_col=x-25
 will_out_row=49
+will_out_var=114
+global_will_in_col=x-2745
+global_will_out_row=5507
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
 enter fpm
 ++++ piece violation ++++
@@ -192,747 +264,1097 @@ before update plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106,
 plastic_vars_in_basic_variables=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
 -------------------------------
 increment=22
-load_level_cumulative=1487553.0025615485
+load_level_cumulative=1487553.002561548
 will_in_col=x-25
 will_out_row=26
+will_out_var=91
+global_will_in_col=x-2745
+global_will_out_row=2705
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
 enter fpm
 -------------------------------
 increment=23
-load_level_cumulative=1563197.6053374093
+load_level_cumulative=1563197.6053373842
 will_in_col=x-26
 will_out_row=18
+will_out_var=83
+global_will_in_col=x-2705
+global_will_out_row=2131
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2745, 2267, 2092]
 enter fpm
 -------------------------------
 increment=24
-load_level_cumulative=1567107.9708740069
+load_level_cumulative=1567107.97087405
 will_in_col=x-18
 will_out_row=0
+will_out_var=17
+global_will_in_col=x-2131
+global_will_out_row=105
 input plastic_vars_in_basic_variables_prev=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 2705, 1435, 65, 105, 718, 3298, 2745, 2267, 2092]
 unload spm
 -------------------------------
 increment=25
-load_level_cumulative=1567107.9708740069
+load_level_cumulative=1567107.97087405
 will_in_col=x-18
 will_out_row=16
+will_out_var=81
+global_will_in_col=x-2131
+global_will_out_row=2132
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 2746, 719, 2705, 1435, 65, 105, 718, 3298, 2745, 2267, 2092]
 enter fpm
 -------------------------------
 increment=26
-load_level_cumulative=1567107.9708740867
+load_level_cumulative=1567107.9708741743
 will_in_col=x-16
-will_out_row=30
+will_out_row=31
+will_out_var=96
+global_will_in_col=x-2132
+global_will_out_row=3258
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 2746, 719, 2131, 2705, 1435, 65, 105, 718, 3298, 2745, 2267, 2092]
 enter fpm
 -------------------------------
 increment=27
-load_level_cumulative=1580666.4495071026
-will_in_col=x-30
+load_level_cumulative=1580666.449507143
+will_in_col=x-31
 will_out_row=10
+will_out_var=24
+global_will_in_col=x-3258
+global_will_out_row=1041
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 2746, 719, 2131, 2705, 1435, 65, 105, 718, 3298, 2745, 2267, 2092, 2132]
 unload spm
 -------------------------------
 increment=28
-load_level_cumulative=1580666.4495071026
-will_in_col=x-30
+load_level_cumulative=1580666.449507143
+will_in_col=x-31
 will_out_row=10
+will_out_var=24
+global_will_in_col=x-3258
+global_will_out_row=1041
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 2746, 719, 2131, 2705, 1435, 65, 105, 718, 2092, 2745, 2267, 2132]
 unload spm
 -------------------------------
 increment=29
-load_level_cumulative=1580666.4495071026
-will_in_col=x-30
+load_level_cumulative=1580666.449507143
+will_in_col=x-31
 will_out_row=10
+will_out_var=24
+global_will_in_col=x-3258
+global_will_out_row=1041
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 2746, 719, 2705, 1435, 65, 105, 718, 2092, 2745, 2267, 2132]
 unload spm
 -------------------------------
 increment=30
-load_level_cumulative=1580666.4495071026
-will_in_col=x-30
-will_out_row=31
+load_level_cumulative=1580666.449507143
+will_in_col=x-31
+will_out_row=30
+will_out_var=95
+global_will_in_col=x-3258
+global_will_out_row=3257
 input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 718, 719, 2705, 1435, 65, 105, 2092, 2745, 2267, 2132]
 enter fpm
 -------------------------------
 increment=31
-load_level_cumulative=1580666.4495071163
-will_in_col=x-31
+load_level_cumulative=1580666.449507163
+will_in_col=x-30
 will_out_row=13
-input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 718, 719, 2705, 1435, 65, 105, 2092, 2745, 2267, 2132, 3258]
+will_out_var=6
+global_will_in_col=x-3257
+global_will_out_row=1435
+input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3297, 106, 718, 719, 2705, 1435, 65, 105, 2092, 2745, 2267, 3258, 2132]
 unload spm
 -------------------------------
 increment=32
-load_level_cumulative=1580666.4495071163
-will_in_col=x-31
+load_level_cumulative=1580666.449507163
+will_in_col=x-30
 will_out_row=13
-input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 106, 718, 719, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+will_out_var=6
+global_will_in_col=x-3257
+global_will_out_row=1435
+input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 106, 718, 719, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 unload spm
 -------------------------------
 increment=33
-load_level_cumulative=1580666.4495071163
-will_in_col=x-31
-will_out_row=5
-input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 718, 106, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+load_level_cumulative=1580666.449507163
+will_in_col=x-30
+will_out_row=7
+will_out_var=72
+global_will_in_col=x-3257
+global_will_out_row=758
+input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 718, 106, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 enter fpm
 -------------------------------
 increment=34
-load_level_cumulative=1598432.9014879575
-will_in_col=x-5
-will_out_row=2
-input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 3257, 718, 106, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+load_level_cumulative=1598432.901487989
+will_in_col=x-7
+will_out_row=13
+will_out_var=1
+global_will_in_col=x-758
+global_will_out_row=1435
+input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 2267, 3257, 718, 106, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 unload spm
 -------------------------------
 increment=35
-load_level_cumulative=1598432.9014879575
-will_in_col=x-5
+load_level_cumulative=1598432.9014879898
+will_in_col=x-7
 will_out_row=13
-input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3257, 2267, 106, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+will_out_var=1
+global_will_in_col=x-758
+global_will_out_row=1435
+input plastic_vars_in_basic_variables_prev=[2307, 2306, 1041, 3257, 2267, 106, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 unload opm
 -------------------------------
 increment=36
-load_level_cumulative=1598432.9014879575
-will_in_col=x-5
+load_level_cumulative=1598432.9014879907
+will_in_col=x-7
 will_out_row=15
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 2306, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+will_out_var=80
+global_will_in_col=x-758
+global_will_out_row=1395
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 2306, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 enter fpm
 -------------------------------
 increment=37
-load_level_cumulative=1626323.629919476
+load_level_cumulative=1626323.629924623
 will_in_col=x-15
 will_out_row=13
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 2306, 758, 2705, 1435, 65, 105, 2092, 2745, 2132, 3258]
+will_out_var=21
+global_will_in_col=x-1395
+global_will_out_row=1435
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 2306, 758, 2705, 1435, 65, 105, 2092, 2745, 3258, 2132]
 unload spm
 -------------------------------
 increment=38
-load_level_cumulative=1626323.6299194766
+load_level_cumulative=1626323.629924624
 will_in_col=x-15
 will_out_row=9
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258]
+will_out_var=74
+global_will_in_col=x-1395
+global_will_out_row=1042
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132]
 enter fpm
 -------------------------------
 increment=39
-load_level_cumulative=1660199.7381440615
+load_level_cumulative=1660199.7381445435
 will_in_col=x-9
 will_out_row=49
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258]
+will_out_var=114
+global_will_in_col=x-1042
+global_will_out_row=5507
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132]
 enter fpm
 -------------------------------
 increment=40
-load_level_cumulative=1661500.614452275
+load_level_cumulative=1661500.6144523006
 will_in_col=x-49
 will_out_row=60
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
+will_out_var=125
+global_will_in_col=x-5507
+global_will_out_row=6752
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=2
 will_in_col=49
 will_in_col_piece_num_in_structure=5507
-before update plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
-plastic_vars_in_basic_variables=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
+before update plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
+plastic_vars_in_basic_variables=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
 -------------------------------
 increment=40
-load_level_cumulative=1661500.614452275
+load_level_cumulative=1661500.6144523006
 will_in_col=x-49
 will_out_row=6
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
+will_out_var=71
+global_will_in_col=x-5507
+global_will_out_row=798
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
 enter fpm
 -------------------------------
 increment=41
-load_level_cumulative=1720185.3055824866
+load_level_cumulative=1720185.3055839217
 will_in_col=x-6
 will_out_row=15
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 3257, 5507, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
+will_out_var=7
+global_will_in_col=x-798
+global_will_out_row=1395
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 3257, 1395, 2267, 65, 758, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
 unload spm
 -------------------------------
 increment=42
-load_level_cumulative=1720185.305582487
+load_level_cumulative=1720185.305583933
 will_in_col=x-6
 will_out_row=60
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042]
+will_out_var=125
+global_will_in_col=x-798
+global_will_out_row=6752
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042]
 enter fpm
 -------------------------------
 increment=43
-load_level_cumulative=1760001.7069554245
+load_level_cumulative=1760001.7069556054
 will_in_col=x-60
 will_out_row=61
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798]
+will_out_var=126
+global_will_in_col=x-6752
+global_will_out_row=6712
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042, 798]
 enter fpm
 -------------------------------
 increment=44
-load_level_cumulative=1778434.3965747887
+load_level_cumulative=1778434.3965890137
 will_in_col=x-61
 will_out_row=8
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798, 6752]
+will_out_var=73
+global_will_in_col=x-6712
+global_will_out_row=1002
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042, 798, 6752]
 unload spm
 -------------------------------
 increment=45
-load_level_cumulative=1778434.3965747892
+load_level_cumulative=1778434.396589015
 will_in_col=x-61
 will_out_row=8
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798]
+will_out_var=73
+global_will_in_col=x-6712
+global_will_out_row=1002
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042, 798]
 enter fpm
 -------------------------------
 increment=46
-load_level_cumulative=1785573.2724341378
+load_level_cumulative=1785573.2724222962
 will_in_col=x-8
-will_out_row=3
-input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 6712, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798]
+will_out_row=52
+will_out_var=117
+global_will_in_col=x-1002
+global_will_out_row=5840
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 6712, 1395, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1042, 798]
 unload spm
 -------------------------------
 increment=47
-load_level_cumulative=1785573.2724341461
+load_level_cumulative=1785573.2724222997
 will_in_col=x-8
-will_out_row=11
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1395, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798]
-enter fpm
+will_out_row=3
+will_out_var=10
+global_will_in_col=x-1002
+global_will_out_row=65
+input plastic_vars_in_basic_variables_prev=[2307, 1041, 5507, 6712, 2267, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1395, 798]
+unload spm
 -------------------------------
 increment=48
-load_level_cumulative=1785573.2724349801
-will_in_col=x-11
+load_level_cumulative=1785573.2724223025
+will_in_col=x-8
 will_out_row=25
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1395, 1001, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1042, 798]
+will_out_var=19
+global_will_in_col=x-1002
+global_will_out_row=2745
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 1435, 105, 2092, 2745, 3258, 2132, 1395, 798]
 unload spm
 -------------------------------
 increment=49
-load_level_cumulative=1785573.2724349773
-will_in_col=x-11
-will_out_row=25
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1001, 65, 3257, 2705, 1435, 105, 2092, 2745, 2132, 3258, 1395, 798]
-unload spm
+load_level_cumulative=1785573.272422305
+will_in_col=x-8
+will_out_row=11
+will_out_var=76
+global_will_in_col=x-1002
+global_will_out_row=1001
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 1395, 798]
+enter fpm
 -------------------------------
 increment=50
-load_level_cumulative=1785573.2724349746
+load_level_cumulative=1785573.2724480547
 will_in_col=x-11
 will_out_row=52
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1001, 65, 3257, 2705, 105, 1435, 2745, 2132, 3258, 1395, 798]
+will_out_var=117
+global_will_in_col=x-1001
+global_will_out_row=5840
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1002, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 1395, 798]
 enter fpm
 -------------------------------
 increment=51
-load_level_cumulative=1799489.571543194
+load_level_cumulative=1799489.5715443115
 will_in_col=x-52
 will_out_row=36
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1001, 65, 3257, 2705, 105, 1435, 2745, 2132, 3258, 1395, 1002, 798]
+will_out_var=101
+global_will_in_col=x-5840
+global_will_out_row=4174
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1002, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 1395, 1001, 798]
 enter fpm
 -------------------------------
 increment=52
-load_level_cumulative=1802337.5279730503
+load_level_cumulative=1802337.52797424
 will_in_col=x-36
 will_out_row=40
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1001, 65, 3257, 2705, 105, 1435, 2745, 2132, 3258, 5840, 1395, 1002, 798]
+will_out_var=105
+global_will_in_col=x-4174
+global_will_out_row=4538
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1002, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 5840, 1395, 1001, 798]
 enter fpm
 -------------------------------
 increment=53
-load_level_cumulative=1802936.1133667137
+load_level_cumulative=1802936.1133675906
 will_in_col=x-40
 will_out_row=19
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1001, 65, 3257, 2705, 105, 1435, 2745, 2132, 3258, 5840, 4174, 1395, 1002, 798]
+will_out_var=84
+global_will_in_col=x-4538
+global_will_out_row=2092
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 1002, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 5840, 4174, 1395, 1001, 798]
 unload spm
 -------------------------------
 increment=54
-load_level_cumulative=1802936.1133667142
+load_level_cumulative=1802936.1133675904
 will_in_col=x-40
 will_out_row=19
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 105, 1435, 2745, 2132, 3258, 5840, 4174, 1395, 1002, 798]
+will_out_var=84
+global_will_in_col=x-4538
+global_will_out_row=2092
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 105, 1435, 2745, 3258, 2132, 5840, 4174, 1395, 1002, 798]
 enter fpm
 -------------------------------
 increment=55
-load_level_cumulative=1804532.5645911498
+load_level_cumulative=1804532.5645926613
 will_in_col=x-19
 will_out_row=41
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 1395, 1002, 798]
+will_out_var=106
+global_will_in_col=x-2092
+global_will_out_row=4539
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 1395, 1002, 798]
 enter fpm
 -------------------------------
 increment=56
-load_level_cumulative=1809432.8514342003
+load_level_cumulative=1809432.8514396413
 will_in_col=x-41
 will_out_row=9
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]enter fpm
+will_out_var=74
+global_will_in_col=x-4539
+global_will_out_row=1042
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
+enter fpm
 -------------------------------
 increment=57
-load_level_cumulative=1815133.4555427951
+load_level_cumulative=1815133.4555548772
 will_in_col=x-9
 will_out_row=63
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+will_out_var=128
+global_will_in_col=x-1042
+global_will_out_row=6713
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 4539, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=15
 will_in_col=9
 will_in_col_piece_num_in_structure=1042
-before update plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
-plastic_vars_in_basic_variables=[2307, 2267, 5507, 4539, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+before update plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 4539, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
+plastic_vars_in_basic_variables=[2307, 2267, 5507, 6712, 4539, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 -------------------------------
 increment=57
-load_level_cumulative=1815133.4555427951
+load_level_cumulative=1815133.4555548772
 will_in_col=x-9
 will_out_row=17
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 65, 3257, 2705, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+will_out_var=82
+global_will_in_col=x-1042
+global_will_out_row=2133
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 4539, 65, 3257, 2705, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 enter fpm
 -------------------------------
 increment=58
-load_level_cumulative=1828345.3091525156
+load_level_cumulative=1828345.3091499736
 will_in_col=x-17
 will_out_row=12
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+will_out_var=77
+global_will_in_col=x-2133
+global_will_out_row=1396
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 4539, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 enter fpm
 -------------------------------
 increment=59
-load_level_cumulative=1839372.748270641
+load_level_cumulative=1839372.748606525
 will_in_col=x-12
-will_out_row=14
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 2133, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+will_out_row=7
+will_out_var=72
+global_will_in_col=x-1396
+global_will_out_row=838
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 6712, 4539, 2133, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 enter fpm
 -------------------------------
 increment=60
-load_level_cumulative=1857167.20565613
-will_in_col=x-14
-will_out_row=25
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 2133, 65, 1396, 3257, 2705, 1042, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+load_level_cumulative=1857641.9216888202
+will_in_col=x-7
+will_out_row=41
+will_out_var=19
+global_will_in_col=x-838
+global_will_out_row=4539
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 1396, 6712, 4539, 2133, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 798]
 unload spm
 -------------------------------
 increment=61
-load_level_cumulative=1857167.2056560938
-will_in_col=x-14
-will_out_row=25
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 65, 2133, 3257, 2705, 1042, 4538, 105, 1435, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
+load_level_cumulative=1857641.9216888086
+will_in_col=x-7
+will_out_row=49
+will_out_var=15
+global_will_in_col=x-838
+global_will_out_row=5507
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 3257, 2705, 1042, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 1395, 1002, 5507]
 unload spm
 -------------------------------
 increment=62
-load_level_cumulative=1857167.2056560887
-will_in_col=x-14
-will_out_row=12
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 2133, 3257, 2705, 1042, 4538, 105, 65, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
-enter fpm
+load_level_cumulative=1857641.921688797
+will_in_col=x-7
+will_out_row=41
+will_out_var=19
+global_will_in_col=x-838
+global_will_out_row=4539
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 2705, 1042, 4538, 105, 1435, 2745, 3258, 2132, 5840, 4174, 2092, 3257, 1002, 5507]
+unload spm
 -------------------------------
 increment=63
-load_level_cumulative=1857167.20565593
-will_in_col=x-12
-will_out_row=7
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 4539, 6712, 1436, 2133, 3257, 2705, 1042, 4538, 105, 65, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
-enter fpm
+load_level_cumulative=1857641.9216887853
+will_in_col=x-7
+will_out_row=31
+will_out_var=16
+global_will_in_col=x-838
+global_will_out_row=3258
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 2705, 1042, 105, 1435, 2745, 3258, 2132, 5840, 4174, 4538, 3257, 1002, 5507]
+unload spm
 -------------------------------
 increment=64
-load_level_cumulative=1857641.9203907459
+load_level_cumulative=1857641.9216887758
 will_in_col=x-7
-will_out_row=41
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 5507, 1396, 4539, 6712, 1436, 2133, 3257, 2705, 1042, 4538, 105, 65, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 798]
-unload spm
+will_out_row=15
+will_out_var=80
+global_will_in_col=x-838
+global_will_out_row=1395
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 1042, 105, 1435, 2745, 3258, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
+enter fpm
 -------------------------------
 increment=65
-load_level_cumulative=1857641.9203907447
-will_in_col=x-7
-will_out_row=41
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 4539, 6712, 1436, 2133, 3257, 2705, 1042, 4538, 105, 65, 2745, 2132, 3258, 5840, 4174, 2092, 1395, 1002, 5507]
-unload spm
+load_level_cumulative=1857641.9216916508
+will_in_col=x-15
+will_out_row=29
+will_out_var=94
+global_will_in_col=x-1395
+global_will_out_row=3218
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 838, 1042, 105, 1435, 2745, 3258, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
+enter fpm
 -------------------------------
 increment=66
-load_level_cumulative=1857641.9203907435
-will_in_col=x-7
-will_out_row=30
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 4539, 6712, 1436, 2133, 3257, 2705, 1042, 105, 65, 2745, 2132, 3258, 5840, 4174, 4538, 1395, 1002, 5507]
+load_level_cumulative=1879982.7533920484
+will_in_col=x-29
+will_out_row=29
+will_out_var=15
+global_will_in_col=x-3218
+global_will_out_row=3218
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 838, 1042, 105, 1435, 2745, 1395, 3258, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
 unload spm
 -------------------------------
 increment=67
-load_level_cumulative=1857641.9203907426
-will_in_col=x-7
-will_out_row=28
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 4539, 6712, 1436, 2133, 3257, 1042, 105, 65, 2745, 2705, 3258, 5840, 4174, 4538, 1395, 1002, 5507]
-enter fpm
--------------------------------
-increment=68
-load_level_cumulative=1879982.62446835
-will_in_col=x-28
-will_out_row=31
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 4539, 6712, 1436, 2133, 3257, 1042, 105, 65, 2745, 838, 2705, 3258, 5840, 4174, 4538, 1395, 1002, 5507]
+load_level_cumulative=1879982.7533919686
+will_in_col=x-29
+will_out_row=29
+will_out_var=15
+global_will_in_col=x-3218
+global_will_out_row=3218
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 838, 1042, 105, 1435, 2745, 1395, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
 unload spm
 -------------------------------
+increment=68
+load_level_cumulative=1879982.75339189
+will_in_col=x-29
+will_out_row=28
+will_out_var=93
+global_will_in_col=x-3218
+global_will_out_row=3217
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 1042, 105, 1435, 2745, 838, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
+enter fpm
+-------------------------------
 increment=69
-load_level_cumulative=1879982.6244683522
+load_level_cumulative=1879982.7533920738
 will_in_col=x-28
-will_out_row=17
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 4539, 6712, 1436, 2133, 3257, 1042, 105, 65, 2745, 838, 2705, 5840, 4174, 4538, 1395, 1002, 5507]
+will_out_row=49
+will_out_var=30
+global_will_in_col=x-3217
+global_will_out_row=5507
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 1042, 105, 1435, 2745, 3218, 838, 2705, 5840, 4174, 4538, 3257, 1002, 5507]
 unload spm
 -------------------------------
 increment=70
-load_level_cumulative=1879982.6244683543
+load_level_cumulative=1879982.7533920528
 will_in_col=x-28
-will_out_row=29
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 3257, 4539, 105, 65, 2745, 838, 2705, 5840, 4174, 4538, 1395, 1002, 5507]enter fpm
--------------------------------
-increment=71
-load_level_cumulative=1879982.947390981
-will_in_col=x-29
-will_out_row=15
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 3257, 4539, 105, 65, 2745, 838, 3218, 2705, 5840, 4174, 4538, 1395, 1002, 5507]
+will_out_row=17
+will_out_var=9
+global_will_in_col=x-3217
+global_will_out_row=2133
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 4539, 2133, 65, 1042, 105, 1435, 2745, 3218, 838, 5840, 4174, 4538, 2705, 1002, 5507]
 unload spm
 -------------------------------
+increment=71
+load_level_cumulative=1879982.7533920312
+will_in_col=x-28
+will_out_row=14
+will_out_var=79
+global_will_in_col=x-3217
+global_will_out_row=1436
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 2133, 65, 4539, 105, 1435, 2745, 3218, 838, 5840, 4174, 4538, 2705, 1002, 5507]
+enter fpm
+-------------------------------
 increment=72
-load_level_cumulative=1879982.9473909768
-will_in_col=x-29
+load_level_cumulative=1879982.753523492
+will_in_col=x-14
 will_out_row=39
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 2705, 4539, 105, 65, 2745, 838, 3218, 5840, 4174, 4538, 1395, 1002, 5507]enter fpm
+will_out_var=104
+global_will_in_col=x-1436
+global_will_out_row=4175
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 2133, 65, 3217, 4539, 105, 1435, 2745, 3218, 838, 5840, 4174, 4538, 2705, 1002, 5507]
+enter fpm
 -------------------------------
 increment=73
-load_level_cumulative=1890389.0734747972
+load_level_cumulative=1890389.2844420832
 will_in_col=x-39
-will_out_row=49
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 2705, 4539, 105, 65, 2745, 838, 3218, 5840, 3217, 4174, 4538, 1395, 1002, 5507]
+will_out_row=25
+will_out_var=13
+global_will_in_col=x-4175
+global_will_out_row=2745
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 2133, 65, 3217, 4539, 105, 1435, 2745, 3218, 838, 5840, 1436, 4174, 4538, 2705, 1002, 5507]
 unload spm
 -------------------------------
 increment=74
-load_level_cumulative=1890389.0734748002
+load_level_cumulative=1890389.2844420488
 will_in_col=x-39
 will_out_row=63
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 4539, 105, 65, 2745, 838, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507]enter fpm
+will_out_var=128
+global_will_in_col=x-4175
+global_will_out_row=6713
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 838, 5840, 1436, 4174, 4538, 2705, 1002, 5507]
+enter fpm
 -------------------------------
 increment=75
-load_level_cumulative=1902348.8094428992
+load_level_cumulative=1902348.7643472739
 will_in_col=x-63
 will_out_row=5
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 1436, 2133, 4539, 105, 65, 2745, 838, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=70
+global_will_in_col=x-6713
+global_will_out_row=837
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 1396, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 838, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=76
-load_level_cumulative=1906156.8779284984
+load_level_cumulative=1906151.77783019
 will_in_col=x-5
 will_out_row=24
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 1396, 6712, 1436, 2133, 4539, 105, 65, 2745, 838, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=89
+global_will_in_col=x-837
+global_will_out_row=2704
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 1396, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 838, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 unload spm
 -------------------------------
 increment=77
-load_level_cumulative=1906156.8779284987
+load_level_cumulative=1906151.7778301456
 will_in_col=x-5
 will_out_row=24
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 2745, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=89
+global_will_in_col=x-837
+global_will_out_row=2704
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=1
 will_in_col=5
 will_in_col_piece_num_in_structure=837
-before update plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 2745, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
-plastic_vars_in_basic_variables=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 2745, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+before update plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
+plastic_vars_in_basic_variables=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 -------------------------------
 increment=77
-load_level_cumulative=1906156.8779284987
+load_level_cumulative=1906151.7778301456
 will_in_col=x-5
 will_out_row=27
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 2745, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=92
+global_will_in_col=x-837
+global_will_out_row=2744
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 2745, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=78
-load_level_cumulative=1941118.3474814866
+load_level_cumulative=1941432.7586496307
 will_in_col=x-27
 will_out_row=26
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 2745, 837, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=25
+global_will_in_col=x-2744
+global_will_out_row=2705
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 2745, 837, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 unload spm
 -------------------------------
 increment=79
-load_level_cumulative=1941118.3474814869
+load_level_cumulative=1941432.7586496107
 will_in_col=x-27
 will_out_row=24
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 65, 837, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=89
+global_will_in_col=x-2744
+global_will_out_row=2704
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 65, 837, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=80
-load_level_cumulative=1941619.2269707872
+load_level_cumulative=1941432.758695361
 will_in_col=x-24
 will_out_row=18
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 105, 2744, 65, 837, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=83
+global_will_in_col=x-2704
+global_will_out_row=2134
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 105, 2744, 65, 837, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=81
-load_level_cumulative=1961410.1672012683
+load_level_cumulative=1961251.7710439325
 will_in_col=x-18
 will_out_row=48
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 65, 837, 1396, 3218, 5840, 3217, 4174, 4538, 2705, 1002, 5507, 4175]
+will_out_var=113
+global_will_in_col=x-2134
+global_will_out_row=5547
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 65, 837, 3218, 1396, 5840, 1436, 4174, 4538, 2705, 1002, 5507, 4175]
 unload spm
 -------------------------------
 increment=82
-load_level_cumulative=1961410.167201266
+load_level_cumulative=1961251.771043924
 will_in_col=x-18
 will_out_row=40
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 837, 1396, 3218, 5840, 3217, 4174, 4538, 65, 1002, 5507, 4175]
+will_out_var=36
+global_will_in_col=x-2134
+global_will_out_row=4538
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 837, 3218, 1396, 5840, 1436, 4174, 4538, 65, 1002, 5507, 4175]
 unload spm
 -------------------------------
 increment=83
-load_level_cumulative=1961410.1672012636
+load_level_cumulative=1961251.7710439155
 will_in_col=x-18
 will_out_row=48
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 837, 1396, 3218, 3217, 5840, 4538, 65, 1002, 5507, 4175]
+will_out_var=113
+global_will_in_col=x-2134
+global_will_out_row=5547
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 837, 3218, 1396, 1436, 5840, 4538, 65, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=84
-load_level_cumulative=1977094.4432591938
+load_level_cumulative=1977147.6096955095
 will_in_col=x-48
 will_out_row=26
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 837, 1396, 3218, 3217, 5840, 4538, 2134, 65, 1002, 5507, 4175]
+will_out_var=91
+global_will_in_col=x-5547
+global_will_out_row=2705
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 837, 3218, 1396, 1436, 5840, 4538, 2134, 65, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=85
-load_level_cumulative=1978431.8378074758
+load_level_cumulative=1978590.8195057265
 will_in_col=x-26
 will_out_row=36
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 5547, 837, 1396, 3218, 3217, 5840, 4538, 2134, 65, 1002, 5507, 4175]
+will_out_var=101
+global_will_in_col=x-2705
+global_will_out_row=4174
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 5547, 837, 3218, 1396, 1436, 5840, 4538, 2134, 65, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=86
-load_level_cumulative=1979668.1204469476
+load_level_cumulative=1979797.358314553
 will_in_col=x-36
 will_out_row=32
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 5547, 837, 1396, 3218, 2705, 3217, 5840, 4538, 2134, 65, 1002, 5507, 4175]
+will_out_var=97
+global_will_in_col=x-4174
+global_will_out_row=3643
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 5547, 837, 3218, 1396, 2705, 1436, 5840, 4538, 2134, 65, 1002, 5507, 4175]
 enter fpm
 -------------------------------
 increment=87
-load_level_cumulative=1980942.4438284629
+load_level_cumulative=1980942.390554481
 will_in_col=x-32
 will_out_row=61
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 65, 1002, 5507, 4175]
+will_out_var=49
+global_will_in_col=x-3643
+global_will_out_row=6712
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 65, 1002, 5507, 4175]
 unload spm
 -------------------------------
 increment=88
-load_level_cumulative=1980942.4438284629
+load_level_cumulative=1980942.390554472
 will_in_col=x-32
 will_out_row=21
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 105, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+will_out_var=86
+global_will_in_col=x-3643
+global_will_out_row=2268
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 105, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 enter fpm
 -------------------------------
 increment=89
-load_level_cumulative=2006553.6008433474
+load_level_cumulative=2006639.627197823
 will_in_col=x-21
 will_out_row=64
-input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 105, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+will_out_var=129
+global_will_in_col=x-2268
+global_will_out_row=?
+input plastic_vars_in_basic_variables_prev=[2307, 2267, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 105, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 unload spm
 -------------------------------
 increment=90
-load_level_cumulative=2006553.6008433474
+load_level_cumulative=2006639.6271978226
 will_in_col=x-21
 will_out_row=64
-input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+will_out_var=129
+global_will_in_col=x-2268
+global_will_out_row=?
+input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=27
 will_in_col=21
 will_in_col_piece_num_in_structure=2268
-before update plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
-plastic_vars_in_basic_variables=[2307, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+before update plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
+plastic_vars_in_basic_variables=[2307, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 -------------------------------
 increment=90
-load_level_cumulative=2006553.6008433476
+load_level_cumulative=2006639.6271978226
 will_in_col=x-21
 will_out_row=22
-input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+will_out_var=87
+global_will_in_col=x-2268
+global_will_out_row=2308
+input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 enter fpm
 -------------------------------
 increment=91
-load_level_cumulative=2010187.6689964093
+load_level_cumulative=2006639.6275348589
 will_in_col=x-22
-will_out_row=2
-input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
+will_out_row=1
+will_out_var=66
+global_will_in_col=x-2308
+global_will_out_row=64
+input plastic_vars_in_basic_variables_prev=[2307, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 enter fpm
 -------------------------------
 increment=92
-load_level_cumulative=2011045.001981452
-will_in_col=x-2
+load_level_cumulative=2011005.5228640463
+will_in_col=x-1
 will_out_row=43
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 2134, 1002, 65, 4175]
-enter fpm
--------------------------------
-increment=93
-load_level_cumulative=2015936.7057410092
-will_in_col=x-43
-will_out_row=41
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4538, 104, 2134, 1002, 65, 4175]
+will_out_var=108
+global_will_in_col=x-64
+global_will_out_row=4499
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 65, 4175]
 unload spm
 -------------------------------
+increment=93
+load_level_cumulative=2011005.5228640463
+will_in_col=x-1
+will_out_row=2
+will_out_var=67
+global_will_in_col=x-64
+global_will_out_row=104
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 105, 4175]
+enter fpm
+-------------------------------
 increment=94
-load_level_cumulative=2015936.7057410092
-will_in_col=x-43
-will_out_row=42
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 104, 2134, 1002, 65, 4175]
+load_level_cumulative=2011005.522997158
+will_in_col=x-2
+will_out_row=43
+will_out_var=108
+global_will_in_col=x-104
+global_will_out_row=4499
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 2134, 1002, 105, 4175]
 enter fpm
 -------------------------------
 increment=95
-load_level_cumulative=2015944.836789213
-will_in_col=x-42
+load_level_cumulative=2015939.4057186749
+will_in_col=x-43
 will_out_row=19
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 2133, 4539, 2704, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4498, 104, 2134, 1002, 65, 4175]
+will_out_var=84
+global_will_in_col=x-4499
+global_will_out_row=2173
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2133, 3217, 4539, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 104, 2134, 1002, 105, 4175]
 enter fpm
 -------------------------------
 increment=96
-load_level_cumulative=2020295.5107898363
+load_level_cumulative=2020259.5922922138
 will_in_col=x-19
-will_out_row=14
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 2133, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4498, 104, 2134, 1002, 65, 4175]
+will_out_row=12
+will_out_var=17
+global_will_in_col=x-2173
+global_will_out_row=1396
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2133, 3217, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 104, 2134, 1002, 105, 4175]
 unload spm
 -------------------------------
 increment=97
-load_level_cumulative=2020295.5107898363
+load_level_cumulative=2020259.5922922138
 will_in_col=x-19
 will_out_row=63
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 3217, 5840, 4498, 104, 2134, 1002, 65, 4175]
+will_out_var=39
+global_will_in_col=x-2173
+global_will_out_row=6713
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 4539, 3217, 2704, 4499, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 1436, 5840, 4538, 104, 2134, 1002, 105, 4175]
 unload spm
 -------------------------------
 increment=98
-load_level_cumulative=2020295.5107898363
+load_level_cumulative=2020259.5922922138
 will_in_col=x-19
-will_out_row=10
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 5840, 4498, 104, 2134, 1002, 65, 3217]
+will_out_row=16
+will_out_var=81
+global_will_in_col=x-2173
+global_will_out_row=2174
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 4539, 3217, 2704, 4499, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
 enter fpm
 -------------------------------
 increment=99
-load_level_cumulative=2035441.7212084725
-will_in_col=x-10
-will_out_row=7
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 5840, 4498, 104, 2134, 1002, 65, 3217]
-enter fpm
--------------------------------
-increment=100
-load_level_cumulative=2068009.1245254232
-will_in_col=x-7
-will_out_row=6
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 5547, 837, 1396, 3218, 4174, 2705, 5840, 4498, 104, 2134, 1002, 65, 3217]
+load_level_cumulative=2020259.5923120503
+will_in_col=x-16
+will_out_row=16
+will_out_var=19
+global_will_in_col=x-2174
+global_will_out_row=2174
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 4539, 3217, 2173, 2704, 4499, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
 unload spm
 -------------------------------
+increment=100
+load_level_cumulative=2020259.5923120503
+will_in_col=x-16
+will_out_row=11
+will_out_var=76
+global_will_in_col=x-2174
+global_will_out_row=1003
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+enter fpm
+-------------------------------
 increment=101
-load_level_cumulative=2068009.1245254232
+load_level_cumulative=2035337.3669749391
+will_in_col=x-11
+will_out_row=6
+will_out_var=71
+global_will_in_col=x-1003
+global_will_out_row=836
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+enter fpm
+++++ piece violation ++++
+len(violated_pieces)=3
+will_in_col=11
+will_in_col_piece_num_in_structure=1003
+before update plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+plastic_vars_in_basic_variables=[2307, 2308, 64, 6713, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+-------------------------------
+increment=101
+load_level_cumulative=2035337.3669749391
+will_in_col=x-11
+will_out_row=7
+will_out_var=72
+global_will_in_col=x-1003
+global_will_out_row=877
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+enter fpm
+-------------------------------
+increment=102
+load_level_cumulative=2067994.1315964984
 will_in_col=x-7
 will_out_row=6
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 837, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
+will_out_var=71
+global_will_in_col=x-877
+global_will_out_row=876
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 5547, 837, 3218, 1396, 4174, 2705, 5840, 4538, 104, 2134, 1002, 105, 1436]
+unload spm
+-------------------------------
+increment=103
+load_level_cumulative=2067994.1315964984
+will_in_col=x-7
+will_out_row=6
+will_out_var=71
+global_will_in_col=x-877
+global_will_out_row=876
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 837, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=1
 will_in_col=7
 will_in_col_piece_num_in_structure=877
-before update plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 837, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
-plastic_vars_in_basic_variables=[2307, 2308, 105, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 837, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
--------------------------------
-increment=101
-load_level_cumulative=2068009.1245254232
-will_in_col=x-7
-will_out_row=4
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 837, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
-enter fpm
--------------------------------
-increment=102
-load_level_cumulative=2069544.7936349937
-will_in_col=x-4
-will_out_row=48
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 877, 6713, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 837, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
-unload spm
+before update plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 837, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
+plastic_vars_in_basic_variables=[2307, 2308, 64, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 837, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 -------------------------------
 increment=103
-load_level_cumulative=2069544.7936349937
-will_in_col=x-4
-will_out_row=6
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 877, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
+load_level_cumulative=2067994.1315964984
+will_in_col=x-7
+will_out_row=4
+will_out_var=69
+global_will_in_col=x-877
+global_will_out_row=836
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 837, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 enter fpm
 -------------------------------
 increment=104
-load_level_cumulative=2069755.8519324814
-will_in_col=x-6
+load_level_cumulative=2069692.8345680854
+will_in_col=x-4
 will_out_row=48
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 877, 836, 1003, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
+will_out_var=18
+global_will_in_col=x-836
+global_will_out_row=5547
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 877, 6713, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 837, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 unload spm
 -------------------------------
 increment=105
-load_level_cumulative=2069755.8519324814
-will_in_col=x-6
-will_out_row=48
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 2704, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2134, 1002, 65, 3217]
-unload spm
--------------------------------
-increment=106
-load_level_cumulative=2069755.8519324814
-will_in_col=x-6
-will_out_row=51
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2704, 1002, 65, 3217]
+load_level_cumulative=2069692.8345680851
+will_in_col=x-4
+will_out_row=6
+will_out_var=71
+global_will_in_col=x-836
+global_will_out_row=876
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 877, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 enter fpm
 -------------------------------
+increment=106
+load_level_cumulative=2069692.8347429342
+will_in_col=x-6
+will_out_row=48
+will_out_var=18
+global_will_in_col=x-876
+global_will_out_row=5547
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 877, 836, 1003, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
+unload spm
+-------------------------------
 increment=107
-load_level_cumulative=2074473.315193626
-will_in_col=x-51
-will_out_row=53
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 5547, 5840, 4498, 104, 2704, 876, 1002, 65, 3217]
+load_level_cumulative=2069692.8347429342
+will_in_col=x-6
+will_out_row=48
+will_out_var=18
+global_will_in_col=x-876
+global_will_out_row=5547
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 2704, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2134, 1002, 105, 1436]
 unload spm
 -------------------------------
 increment=108
-load_level_cumulative=2074473.315193626
-will_in_col=x-51
-will_out_row=53
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 5840, 4498, 104, 876, 1002, 65, 3217]
+load_level_cumulative=2069692.8347429342
+will_in_col=x-6
+will_out_row=51
+will_out_var=116
+global_will_in_col=x-876
+global_will_out_row=5548
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2704, 1002, 105, 1436]
 enter fpm
 -------------------------------
 increment=109
-load_level_cumulative=2075177.7943609552
-will_in_col=x-53
-will_out_row=41
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 5840, 4498, 104, 876, 1002, 5548, 65, 3217]
+load_level_cumulative=2074407.6027169211
+will_in_col=x-51
+will_out_row=53
+will_out_var=118
+global_will_in_col=x-5548
+global_will_out_row=5841
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 5547, 5840, 4538, 104, 2704, 876, 1002, 105, 1436]
 unload spm
 -------------------------------
 increment=110
-load_level_cumulative=2075177.7943609552
-will_in_col=x-53
-will_out_row=17
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 65, 3217]
+load_level_cumulative=2074407.6027169211
+will_in_col=x-51
+will_out_row=53
+will_out_var=118
+global_will_in_col=x-5548
+global_will_out_row=5841
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 5840, 4538, 104, 876, 1002, 105, 1436]
 enter fpm
 -------------------------------
 increment=111
-load_level_cumulative=2078675.3436851532
-will_in_col=x-17
-will_out_row=10
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 2174, 6712, 1436, 4539, 5841, 4499, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 65, 3217]
+load_level_cumulative=2075160.1708058515
+will_in_col=x-53
+will_out_row=40
+will_out_var=52
+global_will_in_col=x-5841
+global_will_out_row=4538
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 5840, 4538, 104, 876, 1002, 5548, 105, 1436]
 unload spm
 -------------------------------
 increment=112
-load_level_cumulative=2078675.3436851532
-will_in_col=x-17
-will_out_row=54
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 65, 3217]
+load_level_cumulative=2075160.1708058515
+will_in_col=x-53
+will_out_row=17
+will_out_var=82
+global_will_in_col=x-5841
+global_will_out_row=2175
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 105, 1436]
 enter fpm
 -------------------------------
 increment=113
-load_level_cumulative=2089859.3133128954
+load_level_cumulative=2078751.4507858064
+will_in_col=x-17
+will_out_row=11
+will_out_var=16
+global_will_in_col=x-2175
+global_will_out_row=1003
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 2174, 4539, 3217, 4499, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 105, 1436]
+unload spm
+-------------------------------
+increment=114
+load_level_cumulative=2078751.4507858064
+will_in_col=x-17
+will_out_row=54
+will_out_var=119
+global_will_in_col=x-2175
+global_will_out_row=5801
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 105, 1436]
+enter fpm
+-------------------------------
+increment=115
+load_level_cumulative=2089843.0598959
 will_in_col=x-54
 will_out_row=64
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
+will_out_var=129
+global_will_in_col=x-5801
+global_will_out_row=?
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
 enter fpm
 ++++ piece violation ++++
 len(violated_pieces)=2
 will_in_col=54
 will_in_col_piece_num_in_structure=5801
-before update plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
-plastic_vars_in_basic_variables=[2307, 2308, 105, 1003, 836, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
--------------------------------
-increment=113
-load_level_cumulative=2089859.3133128954
-will_in_col=x-54
-will_out_row=7
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
-enter fpm
--------------------------------
-increment=114
-load_level_cumulative=2096867.3400444689
-will_in_col=x-7
-will_out_row=6
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 836, 5801, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
-unload spm
+before update plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
+plastic_vars_in_basic_variables=[2307, 2308, 64, 1003, 836, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
 -------------------------------
 increment=115
-load_level_cumulative=2096867.3400444689
-will_in_col=x-7
-will_out_row=5
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 1003, 5801, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
+load_level_cumulative=2089843.0598958998
+will_in_col=x-54
+will_out_row=7
+will_out_var=72
+global_will_in_col=x-5801
+global_will_out_row=835
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
 enter fpm
 -------------------------------
 increment=116
-load_level_cumulative=2096867.3400445704
-will_in_col=x-5
-will_out_row=51
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 835, 1003, 5801, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 876, 5548, 2175, 65, 3217]
+load_level_cumulative=2096827.7883601673
+will_in_col=x-7
+will_out_row=6
+will_out_var=4
+global_will_in_col=x-835
+global_will_out_row=876
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 836, 5801, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
 unload spm
 -------------------------------
 increment=117
-load_level_cumulative=2096867.3400445704
+load_level_cumulative=2096827.7883601668
+will_in_col=x-7
+will_out_row=5
+will_out_var=70
+global_will_in_col=x-835
+global_will_out_row=875
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 1003, 5801, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
+enter fpm
+-------------------------------
+increment=118
+load_level_cumulative=2096827.7883609554
+will_in_col=x-5
+will_out_row=51
+will_out_var=6
+global_will_in_col=x-875
+global_will_out_row=5548
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 835, 1003, 5801, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 876, 5548, 2175, 105, 1436]
+unload spm
+-------------------------------
+increment=119
+load_level_cumulative=2096827.7883609557
 will_in_col=x-5
 will_out_row=64
-input plastic_vars_in_basic_variables_prev=[2307, 2308, 105, 835, 5801, 4499, 6712, 1436, 4539, 5841, 3643, 2268, 2744, 6713, 1396, 3218, 4174, 2704, 1002, 4498, 104, 1003, 5548, 2175, 65, 3217]
+will_out_var=129
+global_will_in_col=x-875
+global_will_out_row=?
+input plastic_vars_in_basic_variables_prev=[2307, 2308, 64, 835, 5801, 6712, 4499, 4539, 3217, 5841, 3643, 2268, 2744, 6713, 3218, 1396, 4174, 2704, 1002, 4538, 104, 1003, 5548, 2175, 105, 1436]
 enter fpm
+analysis_time=datetime.timedelta(seconds=11, microseconds=48171)
+analysis_time.microseconds=48171
+[1]+  Done                    clear
+(inelastic-structure-py3.10) hamed@N53SV:~/projects/thesis/inelastic-structure$ 

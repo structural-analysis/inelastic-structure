@@ -1,37 +1,4 @@
-increment=0
-will_in_col=7072
-will_out_row=2051
-will_out_var=9124
-enter landa
--------------------------------
-increment=1
-load_level_cumulative=832182.6116381552
-will_in_col=x-2051
-will_out_row=2307
-Traceback (most recent call last):
-  File "C:\Users\Hassan\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 196, in _run_module_as_main
-    return _run_code(code, main_globals, None,
-  File "C:\Users\Hassan\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 86, in _run_code
-    exec(code, run_globals)
-  File "H:\Doctora\Thesis\inelastic-structure\src\main.py", line 59, in <module>
-    run(example_name=settings.example_name)
-  File "H:\Doctora\Thesis\inelastic-structure\src\main.py", line 20, in run
-    inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
-  File "H:\Doctora\Thesis\inelastic-structure\src\analysis\inelastic_analysis.py", line 28, in __init__
-    self.plastic_vars = mahini_method.solve()
-  File "H:\Doctora\Thesis\inelastic-structure\src\program\main.py", line 448, in solve
-    self.structure_sifted_yield_pieces_current,
-AttributeError: 'MahiniMethod' object has no attribute 'structure_sifted_yield_pieces_current'
-(inelastic-structure-py3.10) PS H:\Doctora\Thesis\inelastic-structure> python -m src.main
-H:\Doctora\Thesis\inelastic-structure\src\workshop.py:397: UserWarning: loadtxt: Empty input file: "input/examples/plate-semiconfined-inelastic\limits/disp.csv"
-  disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
-WARNING:root:frame sections input file not found
-WARNING:root:frame members input file not found
-WARNING:root:frame sections input file not found
-WARNING:root:frame members input file not found
-WARNING:root:wall sections input file not found
-WARNING:root:wall members input file not found
--------------------------------
+------------------------------
 increment=0
 will_in_col=7072
 will_out_row=2051

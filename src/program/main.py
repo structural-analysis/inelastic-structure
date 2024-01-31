@@ -393,20 +393,23 @@ class MahiniMethod:
             print(f"{increment=}")
             print(f"{load_level_cumulative=}")
             print(f"will_in_col=x-{will_in_col}")
-            # print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
             print(f"{will_out_row=}")
-            # print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
-            # print(f"{will_out_var=}")
+            print(f"{will_out_var=}")
             # if settings.sifting_type == SiftingType.mahini:
-            #     primary_will_out_var = self.get_primary_var(will_out_var)
-            #     if primary_will_out_var < 0:
-            #         primary_will_out_var = will_out_var
-            #         print(f"will_out_var=x-{primary_will_out_var}")
-            #         print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+            #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
+            #     if will_out_row != 64:
+            #         print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
             #     else:
-            #         print(f"will_out_var=y-{primary_will_out_var}")
-            #         print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
-            #     # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
+            #         print("global_will_out_row=?")
+                # primary_will_out_var = self.get_primary_var(will_out_var)
+                # if primary_will_out_var < 0:
+                #     primary_will_out_var = will_out_var
+                #     print(f"will_out_var=x-{primary_will_out_var}")
+                #     print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+                # else:
+                #     print(f"will_out_var=y-{primary_will_out_var}")
+                #     print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+                # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
 
             # print(f"{bbar[will_out_row]=}")
             # print(f"{sorted_zipped_ba=}")
@@ -436,7 +439,7 @@ class MahiniMethod:
                 cb=cb,
             )
 
-            if settings.sifting_type is SiftingType.mahini:            
+            if settings.sifting_type is SiftingType.mahini:
                 b_matrix_inv_prev = b_matrix_inv.copy()
                 basic_variables_prev = basic_variables.copy()
                 cb_prev = cb.copy()
@@ -589,6 +592,11 @@ class MahiniMethod:
 
                 if check_violation:
                     scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
+                    # if increment == 23:
+                    #     print(f"{scores_current[2131]=}")
+                    #     print(f"{scores_current[2132]=}")
+                    #     print(f"{scores_current.shape=}")
+                    #     input()
                     sifted_results_old = self.sifted_results_current
                     structure_sifted_yield_pieces_old = self.structure_sifted_yield_pieces_current
                     violated_pieces = self.sifting.check_violation(
@@ -602,7 +610,7 @@ class MahiniMethod:
                         # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
                         scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
                         print("++++ piece violation ++++")
-                        print(f"{len(violated_pieces)=}")
+                        print(f"{violated_pieces=}")
                         # print_specific_properties(violated_pieces, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure"])
                         # print(f"{violated_pieces=}")
                         # print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
@@ -611,9 +619,9 @@ class MahiniMethod:
                         fpm = fpm_prev
                         will_in_col = fpm.var
                         will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
-                        print(f"{will_in_col=}")
-                        print(f"{will_in_col_piece_num_in_structure=}")
-                        print(f"before update {plastic_vars_in_basic_variables_prev=}")
+                        # print(f"{will_in_col=}")
+                        # print(f"{will_in_col_piece_num_in_structure=}")
+                        # print(f"before update {plastic_vars_in_basic_variables_prev=}")
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             increment=increment,
                             plastic_vars_in_basic_variables_prev=plastic_vars_in_basic_variables_prev,
@@ -637,21 +645,22 @@ class MahiniMethod:
                         # self.h
                         # self.w
                         # self.cs
-
+                        # in_structure_indices = [num.num_in_structure for num in self.structure_sifted_yield_pieces_current]
+                        # print(f"##################{in_structure_indices}")
                         basic_variables = basic_variables_prev
                         cb = cb_prev
-                        plastic_vars_in_basic_variables = self.get_plastic_vars_in_basic_variables(
-                            basic_variables,
-                            self.landa_var,
-                            self.structure_sifted_yield_pieces_current,
-                        )
-                        print(f"{plastic_vars_in_basic_variables=}")
+                        # plastic_vars_in_basic_variables = self.get_plastic_vars_in_basic_variables(
+                        #     basic_variables,
+                        #     self.landa_var,
+                        #     self.structure_sifted_yield_pieces_current,
+                        # )
+                        # print(f"{plastic_vars_in_basic_variables=}")
                         # NOTE: not done for softening
                         # NOTE: SIFTING+: var nums should change
                         # TODO: check sifting with violation with disp limits
                         # disp limits are calculated in table creation.
                         # in mahini name is C_LastRows and updated after violation
-                        updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
+                        # updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
                         self.table = self._create_table()
 
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
@@ -937,9 +946,10 @@ class MahiniMethod:
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
-
+        # print(f"{sorted_zipped_ba=}")
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
+        # print(f"{will_out_row=}")
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
             # if will in variable is plastic
