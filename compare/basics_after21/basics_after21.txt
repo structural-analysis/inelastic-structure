@@ -1,0 +1,163 @@
+21:
+sifted:
+only_primary_basics=[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
+
+unsifted:
+unsifted_primary_vars=[1041, 2091, 2306, 3297, 106, 2746, 719, 2307, 1435, 105, 65, 3298, 718, 2267, 2092]
+
+22:
+[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
+[2091, 2306, 1041, 3297, 106, 2746, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
+
+[2091, 2306, 1041, 3297, 106, 2704, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2132]
+
+[2091, 2306, 1041, 3297, 106, 2704, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2132]
+
+after uncommenting + plastic_vars_in_basic_variables
+[2133, 2306, 1041, 3297, 106, 2704, 719, 2307, 1435, 65, 105, 718, 3298, 2267, 2092]
+
+piece.num_in_structure=105
+piece.num_in_structure=106
+piece.num_in_structure=65
+piece.num_in_structure=66
+point_num=0
+[105, 106, 65, 66]
+--------
+piece.num_in_structure=718
+piece.num_in_structure=719
+piece.num_in_structure=717
+piece.num_in_structure=720
+point_num=1
+[718, 719, 759, 758]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=5
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=7
+piece.num_in_structure=1041
+piece.num_in_structure=1040
+piece.num_in_structure=1081
+piece.num_in_structure=1042
+point_num=2
+[1041, 1040, 1081, 1042]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=9
+piece.num_in_structure=1435
+piece.num_in_structure=1434
+piece.num_in_structure=1436
+piece.num_in_structure=1433
+point_num=3
+[1435, 1396, 1394, 1395]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=12
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=14
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=15
+piece.num_in_structure=2091
+piece.num_in_structure=2092
+piece.num_in_structure=2093
+piece.num_in_structure=2131
+point_num=4
+[2130, 2092, 2133, 2132]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=16
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=17
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=18
+piece.num_in_structure=2307
+piece.num_in_structure=2306
+piece.num_in_structure=2267
+piece.num_in_structure=2266
+point_num=5
+[2307, 2306, 2267, 2266]
+--------
+piece.num_in_structure=2746
+piece.num_in_structure=2745
+piece.num_in_structure=2744
+piece.num_in_structure=2747
+point_num=6
+[2704, 2745, 2706, 2705]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=24
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=26
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=27
+piece.num_in_structure=3297
+piece.num_in_structure=3298
+piece.num_in_structure=3257
+piece.num_in_structure=3258
+point_num=7
+[3297, 3298, 3257, 3258]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=30
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=31
+piece.num_in_structure=3644
+piece.num_in_structure=3643
+piece.num_in_structure=3645
+piece.num_in_structure=3684
+point_num=8
+[3644, 3643, 3645, 3684]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=34
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=35
+piece.num_in_structure=4134
+piece.num_in_structure=4174
+piece.num_in_structure=4135
+piece.num_in_structure=4133
+point_num=9
+[4134, 4174, 4135, 4133]
+--------
+len(structure_sifted_yield_pieces_updated)=64
+sifted_num_in_structure=37
+piece.num_in_structure=4538
+piece.num_in_structure=4539
+piece.num_in_structure=4578
+piece.num_in_structure=4537
+point_num=10
+[4538, 4539, 4578, 4537]
+--------
+piece.num_in_structure=4975
+piece.num_in_structure=4976
+piece.num_in_structure=4974
+piece.num_in_structure=4973
+point_num=11
+[4975, 4976, 4974, 4973]
+--------
+piece.num_in_structure=5507
+piece.num_in_structure=5506
+piece.num_in_structure=5547
+piece.num_in_structure=5546
+point_num=12
+[5507, 5506, 5547, 5546]
+--------
+piece.num_in_structure=5840
+piece.num_in_structure=5839
+piece.num_in_structure=5841
+piece.num_in_structure=5880
+point_num=13
+[5840, 5839, 5841, 5880]
+--------
+piece.num_in_structure=6277
+piece.num_in_structure=6276
+piece.num_in_structure=6278
+piece.num_in_structure=6275
+point_num=14
+[6277, 6276, 6278, 6275]
+--------
+piece.num_in_structure=6752
+piece.num_in_structure=6712
+piece.num_in_structure=6753
+piece.num_in_structure=6713
+point_num=15
+[6752, 6712, 6753, 6713]

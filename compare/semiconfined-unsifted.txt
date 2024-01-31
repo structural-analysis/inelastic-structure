@@ -1,0 +1,337 @@
+-------------------------------
+increment=0
+will_in_col=7072
+will_out_row=2051
+will_out_var=9124
+enter landa
+-------------------------------
+increment=1
+load_level_cumulative=832182.6116381552
+will_in_col=2051
+will_out_row=2307
+will_out_var=9380
+bbar[will_out_row]=0.1448625448186912
+enter fpm
+will_out_row=2091
+bbar[will_out_row]=0.0029530139573096417
+-------------------------------
+increment=2
+load_level_cumulative=941831.009798774
+will_in_col=2307
+will_out_row=2091
+will_out_var=9164
+bbar[will_out_row]=0.0029530139573096417
+enter fpm
+will_out_row=2307
+bbar[will_out_row]=0.0
+-------------------------------
+increment=3
+load_level_cumulative=1011176.0723221581
+will_in_col=2091
+will_out_row=2307
+will_out_var=2051
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=105
+bbar[will_out_row]=0.1474431048532437
+-------------------------------
+increment=4
+load_level_cumulative=1011176.0723221581
+will_in_col=2091
+will_out_row=105
+will_out_var=7178
+bbar[will_out_row]=0.1474431048532437
+enter fpm
+will_out_row=2267
+bbar[will_out_row]=0.007764263543238108
+-------------------------------
+increment=5
+load_level_cumulative=1133092.5375925046
+will_in_col=105
+will_out_row=2267
+will_out_var=9340
+bbar[will_out_row]=0.007764263543238108
+enter fpm
+will_out_row=3297
+bbar[will_out_row]=0.014760212359095269
+-------------------------------
+increment=6
+load_level_cumulative=1170751.3912765477
+will_in_col=2267
+will_out_row=3297
+will_out_var=10370
+bbar[will_out_row]=0.014760212359095269
+enter fpm
+will_out_row=678
+bbar[will_out_row]=0.017374625997729373
+-------------------------------
+increment=7
+load_level_cumulative=1181127.5484835927
+will_in_col=3297
+will_out_row=678
+will_out_var=7751
+bbar[will_out_row]=0.017374625997729373
+enter fpm
+will_out_row=1081
+bbar[will_out_row]=0.12730771147039763
+-------------------------------
+increment=8
+load_level_cumulative=1191744.5878178403
+will_in_col=678
+will_out_row=1081
+will_out_var=8154
+bbar[will_out_row]=0.12730771147039763
+enter fpm
+will_out_row=718
+bbar[will_out_row]=0.0026376528348810184
+-------------------------------
+increment=9
+load_level_cumulative=1262616.4051732118
+will_in_col=1081
+will_out_row=718
+will_out_var=7791
+bbar[will_out_row]=0.0026376528348810184
+enter fpm
+will_out_row=2746
+bbar[will_out_row]=0.004486917314908183
+-------------------------------
+increment=10
+load_level_cumulative=1280918.4975728467
+will_in_col=718
+will_out_row=2746
+will_out_var=9819
+bbar[will_out_row]=0.004486917314908183
+unload spm
+will_out_row=2746
+bbar[will_out_row]=0.004486917314908183
+-------------------------------
+increment=11
+load_level_cumulative=1280918.4975728467
+will_in_col=718
+will_out_row=2746
+will_out_var=9819
+bbar[will_out_row]=0.004486917314908183
+enter fpm
+will_out_row=1041
+bbar[will_out_row]=0.0012294325782214028
+-------------------------------
+increment=12
+load_level_cumulative=1283082.839460573
+will_in_col=2746
+will_out_row=1041
+will_out_var=8114
+bbar[will_out_row]=0.0012294325782214028
+enter fpm
+will_out_row=65
+bbar[will_out_row]=0.0030317511703330667
+-------------------------------
+increment=13
+load_level_cumulative=1289455.972563057
+will_in_col=1041
+will_out_row=65
+will_out_var=7138
+bbar[will_out_row]=0.0030317511703330667
+unload spm
+will_out_row=65
+bbar[will_out_row]=0.0030317511703330667
+-------------------------------
+increment=14
+load_level_cumulative=1289455.972563057
+will_in_col=1041
+will_out_row=65
+will_out_var=7138
+bbar[will_out_row]=0.0030317511703330667
+enter fpm
+will_out_row=2306
+bbar[will_out_row]=0.00020027081053467421
+-------------------------------
+increment=15
+load_level_cumulative=1298336.4234882984
+will_in_col=65
+will_out_row=2306
+will_out_var=9379
+bbar[will_out_row]=0.00020027081053467421
+enter fpm
+will_out_row=106
+bbar[will_out_row]=0.0013347829770306125
+-------------------------------
+increment=16
+load_level_cumulative=1309493.9014358746
+will_in_col=2306
+will_out_row=106
+will_out_var=7179
+bbar[will_out_row]=0.0013347829770306125
+enter fpm
+will_out_row=719
+bbar[will_out_row]=0.0001700502884160295
+-------------------------------
+increment=17
+load_level_cumulative=1383742.2407937218
+will_in_col=106
+will_out_row=719
+will_out_var=7792
+bbar[will_out_row]=0.0001700502884160295
+enter fpm
+will_out_row=1435
+bbar[will_out_row]=0.0315311355811526
+-------------------------------
+increment=18
+load_level_cumulative=1388475.971118618
+will_in_col=719
+will_out_row=1435
+will_out_var=8508
+bbar[will_out_row]=0.0315311355811526
+enter fpm
+will_out_row=2092
+bbar[will_out_row]=0.00219880831265726
+-------------------------------
+increment=19
+load_level_cumulative=1402396.9352739675
+will_in_col=1435
+will_out_row=2092
+will_out_var=9165
+bbar[will_out_row]=0.00219880831265726
+enter fpm
+will_out_row=3298
+bbar[will_out_row]=0.004758724673572498
+-------------------------------
+increment=20
+load_level_cumulative=1420948.227910589
+will_in_col=2092
+will_out_row=3298
+will_out_var=10371
+bbar[will_out_row]=0.004758724673572498
+enter fpm
+will_out_row=2745
+bbar[will_out_row]=0.00022927361102291531
+-------------------------------
+increment=21
+load_level_cumulative=1479230.8627162802
+will_in_col=3298
+will_out_row=2745
+will_out_var=9818
+bbar[will_out_row]=0.00022927361102291531
+enter fpm
+will_out_row=2705
+bbar[will_out_row]=0.020195895415208668
+-------------------------------
+increment=22
+load_level_cumulative=1487553.0025615408
+will_in_col=2745
+will_out_row=2705
+will_out_var=9778
+bbar[will_out_row]=0.020195895415208668
+enter fpm
+will_out_row=2131
+bbar[will_out_row]=0.0010107306499784483
+-------------------------------
+increment=23
+load_level_cumulative=1563197.6053373967
+will_in_col=2705
+will_out_row=2131
+will_out_var=9204
+bbar[will_out_row]=0.0010107306499784483
+enter fpm
+will_out_row=105
+bbar[will_out_row]=0.0
+-------------------------------
+increment=24
+load_level_cumulative=1567107.9708739906
+will_in_col=2131
+will_out_row=105
+will_out_var=2091
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=2132
+bbar[will_out_row]=1.3322785811094032e-15
+-------------------------------
+increment=25
+load_level_cumulative=1567107.9708739906
+will_in_col=2131
+will_out_row=2132
+will_out_var=9205
+bbar[will_out_row]=1.3322785811094032e-15
+enter fpm
+will_out_row=3257
+bbar[will_out_row]=0.0032622916310308995
+-------------------------------
+increment=26
+load_level_cumulative=1567107.9708740322
+will_in_col=2132
+will_out_row=3257
+will_out_var=10330
+bbar[will_out_row]=0.0032622916310308995
+enter fpm
+will_out_row=1041
+bbar[will_out_row]=0.0
+-------------------------------
+increment=27
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=1041
+will_out_var=2746
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=2745
+bbar[will_out_row]=0.0
+-------------------------------
+increment=28
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=2745
+will_out_var=3298
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=2132
+bbar[will_out_row]=0.0
+-------------------------------
+increment=29
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=2132
+will_out_var=2131
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=2132
+bbar[will_out_row]=0.0
+-------------------------------
+increment=30
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=2132
+will_out_var=2131
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=1041
+bbar[will_out_row]=0.0
+-------------------------------
+increment=31
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=1041
+will_out_var=2746
+bbar[will_out_row]=0.0
+unload spm
+will_out_row=3258
+bbar[will_out_row]=6.353407412692397e-16
+-------------------------------
+increment=32
+load_level_cumulative=1580666.4495070395
+will_in_col=3257
+will_out_row=3258
+will_out_var=10331
+bbar[will_out_row]=6.353407412692397e-16
+enter fpm
+will_out_row=758
+bbar[will_out_row]=0.00810827719244918
+-------------------------------
+increment=33
+load_level_cumulative=1580666.4495070495
+will_in_col=3258
+will_out_row=758
+will_out_var=7831
+bbar[will_out_row]=0.00810827719244918
+enter fpm
+will_out_row=1435
+bbar[will_out_row]=0.0
+-------------------------------
