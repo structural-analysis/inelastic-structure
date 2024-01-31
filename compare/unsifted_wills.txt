@@ -1,0 +1,753 @@
+increment=0
+will_in_col=7072
+will_out_row=2051
+will_out_var=9124
+enter landa
+-------------------------------
+increment=1
+load_level_cumulative=832182.6116381552
+will_in_col=x-2051
+will_out_row=2307
+Traceback (most recent call last):
+  File "C:\Users\Hassan\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\Hassan\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "H:\Doctora\Thesis\inelastic-structure\src\main.py", line 59, in <module>
+    run(example_name=settings.example_name)
+  File "H:\Doctora\Thesis\inelastic-structure\src\main.py", line 20, in run
+    inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
+  File "H:\Doctora\Thesis\inelastic-structure\src\analysis\inelastic_analysis.py", line 28, in __init__
+    self.plastic_vars = mahini_method.solve()
+  File "H:\Doctora\Thesis\inelastic-structure\src\program\main.py", line 448, in solve
+    self.structure_sifted_yield_pieces_current,
+AttributeError: 'MahiniMethod' object has no attribute 'structure_sifted_yield_pieces_current'
+(inelastic-structure-py3.10) PS H:\Doctora\Thesis\inelastic-structure> python -m src.main
+H:\Doctora\Thesis\inelastic-structure\src\workshop.py:397: UserWarning: loadtxt: Empty input file: "input/examples/plate-semiconfined-inelastic\limits/disp.csv"
+  disp_limits = np.loadtxt(fname=disp_limits_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+WARNING:root:frame sections input file not found
+WARNING:root:frame members input file not found
+WARNING:root:frame sections input file not found
+WARNING:root:frame members input file not found
+WARNING:root:wall sections input file not found
+WARNING:root:wall members input file not found
+-------------------------------
+increment=0
+will_in_col=7072
+will_out_row=2051
+will_out_var=9124
+enter landa
+-------------------------------
+increment=1
+load_level_cumulative=832182.6116381552
+will_in_col=x-2051
+will_out_row=2307
+enter fpm
+-------------------------------
+increment=2
+load_level_cumulative=941831.009798774
+will_in_col=x-2307
+will_out_row=2091
+enter fpm
+-------------------------------
+increment=3
+load_level_cumulative=1011176.0723221581
+will_in_col=x-2091
+will_out_row=2307
+unload spm
+-------------------------------
+increment=4
+load_level_cumulative=1011176.0723221581
+will_in_col=x-2091
+will_out_row=105
+enter fpm
+-------------------------------
+increment=5
+load_level_cumulative=1133092.5375925046
+will_in_col=x-105
+will_out_row=2267
+enter fpm
+-------------------------------
+increment=6
+load_level_cumulative=1170751.3912765477
+will_in_col=x-2267
+will_out_row=3297
+enter fpm
+-------------------------------
+increment=7
+load_level_cumulative=1181127.5484835927
+will_in_col=x-3297
+will_out_row=678
+enter fpm
+-------------------------------
+increment=8
+load_level_cumulative=1191744.5878178403
+will_in_col=x-678
+will_out_row=1081
+enter fpm
+-------------------------------
+increment=9
+load_level_cumulative=1262616.4051732118
+will_in_col=x-1081
+will_out_row=718
+enter fpm
+-------------------------------
+increment=10
+load_level_cumulative=1280918.4975728467
+will_in_col=x-718
+will_out_row=2746
+unload spm
+-------------------------------
+increment=11
+load_level_cumulative=1280918.4975728467
+will_in_col=x-718
+will_out_row=2746
+enter fpm
+-------------------------------
+increment=12
+load_level_cumulative=1283082.839460573
+will_in_col=x-2746
+will_out_row=1041
+enter fpm
+-------------------------------
+increment=13
+load_level_cumulative=1289455.972563057
+will_in_col=x-1041
+will_out_row=65
+unload spm
+-------------------------------
+increment=14
+load_level_cumulative=1289455.972563057
+will_in_col=x-1041
+will_out_row=65
+enter fpm
+-------------------------------
+increment=15
+load_level_cumulative=1298336.4234882984
+will_in_col=x-65
+will_out_row=2306
+enter fpm
+-------------------------------
+increment=16
+load_level_cumulative=1309493.9014358746
+will_in_col=x-2306
+will_out_row=106
+enter fpm
+-------------------------------
+increment=17
+load_level_cumulative=1383742.2407937206
+will_in_col=x-106
+will_out_row=719
+enter fpm
+-------------------------------
+increment=18
+load_level_cumulative=1388475.9711186169
+will_in_col=x-719
+will_out_row=1435
+enter fpm
+-------------------------------
+increment=19
+load_level_cumulative=1402396.935273966
+will_in_col=x-1435
+will_out_row=2092
+enter fpm
+-------------------------------
+increment=20
+load_level_cumulative=1420948.227910587
+will_in_col=x-2092
+will_out_row=3298
+enter fpm
+-------------------------------
+increment=21
+load_level_cumulative=1479230.8627162767
+will_in_col=x-3298
+will_out_row=2745
+enter fpm
+-------------------------------
+increment=22
+load_level_cumulative=1487553.0025615373
+will_in_col=x-2745
+will_out_row=2705
+enter fpm
+-------------------------------
+increment=23
+load_level_cumulative=1563197.6053373904
+will_in_col=x-2705
+will_out_row=2132
+enter fpm
+-------------------------------
+increment=24
+load_level_cumulative=1567107.970873988
+will_in_col=x-2132
+will_out_row=3257
+enter fpm
+-------------------------------
+increment=25
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=1041
+unload spm
+-------------------------------
+increment=26
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=105
+unload spm
+-------------------------------
+increment=27
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=105
+unload spm
+-------------------------------
+increment=28
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=105
+unload spm
+-------------------------------
+increment=29
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=1041
+unload spm
+-------------------------------
+increment=30
+load_level_cumulative=1580666.4495070293
+will_in_col=x-3257
+will_out_row=3258
+enter fpm
+-------------------------------
+increment=31
+load_level_cumulative=1580666.4495070423
+will_in_col=x-3258
+will_out_row=758
+enter fpm
+-------------------------------
+increment=32
+load_level_cumulative=1598432.9014879076
+will_in_col=x-758
+will_out_row=1435
+unload spm
+-------------------------------
+increment=33
+load_level_cumulative=1598432.9014879076
+will_in_col=x-758
+will_out_row=1435
+unload opm
+-------------------------------
+increment=34
+load_level_cumulative=1598432.9014879076
+will_in_col=x-758
+will_out_row=1395
+enter fpm
+-------------------------------
+increment=35
+load_level_cumulative=1626323.6299216193
+will_in_col=x-1395
+will_out_row=1435
+unload spm
+-------------------------------
+increment=36
+load_level_cumulative=1626323.6299216193
+will_in_col=x-1395
+will_out_row=1042
+enter fpm
+-------------------------------
+increment=37
+load_level_cumulative=1660199.7381442194
+will_in_col=x-1042
+will_out_row=5507
+enter fpm
+-------------------------------
+increment=38
+load_level_cumulative=1661500.6144522806
+will_in_col=x-5507
+will_out_row=798
+enter fpm
+-------------------------------
+increment=39
+load_level_cumulative=1720185.3055845993
+will_in_col=x-798
+will_out_row=1395
+unload spm
+-------------------------------
+increment=40
+load_level_cumulative=1720185.3055845993
+will_in_col=x-798
+will_out_row=6752
+enter fpm
+-------------------------------
+increment=41
+load_level_cumulative=1760001.7069546815
+will_in_col=x-6752
+will_out_row=6712
+enter fpm
+-------------------------------
+increment=42
+load_level_cumulative=1778434.3965979607
+will_in_col=x-6712
+will_out_row=1002
+unload spm
+-------------------------------
+increment=43
+load_level_cumulative=1778434.3965979617
+will_in_col=x-6712
+will_out_row=1002
+enter fpm
+-------------------------------
+increment=44
+load_level_cumulative=1785573.2724184874
+will_in_col=x-1002
+will_out_row=5840
+unload spm
+-------------------------------
+increment=45
+load_level_cumulative=1785573.2724184874
+will_in_col=x-1002
+will_out_row=65
+unload spm
+-------------------------------
+increment=46
+load_level_cumulative=1785573.2724184874
+will_in_col=x-1002
+will_out_row=2745
+unload spm
+-------------------------------
+increment=47
+load_level_cumulative=1785573.2724184874
+will_in_col=x-1002
+will_out_row=1001
+enter fpm
+-------------------------------
+increment=48
+load_level_cumulative=1785573.2724298423
+will_in_col=x-1001
+will_out_row=5840
+enter fpm
+-------------------------------
+increment=49
+load_level_cumulative=1799489.5715431017
+will_in_col=x-5840
+will_out_row=4174
+enter fpm
+-------------------------------
+increment=50
+load_level_cumulative=1802337.5279734167
+will_in_col=x-4174
+will_out_row=4538
+enter fpm
+-------------------------------
+increment=51
+load_level_cumulative=1802936.113367152
+will_in_col=x-4538
+will_out_row=2092
+unload spm
+-------------------------------
+increment=52
+load_level_cumulative=1802936.1133671522
+will_in_col=x-4538
+will_out_row=2092
+enter fpm
+-------------------------------
+increment=53
+load_level_cumulative=1804532.5645930571
+will_in_col=x-2092
+will_out_row=4539
+enter fpm
+-------------------------------
+increment=54
+load_level_cumulative=1809432.8514263437
+will_in_col=x-4539
+will_out_row=1042
+enter fpm
+-------------------------------
+increment=55
+load_level_cumulative=1815133.455552563
+will_in_col=x-1042
+will_out_row=2133
+enter fpm
+-------------------------------
+increment=56
+load_level_cumulative=1828345.3091595548
+will_in_col=x-2133
+will_out_row=1396
+enter fpm
+-------------------------------
+increment=57
+load_level_cumulative=1839372.748457525
+will_in_col=x-1396
+will_out_row=838
+enter fpm
+-------------------------------
+increment=58
+load_level_cumulative=1857641.92168919
+will_in_col=x-838
+will_out_row=4539
+unload spm
+-------------------------------
+increment=59
+load_level_cumulative=1857641.921689191
+will_in_col=x-838
+will_out_row=5507
+unload spm
+-------------------------------
+increment=60
+load_level_cumulative=1857641.9216891918
+will_in_col=x-838
+will_out_row=2133
+unload spm
+-------------------------------
+increment=61
+load_level_cumulative=1857641.9216891928
+will_in_col=x-838
+will_out_row=3257
+unload spm
+-------------------------------
+increment=62
+load_level_cumulative=1857641.9216891937
+will_in_col=x-838
+will_out_row=1395
+enter fpm
+-------------------------------
+increment=63
+load_level_cumulative=1857641.9216892764
+will_in_col=x-1395
+will_out_row=1436
+enter fpm
+-------------------------------
+increment=64
+load_level_cumulative=1862996.5394186755
+will_in_col=x-1436
+will_out_row=2745
+unload spm
+-------------------------------
+increment=65
+load_level_cumulative=1862996.5394186752
+will_in_col=x-1436
+will_out_row=2745
+unload spm
+-------------------------------
+increment=66
+load_level_cumulative=1862996.5394186643
+will_in_col=x-1436
+will_out_row=1396
+enter fpm
+-------------------------------
+increment=67
+load_level_cumulative=1862996.539418684
+will_in_col=x-1396
+will_out_row=3218
+enter fpm
+-------------------------------
+increment=68
+load_level_cumulative=1879982.0026358862
+will_in_col=x-3218
+will_out_row=5507
+unload spm
+-------------------------------
+increment=69
+load_level_cumulative=1879982.0026358878
+will_in_col=x-3218
+will_out_row=2133
+unload spm
+-------------------------------
+increment=70
+load_level_cumulative=1879982.0026358895
+will_in_col=x-3218
+will_out_row=3217
+enter fpm
+-------------------------------
+increment=71
+load_level_cumulative=1879984.2796526416
+will_in_col=x-3217
+will_out_row=5507
+unload spm
+-------------------------------
+increment=72
+load_level_cumulative=1879984.2796526426
+will_in_col=x-3217
+will_out_row=4175
+enter fpm
+-------------------------------
+increment=73
+load_level_cumulative=1890395.9271185843
+will_in_col=x-4175
+will_out_row=1436
+unload spm
+-------------------------------
+increment=74
+load_level_cumulative=1890395.9271185838
+will_in_col=x-4175
+will_out_row=6713
+enter fpm
+-------------------------------
+increment=75
+load_level_cumulative=1902344.5464306849
+will_in_col=x-6713
+will_out_row=837
+enter fpm
+-------------------------------
+increment=76
+load_level_cumulative=1906129.144066619
+will_in_col=x-837
+will_out_row=2704
+unload spm
+-------------------------------
+increment=77
+load_level_cumulative=1906129.1440666174
+will_in_col=x-837
+will_out_row=2704
+enter fpm
+-------------------------------
+increment=78
+load_level_cumulative=1941416.84226391
+will_in_col=x-2704
+will_out_row=2134
+unload spm
+-------------------------------
+increment=79
+load_level_cumulative=1941416.8422639086
+will_in_col=x-2704
+will_out_row=2744
+enter fpm
+-------------------------------
+increment=80
+load_level_cumulative=1941437.555045451
+will_in_col=x-2744
+will_out_row=2134
+enter fpm
+-------------------------------
+increment=81
+load_level_cumulative=1961217.7915690679
+will_in_col=x-2134
+will_out_row=5547
+unload spm
+-------------------------------
+increment=82
+load_level_cumulative=1961217.7915690646
+will_in_col=x-2134
+will_out_row=4538
+unload spm
+-------------------------------
+increment=83
+load_level_cumulative=1961217.7915690613
+will_in_col=x-2134
+will_out_row=5547
+enter fpm
+-------------------------------
+increment=84
+load_level_cumulative=1977140.2532906665
+will_in_col=x-5547
+will_out_row=2745
+enter fpm
+-------------------------------
+increment=85
+load_level_cumulative=1978575.4202126055
+will_in_col=x-2745
+will_out_row=4174
+enter fpm
+-------------------------------
+increment=86
+load_level_cumulative=1979774.8814467906
+will_in_col=x-4174
+will_out_row=3643
+enter fpm
+-------------------------------
+increment=87
+load_level_cumulative=1980905.2904319176
+will_in_col=x-3643
+will_out_row=6712
+unload spm
+-------------------------------
+increment=88
+load_level_cumulative=1980905.2904319155
+will_in_col=x-3643
+will_out_row=2268
+enter fpm
+-------------------------------
+increment=89
+load_level_cumulative=2006606.567711302
+will_in_col=x-2268
+will_out_row=104
+unload spm
+-------------------------------
+increment=90
+load_level_cumulative=2006606.5677113004
+will_in_col=x-2268
+will_out_row=2308
+enter fpm
+-------------------------------
+increment=91
+load_level_cumulative=2006962.9700878887
+will_in_col=x-2308
+will_out_row=104
+enter fpm
+-------------------------------
+increment=92
+load_level_cumulative=2010976.0589049475
+will_in_col=x-104
+will_out_row=4498
+enter fpm
+-------------------------------
+increment=93
+load_level_cumulative=2015907.9774402457
+will_in_col=x-4498
+will_out_row=4539
+unload spm
+-------------------------------
+increment=94
+load_level_cumulative=2015907.9774402461
+will_in_col=x-4498
+will_out_row=4499
+enter fpm
+-------------------------------
+increment=95
+load_level_cumulative=2015935.7948543148
+will_in_col=x-4499
+will_out_row=2173
+enter fpm
+-------------------------------
+increment=96
+load_level_cumulative=2020233.1150692897
+will_in_col=x-2173
+will_out_row=1436
+unload spm
+-------------------------------
+increment=97
+load_level_cumulative=2020233.115069287
+will_in_col=x-2173
+will_out_row=6713
+unload spm
+-------------------------------
+increment=98
+load_level_cumulative=2020233.115069284
+will_in_col=x-2173
+will_out_row=2174
+enter fpm
+-------------------------------
+increment=99
+load_level_cumulative=2020391.047264868
+will_in_col=x-2174
+will_out_row=2174
+unload spm
+-------------------------------
+increment=100
+load_level_cumulative=2020391.0472648654
+will_in_col=x-2174
+will_out_row=1003
+enter fpm
+-------------------------------
+increment=101
+load_level_cumulative=2035341.5987276775
+will_in_col=x-1003
+will_out_row=877
+enter fpm
+-------------------------------
+increment=102
+load_level_cumulative=2067951.7147148808
+will_in_col=x-877
+will_out_row=876
+unload spm
+-------------------------------
+increment=103
+load_level_cumulative=2067951.7147148943
+will_in_col=x-877
+will_out_row=876
+enter fpm
+-------------------------------
+increment=104
+load_level_cumulative=2068128.892986417
+will_in_col=x-876
+will_out_row=5547
+unload spm
+-------------------------------
+increment=105
+load_level_cumulative=2068128.89298643
+will_in_col=x-876
+will_out_row=5547
+unload spm
+-------------------------------
+increment=106
+load_level_cumulative=2068128.8929864306
+will_in_col=x-876
+will_out_row=5547
+unload spm
+-------------------------------
+increment=107
+load_level_cumulative=2068128.892986431
+will_in_col=x-876
+will_out_row=837
+enter fpm
+-------------------------------
+increment=108
+load_level_cumulative=2068128.8929847844
+will_in_col=x-837
+will_out_row=836
+enter fpm
+-------------------------------
+increment=109
+load_level_cumulative=2071385.2622175394
+will_in_col=x-836
+will_out_row=836
+unload spm
+-------------------------------
+increment=110
+load_level_cumulative=2071385.262217539
+will_in_col=x-836
+will_out_row=5548
+enter fpm
+-------------------------------
+increment=111
+load_level_cumulative=2074286.86511961
+will_in_col=x-5548
+will_out_row=5841
+unload spm
+-------------------------------
+increment=112
+load_level_cumulative=2074286.8651196107
+will_in_col=x-5548
+will_out_row=5841
+enter fpm
+-------------------------------
+increment=113
+load_level_cumulative=2075024.366486434
+will_in_col=x-5841
+will_out_row=4539
+unload spm
+-------------------------------
+increment=114
+load_level_cumulative=2075024.3664864344
+will_in_col=x-5841
+will_out_row=2175
+enter fpm
+-------------------------------
+increment=115
+load_level_cumulative=2078426.054807481
+will_in_col=x-2175
+will_out_row=1003
+unload spm
+-------------------------------
+increment=116
+load_level_cumulative=2078426.0548074814
+will_in_col=x-2175
+will_out_row=5801
+enter fpm
+-------------------------------
+increment=117
+load_level_cumulative=2089807.6669335926
+will_in_col=x-5801
+will_out_row=835
+enter fpm
+-------------------------------
+increment=118
+load_level_cumulative=2094825.2057727852
+will_in_col=x-835
+will_out_row=5548
+unload spm
+-------------------------------
+increment=119
+load_level_cumulative=2094825.20577271
+will_in_col=x-835
+will_out_row=7072
+enter fpm

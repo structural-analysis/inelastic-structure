@@ -179,9 +179,6 @@ class Sifting:
                 plastic_vars_in_basic_variables=plastic_vars_in_basic_variables_prev
             )
             final_num_in_structures = [piece.num_in_structure for piece in point_pieces_current]
-            print(f"{point_num=}")
-            print(final_num_in_structures)
-            print("--------")
             point_updated = sifted_yield_points_updated[point_num]
             point_pieces_updated = point_updated.pieces
             point_sifted_yield_pieces_nums_in_intact_yield_point_updated = point_updated.sifted_yield_pieces_nums_in_intact_yield_point
@@ -243,8 +240,7 @@ class Sifting:
                 )
                 point_pieces_updated[prev_changed_index] = sifted_yield_piece
                 point_sifted_yield_pieces_nums_in_intact_yield_point_updated[prev_changed_index] = current_piece_to_change.num_in_yield_point
-                print(f"{len(structure_sifted_yield_pieces_updated)=}")
-                print(f"{sifted_num_in_structure=}")
+
                 structure_sifted_yield_pieces_updated[sifted_num_in_structure] = sifted_yield_piece
                 modified_structure_sifted_yield_pieces_indices.append(
                     prev_changed_index + cumulative_point_pieces_count
