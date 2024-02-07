@@ -178,7 +178,16 @@ class Sifting:
                 will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
                 plastic_vars_in_basic_variables=plastic_vars_in_basic_variables_prev
             )
-            final_num_in_structures = [piece.num_in_structure for piece in point_pieces_current]
+
+            # if point_num == 1 or point_num == 5:
+            #     print(f"point_violated_pieces for {point_num=}:")
+            #     print_specific_properties(point_violated_pieces, ["num_in_structure"])
+            #     print(f"point_selected_pieces for {point_num=}:")
+            #     print_specific_properties(point_selected_pieces, ["num_in_structure", "score"])
+            #     print(f"point_pieces_current for {point_num=}:")
+            #     print_specific_properties(point_pieces_current, ["num_in_structure"])
+
+            # final_num_in_structures = [piece.num_in_structure for piece in point_pieces_current]
             # print(f"{point_num=}")
             # print(f"{final_num_in_structures=}")
             point_updated = sifted_yield_points_updated[point_num]
@@ -390,6 +399,8 @@ class Sifting:
                     score=scores[violated_piece_num],
                 )
             )
+        print("//// score of violated pieces: ")
+        print_specific_properties(violated_pieces, ["num_in_structure", "score"])
         return violated_pieces
 
     def get_point_changed_pieces(self, sifted_pieces_prev, sifted_pieces_current):
@@ -428,11 +439,15 @@ class Sifting:
         final_pieces = selected_pieces[:]
         assign_indices = [index for index, piece in enumerate(selected_pieces) if piece.num_in_structure not in unchanged_vars]
         assign_indices.sort(reverse=True)
-        for i, assign_index in enumerate(assign_indices):
-            if i < len(violated_pieces):
-                final_pieces[assign_index] = violated_pieces[i]
-            else:
-                break
+        if violated_pieces:
+            if not violated_pieces[0] in final_pieces:
+                final_pieces[assign_indices[0]] = violated_pieces[0]
+        # for i, assign_index in enumerate(assign_indices):
+        #     if i < len(violated_pieces):
+        #         final_pieces[assign_index] = violated_pieces[i]
+        #     else:
+        #         break
+
         # print(f"{unchanged_vars=}")
         # for violated_piece in violated_pieces[:4]:
         #     print(f"{violated_piece=}")

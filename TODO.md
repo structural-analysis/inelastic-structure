@@ -33,3 +33,10 @@ sifted pieces nums was 16 and 18 and num_in_structures was: 2132 and 2131
 check b/a in increment 22 b/c will_out of increment 23 computed in inc 22.
 
 and in example: 3d-simple beam sifted and unsifted results was different b/c there is two yield points exactly in one point of structure.
+
+infinite loop of selected pieces:
+sifting with 4 pieces fails in example plate-semiconfined-inelastic.
+in increment 72 violated pieces loops between 2268 and 2306 forever.
+with 5 pieces example solved 
+but there was some changes in responses, probabely b/c of bifurcation.
+sifted results are in compare/plate-semiconfined-inelastic/sifted-4sifted_pieces.txt

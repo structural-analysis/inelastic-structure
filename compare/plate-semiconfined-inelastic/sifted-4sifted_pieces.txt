@@ -1,0 +1,187 @@
+-------------------------------
+increment=71
+load_level_cumulative=1869493.6819532437
+will_in_col=x-29
+will_out_row=49
+will_out_var=31
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 2267, 5840, 838, 4174, 3258, 2133, 4538]
+unload spm
+-------------------------------
+increment=72
+load_level_cumulative=1869493.6819532744
+will_in_col=x-29
+will_out_row=63
+will_out_var=128
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 5840, 838, 4174, 2267, 2133, 4538]
+enter fpm
+//// score of violated pieces: 
+837 [[0.00067474]]
+2268 [[0.00118945]]
+++++ piece violation ++++
+1 395 837
+5 58 2268
+point_violated_pieces for point_num=1:
+837
+point_selected_pieces for point_num=1:
+838 [[-3.20743432e-13]]
+798 [[-0.00280259]]
+837 [[-0.00340033]]
+839 [[-0.0045407]]
+point_pieces_current for point_num=1:
+838
+798
+837
+839
+point_violated_pieces for point_num=5:
+2268
+point_selected_pieces for point_num=5:
+2307 [[0.00541217]]
+2267 [[0.00524607]]
+2266 [[0.00287267]]
+2306 [[0.0018078]]
+point_pieces_current for point_num=5:
+2307
+2267
+2266
+2268
+-------------------------------
+increment=72
+load_level_cumulative=1869493.6819532744
+will_in_col=x-29
+will_out_row=21
+will_out_var=86
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 5840, 838, 4174, 2267, 2133, 4538]
+enter fpm
+//// score of violated pieces: 
+2306 [[0.00015212]]
+++++ piece violation ++++
+5 96 2306
+point_violated_pieces for point_num=1:
+point_selected_pieces for point_num=1:
+838 [[-3.20743432e-13]]
+798 [[-0.00280259]]
+837 [[-0.00340033]]
+839 [[-0.0045407]]
+point_pieces_current for point_num=1:
+838
+798
+837
+839
+point_violated_pieces for point_num=5:
+2306
+point_selected_pieces for point_num=5:
+2307 [[0.00541217]]
+2267 [[0.00524607]]
+2266 [[0.00287267]]
+2306 [[0.0018078]]
+point_pieces_current for point_num=5:
+2307
+2267
+2266
+2306
+-------------------------------
+increment=72
+load_level_cumulative=1869493.6819532744
+will_in_col=x-29
+will_out_row=6
+will_out_var=71
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 5840, 838, 4174, 2267, 2133, 4538]
+enter fpm
+//// score of violated pieces: 
+2268 [[0.0005637]]
+++++ piece violation ++++
+5 58 2268
+point_violated_pieces for point_num=1:
+point_selected_pieces for point_num=1:
+838 [[-3.20743432e-13]]
+798 [[-0.00280259]]
+837 [[-0.00340033]]
+839 [[-0.0045407]]
+point_pieces_current for point_num=1:
+838
+798
+837
+839
+point_violated_pieces for point_num=5:
+2268
+point_selected_pieces for point_num=5:
+2307 [[0.00541217]]
+2267 [[0.00524607]]
+2266 [[0.00287267]]
+2306 [[0.0018078]]
+point_pieces_current for point_num=5:
+2307
+2267
+2266
+2268
+-------------------------------
+increment=72
+load_level_cumulative=1869493.6819532744
+will_in_col=x-29
+will_out_row=21
+will_out_var=86
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 5840, 838, 4174, 2267, 2133, 4538]
+enter fpm
+//// score of violated pieces: 
+2306 [[0.00015212]]
+++++ piece violation ++++
+5 96 2306
+point_violated_pieces for point_num=1:
+point_selected_pieces for point_num=1:
+838 [[-3.20743432e-13]]
+798 [[-0.00280259]]
+837 [[-0.00340033]]
+839 [[-0.0045407]]
+point_pieces_current for point_num=1:
+838
+798
+837
+839
+point_violated_pieces for point_num=5:
+2306
+point_selected_pieces for point_num=5:
+2307 [[0.00541217]]
+2267 [[0.00524607]]
+2266 [[0.00287267]]
+2306 [[0.0018078]]
+point_pieces_current for point_num=5:
+2307
+2267
+2266
+2306
+-------------------------------
+increment=72
+load_level_cumulative=1869493.6819532744
+will_in_col=x-29
+will_out_row=6
+will_out_var=71
+input plastic_vars_in_basic_variables_prev=[2307, 2705, 1396, 5507, 4539, 105, 1002, 1042, 65, 1435, 2745, 6712, 3217, 5840, 838, 4174, 2267, 2133, 4538]
+enter fpm
+//// score of violated pieces: 
+2268 [[0.0005637]]
+++++ piece violation ++++
+5 58 2268
+point_violated_pieces for point_num=1:
+point_selected_pieces for point_num=1:
+838 [[-3.20743432e-13]]
+798 [[-0.00280259]]
+837 [[-0.00340033]]
+839 [[-0.0045407]]
+point_pieces_current for point_num=1:
+838
+798
+837
+839
+point_violated_pieces for point_num=5:
+2268
+point_selected_pieces for point_num=5:
+2307 [[0.00541217]]
+2267 [[0.00524607]]
+2266 [[0.00287267]]
+2306 [[0.0018078]]
+point_pieces_current for point_num=5:
+2307
+2267
+2266
+2268
+-------------------------------

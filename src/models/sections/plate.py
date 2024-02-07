@@ -24,7 +24,7 @@ class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.mp = nonlinear.mp
         self.yield_surface = nonlinear.yield_surface
-        self.sifted_pieces_count = 4
+        self.sifted_pieces_count = 5  # 4 will not run for example plate-semiconfined-inelastic
         self.components_count = self.phi.shape[0]
         self.pieces_count = self.phi.shape[1]
 

@@ -395,21 +395,29 @@ class MahiniMethod:
             print(f"will_in_col=x-{will_in_col}")
             print(f"{will_out_row=}")
             print(f"{will_out_var=}")
+
             # if settings.sifting_type == SiftingType.mahini:
             #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
             #     if will_out_row != 64:
             #         print(f"global_will_out_row={self.structure_sifted_yield_pieces_current[will_out_row].num_in_structure}")
             #     else:
             #         print("global_will_out_row=?")
-                # primary_will_out_var = self.get_primary_var(will_out_var)
-                # if primary_will_out_var < 0:
-                #     primary_will_out_var = will_out_var
-                #     print(f"will_out_var=x-{primary_will_out_var}")
-                #     print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
-                # else:
-                #     print(f"will_out_var=y-{primary_will_out_var}")
-                #     print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
-                # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
+            #     primary_will_out_var = self.get_primary_var(will_out_var)
+            #     if primary_will_out_var < 0:
+            #         primary_will_out_var = will_out_var
+            #         print(f"will_out_var=x-{primary_will_out_var}")
+            #         print(f"global_will_out_var=x-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+            #     else:
+            #         print(f"will_out_var=y-{primary_will_out_var}")
+            #         # print(f"global_will_out_var=y-{self.structure_sifted_yield_pieces_current[primary_will_out_var].num_in_structure}")
+            #     # print_specific_properties(self.structure_sifted_yield_pieces_current, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure", "sifted_num_in_structure"])
+
+            if settings.sifting_type == SiftingType.not_used:
+                unsifted_primary_vars = []
+                for basic_variable in basic_variables:
+                    if basic_variable < self.landa_var:
+                        unsifted_primary_vars.append(basic_variable)
+                print(f"{unsifted_primary_vars=}")
 
             # print(f"{bbar[will_out_row]=}")
             # print(f"{sorted_zipped_ba=}")
@@ -501,14 +509,6 @@ class MahiniMethod:
                         check_violation = True
                         break
 
-            # checking basic variables after 21 increment
-            # if increment == 21:  # use when unsifted
-            #     if settings.sifting_type == SiftingType.not_used:
-            #         unsifted_primary_vars = []
-            #         for basic_variable in basic_variables:
-            #             if basic_variable < self.landa_var:
-            #                 unsifted_primary_vars.append(basic_variable)
-            #         print(f"{unsifted_primary_vars=}")
             #     elif settings.sifting_type == SiftingType.mahini:
             #         basics_primary_vars = []
             #         primary_or_slack = []
@@ -558,6 +558,7 @@ class MahiniMethod:
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
             x, bbar = self.reset(basic_variables, bbar)
+
             # print("abar: ")
             # for num, el in enumerate(abar):
             #     print(num, ":", el)
@@ -610,8 +611,7 @@ class MahiniMethod:
                         # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
                         scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
                         print("++++ piece violation ++++")
-                        print(f"{violated_pieces=}")
-                        # print_specific_properties(violated_pieces, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure"])
+                        print_specific_properties(violated_pieces, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure"])
                         # print(f"{violated_pieces=}")
                         # print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
                         # print(f"top violated prev score={scores_prev[violated_pieces[0].num_in_structure]}")
