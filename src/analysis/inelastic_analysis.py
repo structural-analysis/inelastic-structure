@@ -28,72 +28,14 @@ class InelasticAnalysis:
             self.plastic_vars = mahini_method.solve()
 
         elif self.analysis_type is AnalysisType.DYNAMIC:
-            time_steps = initial_analysis.time_steps
-            self.nodal_disp_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.members_nodal_forces_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.members_disps_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.modal_loads_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.plastic_vars_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.a2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.b2_sensitivity_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.p0_history = np.zeros((time_steps, 1), dtype=object)
-            self.p0_history[0, 0] = np.matrix(np.zeros((structure.yield_specs.intact_components_count, 1)))
-            self.d0_history = np.zeros((time_steps, 1), dtype=object)
-            self.pv_history = np.zeros((time_steps, 1), dtype=object)
-            initial_pv = np.matrix(np.zeros((
-                structure.yield_specs.intact_components_count, structure.yield_specs.intact_components_count
-            )))
-            self.pv_history[0, 0] = initial_pv
-            self.load_level = 0
-
-            self.plastic_multipliers_history = np.matrix(np.zeros((time_steps, 1), dtype=object))
-            self.plastic_multipliers_prev = np.matrix(np.zeros((self.initial_data.plastic_vars_count, 1)))
-
+            mahini_method = MahiniMethod(initial_data=self.initial_data, analysis_data=self.analysis_data)
+            self.plastic_vars = mahini_method.solve_dynamic()
             for time_step in range(1, time_steps):
                 print(f"{time_step=}")
                 print(f"{self.time[time_step][0, 0]=}")
-                self.total_load = loads.get_total_load(structure, loads, time_step)
-
-                elastic_a2s, elastic_b2s, elastic_modal_loads, elastic_nodal_disp = self.get_dynamic_nodal_disp(
-                    time_step=time_step,
-                    modes=modes,
-                    previous_modal_loads=self.modal_loads[time_step - 1, 0],
-                    total_load=self.total_load,
-                    a1s=self.a_duhamel[time_step - 1, 0],
-                    b1s=self.b_duhamel[time_step - 1, 0],
-                )
-
-                self.a_duhamel[time_step, 0] = elastic_a2s
-                self.b_duhamel[time_step, 0] = elastic_b2s
-                self.modal_loads[time_step, 0] = elastic_modal_loads
-                self.elastic_nodal_disp_history[time_step, 0] = elastic_nodal_disp
-                elastic_members_disps = self.get_members_disps(elastic_nodal_disp[0, 0])
-                self.elastic_members_disps_history[time_step, 0] = elastic_members_disps
-                internal_responses = self.get_internal_responses(elastic_members_disps)
-                self.elastic_members_nodal_forces_history[time_step, 0] = internal_responses.members_nodal_forces
 
                 if self.structure.is_inelastic:
-                    self.p0 = internal_responses.p0
-                    self.p0_prev = self.p0_history[time_step - 1, 0]
-                    self.p0_history[time_step, 0] = self.p0
 
-                    d0 = self.get_nodal_disp_limits(elastic_nodal_disp[0, 0])
-                    self.d0 = d0
-                    self.d0_history[time_step, 0] = d0
-                    sensitivity = self.get_dynamic_sensitivity(modes, time_step)
-                    self.pv = sensitivity.pv
-                    self.pv_prev = self.pv_history[time_step - 1, 0]
-                    self.pv_history[time_step, 0] = sensitivity.pv
-                    self.nodal_disp_sensitivity_history[time_step, 0] = sensitivity.nodal_disp
-                    self.members_nodal_forces_sensitivity_history[time_step, 0] = sensitivity.members_nodal_forces
-                    self.members_disps_sensitivity_history[time_step, 0] = sensitivity.members_disps
-                    self.modal_loads_sensitivity_history[time_step, 0] = sensitivity.modal_loads
-                    self.a2_sensitivity_history[time_step, 0] = sensitivity.a2s
-                    self.b2_sensitivity_history[time_step, 0] = sensitivity.b2s
-
-                    self.dv = self.get_nodal_disp_limits_sensitivity_rows()
-                    self.load_level_prev = self.load_level
-                    mahini_method = MahiniMethod(self.initial_data)
                     self.plastic_vars = mahini_method.solve_dynamic()
                     self.plastic_vars_history[time_step, 0] = self.plastic_vars
                     self.delta_plastic_multipliers = self.plastic_vars["pms_history"][-1]

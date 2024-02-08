@@ -8,15 +8,15 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-semiconfined-inelastic"
+    example_name: str = "simple-beam-dynamic-elastic"
     sifting_type: SiftingType = SiftingType.not_used
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
     examples_to_test = [
         # "3story-static-inelastic-softening",    # still not fixed after sifting
-        # "3d-simple-beam-static-inelastic",  # possible bifurcation
-        # "plate-semiconfined-inelastic",  # possible-bifurcation
+        "3d-simple-beam-static-inelastic",  # possible bifurcation
+        "plate-semiconfined-inelastic",  # possible-bifurcation
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",
         "torre-static-elastic",
@@ -45,8 +45,8 @@ class Settings(BaseSettings):
         "plate-4element-inelastic-q8r",
         "plate-9element-confined-inelastic",
         "plate-confined-inelastic",
-        # "torre-dynamic-elastic",
         # "simple-beam-dynamic-elastic",
+        # "torre-dynamic-elastic",
         # "1story-dynamic-elastic",
         # "2story-dynamic-elastic",
         # "simple-beam-dynamic-inelastic-1phase",
