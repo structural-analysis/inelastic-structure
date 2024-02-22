@@ -133,13 +133,17 @@ class InitialAnalysis:
             self.elastic_nodal_disp_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
             self.elastic_members_disps_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
             self.elastic_members_nodal_forces_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+            self.elastic_members_nodal_strains_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+            self.elastic_members_nodal_stresses_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+            self.elastic_members_nodal_moments_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
 
             if self.structure.is_inelastic:
                 self.nodal_disp_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.members_nodal_forces_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.members_disps_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.modal_loads_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
-                self.plastic_vars_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+                
                 self.a2_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.b2_sensitivity_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.p0_history = np.zeros((self.time_steps, 1), dtype=object)
@@ -152,7 +156,6 @@ class InitialAnalysis:
                 self.pv_history[0, 0] = initial_pv
                 self.load_level = 0
 
-                self.plastic_multipliers_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
                 self.plastic_multipliers_prev = np.matrix(np.zeros((self.initial_data.intact_pieces_count, 1)))
 
     def update_dynamic_time_step(self, time_step):
@@ -189,7 +192,7 @@ class InitialAnalysis:
         if self.structure.is_inelastic:
             self.p0_prev = self.p0_history[time_step - 1, 0]
             self.p0_history[time_step, 0] = internal_responses.p0
-            self.d0_history[time_step, 0] = self.get_nodal_disp_limits(self.elastic_nodal_disp[0, 0])
+            self.d0_history[time_step, 0] = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp[0, 0])
 
             sensitivity = get_dynamic_sensitivity(
                 structure=self.structure,

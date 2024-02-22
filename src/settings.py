@@ -8,7 +8,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "simple-beam-dynamic-elastic"
+    example_name: str = "simple-beam-dynamic-inelastic-1phase"
     sifting_type: SiftingType = SiftingType.not_used
     computational_zero = 1e-12
     isclose_tolerance = 1e-7

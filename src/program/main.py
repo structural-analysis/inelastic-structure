@@ -11,7 +11,7 @@ from ..settings import settings, SiftingType
 
 
 class MahiniMethod:
-    def __init__(self, initial_data: InitialData, analysis_data: AnalysisData):
+    def __init__(self, initial_data: InitialData, analysis_data: AnalysisData, final_inc_phi_pms_prev=None):
         self.load_limit = initial_data.load_limit
         self.disp_limits = initial_data.disp_limits
         self.disp_limits_count = initial_data.disp_limits_count
@@ -75,7 +75,8 @@ class MahiniMethod:
         self.landa_var = self.plastic_vars_count + self.softening_vars_count
         self.landa_bar_var = 2 * self.landa_var + 1
         self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
-
+        self.final_inc_phi_pms_prev = final_inc_phi_pms_prev
+    
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
         self.c = self._get_costs_row()
@@ -306,16 +307,20 @@ class MahiniMethod:
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
         x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
         x_history.append(x_cumulative.copy())
-        pms_history = []
+        phi_pms_history = []
         load_level_history = []
         for x in x_history:
             pms = x[0:self.plastic_vars_count]
+            phi_pms = self.intact_phi * pms
             load_level = x[self.landa_var][0, 0]
-            pms_history.append(pms)
+            phi_pms_history.append(phi_pms)
             load_level_history.append(load_level)
+
+        final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
         result = {
-            "pms_history": pms_history,
-            "load_level_history": load_level_history
+            "phi_pms_history": phi_pms_history,
+            "load_level_history": load_level_history,
+            "final_inc_phi_pms": final_inc_phi_pms,
         }
         return result
 

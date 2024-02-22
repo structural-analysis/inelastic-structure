@@ -23,71 +23,22 @@ def run(example_name):
     structure = Structure(structure_input)
     loads = Loads(loads_input)
     analysis_type = get_analysis_type(general_info)
+    inelastic_analysis = None
 
-    if structure.is_inelastic:
-        if analysis_type == AnalysisType.STATIC:
-            initial_analysis = InitialAnalysis(structure=structure, loads=loads, analysis_type=analysis_type)
+    if analysis_type == AnalysisType.STATIC:
+        initial_analysis = InitialAnalysis(structure=structure, loads=loads, analysis_type=analysis_type)
+        if structure.is_inelastic:
             inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
-        elif analysis_type == AnalysisType.DYNAMIC:
-            initial_analysis = InitialAnalysis(structure=structure, loads=loads, analysis_type=analysis_type)
-            time_steps = initial_analysis.time_steps
-            # Create initial phi_x_prev by its size
-            phi_x_prev = np.matrix(np.zeros((initial_analysis.initial_data.intact_components_count, 1)))
-            for time_step in range(1, time_steps):
-                initial_analysis.update_dynamic_time_step()
-                inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
-                delta_phi_x = inelastic_analysis.plastic_vars["phi_pms_history"][-1]
-                load_level = inelastic_analysis.plastic_vars["load_level_history"][-1]
-                phi_x = delta_phi_x + phi_x_prev
-                phi_x_prev = phi_x
+    elif analysis_type == AnalysisType.DYNAMIC:
+        initial_analysis = InitialAnalysis(structure=structure, loads=loads, analysis_type=analysis_type)
+        inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
+        time_steps = initial_analysis.time_steps
 
-                elastoplastic_a2s = get_elastoplastic_response(
-                    load_level=load_level,
-                    phi_x=phi_x,
-                    elastic_response=initial_analysis.a_duhamel[time_step, 0],
-                    sensitivity=initial_analysis.a2_sensitivity_history[time_step, 0],
-                )
-
-                elastoplastic_b2s = get_elastoplastic_response(
-                    load_level=load_level,
-                    phi_x=phi_x,
-                    elastic_response=initial_analysis.b_duhamel[time_step, 0],
-                    sensitivity=initial_analysis.b2_sensitivity_history[time_step, 0],
-                )
-
-                elastoplastic_modal_loads = get_elastoplastic_response(
-                    load_level=load_level,
-                    phi_x=phi_x,
-                    elastic_response=initial_analysis.modal_loads[time_step, 0],
-                    sensitivity=initial_analysis.modal_loads_sensitivity_history[time_step, 0],
-                )
-
-                initial_analysis.a_duhamel[time_step, 0] = elastoplastic_a2s
-                initial_analysis.b_duhamel[time_step, 0] = elastoplastic_b2s
-                initial_analysis.modal_loads[time_step, 0] = elastoplastic_modal_loads
-
-                # elastoplastic_nodal_disp = get_elastoplastic_response(
-                #     load_level=load_level,
-                #     phi_x=phi_x,
-                #     elastic_response=elastic_nodal_disp,
-                #     sensitivity=sensitivity.nodal_disp,
-                # )
-
-                # elastoplastic_members_disps = get_elastoplastic_response(
-                #     load_level=load_level,
-                #     phi_x=phi_x,
-                #     elastic_response=elastic_members_disps,
-                #     sensitivity=sensitivity.members_disps,
-                # )
-
-                # elastoplastic_members_nodal_forces = get_elastoplastic_response(
-                #     load_level=load_level,
-                #     phi_x=phi_x,
-                #     elastic_response=internal_responses.members_nodal_forces,
-                #     sensitivity=sensitivity.members_nodal_forces,
-                # )
-    else:
-        inelastic_analysis = None
+        for time_step in range(1, time_steps):
+            initial_analysis.update_dynamic_time_step(time_step)
+            if structure.is_inelastic:
+                inelastic_analysis.update_dynamic_time_step(analysis_data=initial_analysis.analysis_data)
+                inelastic_analysis.update_inelasticity_dependent_variables(time_step=time_step, initial_analysis=initial_analysis)
 
     end_time = datetime.now()
     analysis_time = end_time - start_time
@@ -119,7 +70,7 @@ def run(example_name):
             structure_type=structure_type,
             responses=responses,
             desired_responses=desired_responses,
-            time_steps=inelastic_analysis.time_steps,
+            time_steps=initial_analysis.time_steps,
         )
         aggregate_responses(example_name)
 
