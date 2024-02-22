@@ -66,13 +66,15 @@ class Structure:
             self.reduced_k00_inv = condensation_params["reduced_k00_inv"]
             self.reduced_k00 = condensation_params["reduced_k00"]
             self.reduced_k0t = condensation_params["reduced_k0t"]
-            self.wns, self.wds, self.modes = self.compute_modes_props()
+            self.wns, self.wds, self.modes, self.modes_count = self.compute_modes_props()
             self.c = self.get_rayleigh_damping(
                 damping_ratio=self.damping,
                 wns=self.wns,
                 m=self.condensed_m,
                 k=self.condensed_k,
             )
+            self.m_modal = self.get_modal_property(self.condensed_m, self.modes)
+            self.k_modal = self.get_modal_property(self.condensed_k, self.modes)
 
     @property
     def is_inelastic(self):
@@ -396,7 +398,9 @@ class Structure:
         wd = np.sqrt(1 - damping ** 2) * wn
         print(f"{eigvals=}")
         print(f"{wn=}")
-        return wn, wd, modes
+        modes = np.matrix(modes)
+        modes_count = modes.shape[1]
+        return wn, wd, modes, modes_count
 
     def get_rayleigh_damping(self, damping_ratio, wns, m, k):
         wn0 = wns[0]
