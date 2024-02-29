@@ -20,6 +20,7 @@ class Settings(BaseSettings):
         # "3d-simple-beam-dynamic-inelastic", # won't run after use solve() for dynamic
 
         # STATIC EXAMPLES:
+        "truss-kassimali-115-static-elastic",
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",
         "torre-static-elastic",
