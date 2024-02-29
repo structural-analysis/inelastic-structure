@@ -26,13 +26,13 @@ class InelasticAnalysis:
             analysis_data=analysis_data,
             final_inc_phi_pms_prev=self.final_inc_phi_pms_prev,
         )
-        self.plastic_vars = mahini_method.solve_dynamic()
+        self.plastic_vars = mahini_method.solve()
 
     def update_inelasticity_dependent_variables(self, time_step, initial_analysis):
         final_inc_phi_pms = self.plastic_vars["final_inc_phi_pms"]
         final_inc_load_level = self.plastic_vars["load_level_history"][-1]
         self.final_inc_phi_pms_prev = final_inc_phi_pms
-        self.plastic_vars_history[time_step, 0] = self.plastic_vars 
+        self.plastic_vars_history[time_step, 0] = self.plastic_vars
         self.final_inc_phi_pms_history[time_step, 0] = final_inc_phi_pms
         elastoplastic_a2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
@@ -60,10 +60,10 @@ class InelasticAnalysis:
         initial_analysis.modal_loads[time_step, 0] = elastoplastic_modal_loads
 
         # elastoplastic_nodal_disp = get_elastoplastic_response(
-        #     load_level=load_level,
-        #     phi_x=phi_x,
-        #     elastic_response=elastic_nodal_disp,
-        #     sensitivity=sensitivity.nodal_disp,
+        #     load_level=final_inc_load_level,
+        #     phi_x=final_inc_phi_pms,
+        #     elastic_response=initial_analysis.elastic_nodal_disp_history[time_step, 0],
+        #     sensitivity=initial_analysis.nodal_disp_sensitivity_history[time_step, 0],
         # )
 
         # elastoplastic_members_disps = get_elastoplastic_response(

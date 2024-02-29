@@ -28,6 +28,7 @@ class AnalysisData:
     pv: np.matrix
     d0: np.matrix
     dv: np.matrix
+    pv_prev: np.matrix
 
 
 @dataclass
@@ -127,7 +128,7 @@ class InitialAnalysis:
             self.b_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
             b_duhamels[0, 0] = b_duhamel
             self.b_duhamel[0, 0] = b_duhamels
-            self.modal_disp_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+            # self.modal_disp_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
 
             self.total_load = np.zeros((structure.dofs_count, 1))
             self.elastic_nodal_disp_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
@@ -159,11 +160,9 @@ class InitialAnalysis:
                 self.plastic_multipliers_prev = np.matrix(np.zeros((self.initial_data.intact_pieces_count, 1)))
 
     def update_dynamic_time_step(self, time_step):
-        # self.update_b_for_dynamic_analysis(pv_prev, plastic_multipliers_prev)
-
         self.total_load = self.loads.get_total_load(self.structure, self.loads, time_step)
 
-        elastic_a2s, elastic_b2s, elastic_modal_loads, self.elastic_nodal_disp, modal_disps = get_dynamic_nodal_disp(
+        elastic_a2s, elastic_b2s, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
             structure=self.structure,
             loads=self.loads,
             time=self.time,
@@ -178,7 +177,7 @@ class InitialAnalysis:
         self.a_duhamel[time_step, 0] = elastic_a2s
         self.b_duhamel[time_step, 0] = elastic_b2s
         self.modal_loads[time_step, 0] = elastic_modal_loads
-        self.modal_disp_history[time_step, 0] = modal_disps
+        # self.modal_disp_history[time_step, 0] = modal_disps
         self.elastic_nodal_disp_history[time_step, 0] = self.elastic_nodal_disp
         self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp[0, 0])
         self.elastic_members_disps_history[time_step, 0] = self.elastic_members_disps
@@ -210,10 +209,11 @@ class InitialAnalysis:
             self.a2_sensitivity_history[time_step, 0] = sensitivity.a2s
             self.b2_sensitivity_history[time_step, 0] = sensitivity.b2s
 
-            self.dv = get_nodal_disp_limits_sensitivity_rows()
+            self.dv = get_nodal_disp_limits_sensitivity_rows(structure=self.structure, nodal_disp_sensitivity=sensitivity.nodal_disp)
             self.load_level_prev = self.load_level
 
             self.analysis_data.p0 = self.p0_history[time_step, 0]
             self.analysis_data.d0 = self.d0_history[time_step, 0]
             self.analysis_data.pv = self.pv_history[time_step, 0]
             self.analysis_data.dv = self.dv
+            self.analysis_data.pv_prev = self.pv_prev

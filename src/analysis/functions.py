@@ -229,7 +229,7 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
 
     disp = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
     nodal_disp[0, 0] = disp
-    return a2s, b2s, modal_loads, nodal_disp, modal_disps
+    return a2s, b2s, modal_loads, nodal_disp
 
 
 def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s):

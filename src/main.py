@@ -35,11 +35,12 @@ def run(example_name):
         time_steps = initial_analysis.time_steps
 
         for time_step in range(1, time_steps):
+            print(f"{time_step=}")
             initial_analysis.update_dynamic_time_step(time_step)
             if structure.is_inelastic:
                 inelastic_analysis.update_dynamic_time_step(analysis_data=initial_analysis.analysis_data)
                 inelastic_analysis.update_inelasticity_dependent_variables(time_step=time_step, initial_analysis=initial_analysis)
-
+            print("-------------")
     end_time = datetime.now()
     analysis_time = end_time - start_time
     print(f"{analysis_time=}")

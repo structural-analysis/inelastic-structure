@@ -35,6 +35,7 @@ class MahiniMethod:
         self.pv = analysis_data.pv
         self.d0 = analysis_data.d0
         self.dv = analysis_data.dv
+        self.pv_prev = analysis_data.pv_prev
 
         if settings.sifting_type is SiftingType.not_used:
             self.phi = self.intact_phi
@@ -79,6 +80,9 @@ class MahiniMethod:
     
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
+        if self.final_inc_phi_pms_prev.any():
+            self.update_b_for_dynamic_analysis()
+
         self.c = self._get_costs_row()
         self.table = self._create_table()
 
@@ -144,11 +148,11 @@ class MahiniMethod:
             j += 1
         return table
 
-    def update_b_for_dynamic_analysis(self, pv_prev, plastic_multipliers_prev):
+    def update_b_for_dynamic_analysis(self):
         self.b[0:self.plastic_vars_count] = (
             self.b[0:self.plastic_vars_count] -
             np.array(
-                self.phi.T * pv_prev * self.phi * plastic_multipliers_prev
+                self.phi.T * self.pv_prev * self.final_inc_phi_pms_prev
             ).flatten()
         )
 
@@ -178,8 +182,10 @@ class MahiniMethod:
         bbar = self.b
         b_matrix_inv = np.eye(self.slack_vars_count)
         cb = np.zeros(self.slack_vars_count)
-        x_cumulative = np.matrix(np.zeros((self.constraints_count, 1)))
         x_history = []
+        phi_pms_history = []
+        load_level_history = []
+
         fpm = FPM
         fpm.var = self.landa_var
         fpm.cost = 0
@@ -226,8 +232,7 @@ class MahiniMethod:
             # input()
             will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
             will_out_var = basic_variables[will_out_row]
-            x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
-            x_history.append(x_cumulative.copy())
+            x, bbar = self.reset(basic_variables, bbar)
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -305,10 +310,8 @@ class MahiniMethod:
                             )
                         break
         bbar = self.calculate_bbar(b_matrix_inv, bbar)
-        x_cumulative, bbar = self.reset(basic_variables, x_cumulative, bbar)
-        x_history.append(x_cumulative.copy())
-        phi_pms_history = []
-        load_level_history = []
+        x, bbar = self.reset(basic_variables, bbar)
+        x_history.append(x.copy())
         for x in x_history:
             pms = x[0:self.plastic_vars_count]
             phi_pms = self.intact_phi * pms
@@ -683,9 +686,11 @@ class MahiniMethod:
                 else:
                     phi_pms_history.append(phi_pms_cumulative.copy())
                     load_level_history.append(load_level_cumulative)
+        final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
         result = {
             "phi_pms_history": phi_pms_history,
-            "load_level_history": load_level_history
+            "load_level_history": load_level_history,
+            "final_inc_phi_pms": final_inc_phi_pms,
         }
         return result
 
