@@ -80,7 +80,7 @@ class MahiniMethod:
     
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
-        if self.final_inc_phi_pms_prev.any():
+        if self.final_inc_phi_pms_prev is not None:
             self.update_b_for_dynamic_analysis()
 
         self.c = self._get_costs_row()
@@ -686,12 +686,19 @@ class MahiniMethod:
                 else:
                     phi_pms_history.append(phi_pms_cumulative.copy())
                     load_level_history.append(load_level_cumulative)
-        final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
-        result = {
-            "phi_pms_history": phi_pms_history,
-            "load_level_history": load_level_history,
-            "final_inc_phi_pms": final_inc_phi_pms,
-        }
+
+        if self.final_inc_phi_pms_prev is not None:
+            final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
+            result = {
+                "phi_pms_history": phi_pms_history,
+                "load_level_history": load_level_history,
+                "final_inc_phi_pms": final_inc_phi_pms,
+            }
+        else:
+            result = {
+                "phi_pms_history": phi_pms_history,
+                "load_level_history": load_level_history,
+            }
         return result
 
     def get_slack_var(self, primary_var):

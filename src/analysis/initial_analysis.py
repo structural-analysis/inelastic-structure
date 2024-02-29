@@ -28,7 +28,7 @@ class AnalysisData:
     pv: np.matrix
     d0: np.matrix
     dv: np.matrix
-    pv_prev: np.matrix
+    pv_prev: np.matrix = np.matrix(np.zeros([1, 1]))
 
 
 @dataclass

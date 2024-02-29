@@ -15,8 +15,6 @@ class Settings(BaseSettings):
     output_digits = 10
     examples_to_test = [
         # "3story-static-inelastic-softening",    # still not fixed after sifting
-        "3d-simple-beam-static-inelastic",  # possible bifurcation
-        "plate-semiconfined-inelastic",  # possible-bifurcation
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",
         "torre-static-elastic",
@@ -45,17 +43,19 @@ class Settings(BaseSettings):
         "plate-4element-inelastic-q8r",
         "plate-9element-confined-inelastic",
         "plate-confined-inelastic",
-        # "simple-beam-dynamic-elastic",
-        # "torre-dynamic-elastic",
-        # "1story-dynamic-elastic",
-        # "2story-dynamic-elastic",
-        # "simple-beam-dynamic-inelastic-1phase",
-        # "1story-dynamic-inelastic-ll1.0-ap400k",
-        # "2story-dynamic-inelastic",
-        # "3d-2side-dynamic-elastic",
-        # "3d-simple-beam-dynamic-elastic",
-        # "3d-simple-beam-dynamic-inelastic",
-        # "3d-2side-dynamic-inelastic",
+        "3d-simple-beam-static-inelastic",  # possible bifurcation
+        "plate-semiconfined-inelastic",  # possible-bifurcation
+        "simple-beam-dynamic-elastic",
+        "torre-dynamic-elastic",
+        "1story-dynamic-elastic",
+        "2story-dynamic-elastic",
+        "simple-beam-dynamic-inelastic-1phase",
+        "1story-dynamic-inelastic-ll1.0-ap400k",
+        "2story-dynamic-inelastic",
+        "3d-2side-dynamic-elastic",
+        "3d-simple-beam-dynamic-elastic",
+        "3d-simple-beam-dynamic-inelastic", # won't run after use solve() for dynamic
+        "3d-2side-dynamic-inelastic",
     ]
 
 
