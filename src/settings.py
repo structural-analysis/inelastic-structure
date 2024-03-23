@@ -8,8 +8,8 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "truss-kassimali-115-static-elastic"
-    sifting_type: SiftingType = SiftingType.mahini
+    example_name: str = "simple-torre-dynamic-inelastic"
+    sifting_type: SiftingType = SiftingType.not_used
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10

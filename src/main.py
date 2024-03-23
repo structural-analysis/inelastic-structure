@@ -40,6 +40,7 @@ def run(example_name):
             if structure.is_inelastic:
                 inelastic_analysis.update_dynamic_time_step(analysis_data=initial_analysis.analysis_data)
                 inelastic_analysis.update_inelasticity_dependent_variables(time_step=time_step, initial_analysis=initial_analysis)
+            # input()
             print("-------------")
     end_time = datetime.now()
     analysis_time = end_time - start_time
