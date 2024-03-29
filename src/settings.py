@@ -17,7 +17,6 @@ class Settings(BaseSettings):
         # "3story-static-inelastic-softening",    # still not fixed after sifting
         # "plate-semiconfined-inelastic",  # possible-bifurcation # wierd behavior on multiple runs # infinite loop in sifting
         # "3d-simple-beam-static-inelastic",  # possible bifurcation
-        # "3d-simple-beam-dynamic-inelastic", # won't run after use solve() for dynamic
 
         # STATIC EXAMPLES:
         # "truss-kassimali-115-static-elastic",
@@ -51,6 +50,7 @@ class Settings(BaseSettings):
         "plate-confined-inelastic",
 
         # DYNAMIC EXAMPLES:
+        "3d-simple-beam-dynamic-inelastic",
         "simple-beam-dynamic-elastic",
         "torre-dynamic-elastic",
         "1story-dynamic-elastic",

@@ -117,7 +117,6 @@ class MahiniMethod:
                 self.activated_costs = self.cb.copy()
                 self.costs = c.copy()
 
-        print(f"{is_two_phase=}")
 
     # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
     def _get_b_column(self):
