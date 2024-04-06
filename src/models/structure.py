@@ -283,7 +283,7 @@ class Structure:
 
     def condense_boundary(self):
         zero_mass_dofs = self.zero_mass_dofs
-
+        print(f"{zero_mass_dofs=}")
         mass_dof_i = 0
         zero_mass_dof_i = 0
 
@@ -293,8 +293,12 @@ class Structure:
         bound_i = 0
         mass_bound_i = 0
         zero_mass_bound_i = 0
+        print(f"{self.zero_mass_dofs.any()=}")
         if self.zero_mass_dofs.any():
             for dof in range(self.dofs_count):
+                print(f"{mass_dof_i=}")
+                print(f"{zero_mass_dof_i=}")
+                print(f"{bound_i=}")
                 if dof == zero_mass_dofs[zero_mass_dof_i]:
                     if bound_i < self.boundaries_dof.shape[0]:
                         if dof == self.boundaries_dof[bound_i]:
@@ -372,7 +376,7 @@ class Structure:
         zero_i = 0
         zero_mass_dofs_i = 0
         for dof in range(self.dofs_count):
-            if dof == self.zero_mass_dofs[zero_mass_dofs_i]:
+            if self.zero_mass_dofs.any() and dof == self.zero_mass_dofs[zero_mass_dofs_i]:
                 mtt = np.delete(mtt, dof - zero_i, 1)
                 mtt = np.delete(mtt, dof - zero_i, 0)
                 ktt = np.delete(ktt, dof - zero_i, 1)
@@ -385,6 +389,10 @@ class Structure:
                 k00 = np.delete(k00, dof - mass_i, 0)
                 k0t = np.delete(k0t, dof - mass_i, 0)
                 mass_i += 1
+        print(f"{mtt=}")
+        print(f"{ktt=}")
+        print(f"{k00=}")
+        print(f"{k0t=}")
         return mtt, ktt, k00, k0t
 
     def get_modal_property(self, property, modes):

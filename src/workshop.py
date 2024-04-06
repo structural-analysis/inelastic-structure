@@ -129,7 +129,8 @@ def create_truss2d_sections(example_name, general_properties):
             truss2d_sections[key] = Truss2DSection(input=value)
             if is_inelastic:
                 with open(f"{nonlinear_capacity_dir}/{key}.csv", "w") as ff:
-                    ff.write(f"0,ap,{truss2d_sections[key].nonlinear.ap}\n")
+                    ff.write(f"0,ap_positive,{truss2d_sections[key].nonlinear.ap_positive}\n")
+                    ff.write(f"0,ap_negative,{truss2d_sections[key].nonlinear.ap_negative}\n")
 
         return truss2d_sections
     except FileNotFoundError:

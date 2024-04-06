@@ -5,7 +5,7 @@ rod:
   geometry:
     a: 4000.0e-6
   nonlinear:
-    is_direct_capacity: false
-    ap_positive: 0
-    ap_negative: 0
+    is_direct_capacity: true
+    ap_positive: 5.5e+5
+    ap_negative: 5.5e+5
   softening: null
