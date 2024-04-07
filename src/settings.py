@@ -10,7 +10,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "truss-kassimali-115-dynamic-elastic"
+    example_name: str = "truss-kassimali-115-dynamic-inelastic"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
