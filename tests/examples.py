@@ -4,7 +4,8 @@ all = [
         # "3d-simple-beam-static-inelastic",  # possible bifurcation
 
         # STATIC EXAMPLES:
-        # "truss-kassimali-115-static-elastic",
+        "truss-kassimali-115-static-elastic",
+        "truss-kassimali-115-static-inelastic",
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",
         "torre-static-elastic",
@@ -35,6 +36,8 @@ all = [
         "plate-confined-inelastic",
 
         # DYNAMIC EXAMPLES:
+        "truss-kassimali-115-dynamic-elastic",
+        "truss-kassimali-115-dynamic-inelastic",
         "3d-simple-beam-dynamic-inelastic",
         "simple-beam-dynamic-elastic",
         "torre-dynamic-elastic",
