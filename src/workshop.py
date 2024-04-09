@@ -16,14 +16,13 @@ from src.models.members.frame2d import Frame2DMember, Mass
 from src.models.members.frame3d import Frame3DMember
 from src.models.members.plate import PlateMember
 from src.models.members.wall import WallMember
-from src.models.loads import Dynamic, Joint
+from src.models.loads import DynamicLoad, JointLoad, DistributedLoad
 
 examples_dir = "input/examples/"
 general_file = "general.yaml"
 nodes_file = "nodes.csv"
 nodal_boundaries_file = "boundaries/nodal.csv"
 linear_boundaries_file = "boundaries/linear.csv"
-static_joint_loads_file = "loads/static/joint_loads.csv"
 truss2d_sections_file = "sections/trusses2d.yaml"
 frame2d_sections_file = "sections/frames2d.yaml"
 frame3d_sections_file = "sections/frames3d.yaml"
@@ -39,6 +38,7 @@ load_limits_file = "limits/load.csv"
 disp_limits_file = "limits/disp.csv"
 dynamic_loads_dir = "loads/dynamic/"
 joint_loads_file = "loads/static/joint_loads.csv"
+distributed_load_file = "loads/static/distributed_load.csv"
 output_dir = "output/examples/"
 
 
@@ -418,15 +418,20 @@ def create_wall_members(example_name, nodes, node_dofs_count):
     return wall_members
 
 
-def create_joint_load(example_name):
+def create_joint_loads(example_name):
     general_info = get_general_properties(example_name)
     if not general_info.get("dynamic_analysis"):
         joint_loads_path = os.path.join(examples_dir, example_name, joint_loads_file)
-        joint_loads__array = np.loadtxt(fname=joint_loads_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
         joint_loads = []
+        try:
+            joint_loads__array = np.loadtxt(fname=joint_loads_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
+        except FileNotFoundError:
+            logging.info("there is no joint load")
+            return []
+
         for i in range(joint_loads__array.shape[0]):
             joint_loads.append(
-                Joint(
+                JointLoad(
                     node=int(joint_loads__array[i, 0]),
                     dof=int(joint_loads__array[i, 1]),
                     magnitude=joint_loads__array[i, 2],
@@ -435,6 +440,20 @@ def create_joint_load(example_name):
         return joint_loads
     else:
         return []
+
+
+def create_distributed_load(example_name):
+    general_info = get_general_properties(example_name)
+    if not general_info.get("dynamic_analysis"):
+        distributed_load_path = os.path.join(examples_dir, example_name, distributed_load_file)
+        try:
+            distributed_load_magnitude = np.loadtxt(fname=distributed_load_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
+        except FileNotFoundError:
+            logging.info("there is no distributed load")
+            return None
+        return DistributedLoad(magnitude=distributed_load_magnitude[0])
+    else:
+        return None
 
 
 def create_dynamic_loads(example_name):
@@ -453,7 +472,7 @@ def create_dynamic_loads(example_name):
             dynamic_load_path = os.path.join(examples_dir, example_name, dynamic_load_dir)
             load = np.loadtxt(fname=dynamic_load_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=0, dtype=float)
             dynamic_loads.append(
-                Dynamic(
+                DynamicLoad(
                     node=int(dynamic_joint_loads_array[i, 1]),
                     dof=int(dynamic_joint_loads_array[i, 2]),
                     time=np.matrix(time),
@@ -474,8 +493,9 @@ def get_structure_input(example_name):
     load_limit = np.loadtxt(fname=load_limit_path, usecols=range(1), delimiter=",", ndmin=1, skiprows=1, dtype=float)
 
     # joint_loads = np.loadtxt(fname=joint_load_path, usecols=range(3), delimiter=",", ndmin=2, skiprows=1, dtype=float)
-    joint_loads = create_joint_load(example_name)
+    joint_loads = create_joint_loads(example_name)
     dynamic_loads = create_dynamic_loads(example_name)
+    distributed_load = create_distributed_load(example_name)
 
     general_properties = get_general_properties(example_name)
     structure_type = general_properties["structure_type"].upper()
@@ -523,10 +543,9 @@ def get_structure_input(example_name):
     }
 
     loads = {
-        "joint": joint_loads,
-        "concentrated": [],
-        "distributed": [],
-        "dynamic": dynamic_loads,
+        "joint_loads": joint_loads,
+        "dynamic_loads": dynamic_loads,
+        "distributed_load": distributed_load,
     }
     input = {
         "structure_type": structure_type,
@@ -544,11 +563,11 @@ def get_structure_input(example_name):
 
 def get_loads_input(example_name):
     dynamic_loads = create_dynamic_loads(example_name)
-    joint_loads = create_joint_load(example_name)
+    joint_loads = create_joint_loads(example_name)
+    distributed_load = create_distributed_load(example_name)
     input = {
-        "joint": joint_loads,
-        "concentrated": [],
-        "distributed": [],
-        "dynamic": dynamic_loads,
+        "joint_loads": joint_loads,
+        "dynamic_loads": dynamic_loads,
+        "distributed_load": distributed_load,
     }
     return input

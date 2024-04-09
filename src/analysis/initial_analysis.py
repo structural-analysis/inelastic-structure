@@ -105,8 +105,8 @@ class InitialAnalysis:
             structure = self.structure
             self.damping = structure.damping
             loads = self.loads
-            self.time_steps = loads.dynamic[0].magnitude.shape[0]
-            self.time = loads.dynamic[0].time
+            self.time_steps = loads.dynamic_loads[0].magnitude.shape[0]
+            self.time = loads.dynamic_loads[0].time
 
             self.m_modal = structure.m_modal
             self.k_modal = structure.k_modal

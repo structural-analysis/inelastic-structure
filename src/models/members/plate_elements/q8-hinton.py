@@ -1,5 +1,7 @@
 import numpy as np
 
+# Hinton Q8 Plate (Thick and Thin) Element.
+# Reference: Finite Element Analysis - Theory and Programming by Krishnamoorthy - 1987 - page: 343
 
 class Node:
     def __init__(self, num, x, y):

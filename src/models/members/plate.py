@@ -91,6 +91,43 @@ class PlateMember:
             ]
         return natural_nodes
 
+    def get_nodal_shape_functions(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
+        if self.element_type in ("Q4", "Q4R"):
+            n = np.matrix([
+                0.25 * (1 - r) * (1 - s),
+                0.25 * (1 + r) * (1 - s),
+                0.25 * (1 + r) * (1 + s),
+                0.25 * (1 - r) * (1 + s),
+            ])
+        elif self.element_type in ("Q8", "Q8R"):
+            n1 = 0.5 * (1 - r ** 2) * (1 - s)
+            n3 = 0.5 * (1 + r) * (1 - s ** 2)
+            n5 = 0.5 * (1 - r ** 2) * (1 + s)
+            n7 = 0.5 * (1 - r) * (1 - s ** 2)
+
+            n0 = 0.25 * (1 - r) * (1 - s) - 0.5 * (n7 + n1)
+            n2 = 0.25 * (1 + r) * (1 - s) - 0.5 * (n1 + n3)
+            n4 = 0.25 * (1 + r) * (1 + s) - 0.5 * (n3 + n5)
+            n6 = 0.25 * (1 - r) * (1 + s) - 0.5 * (n5 + n7)
+
+            n = np.matrix([n0, n1, n2, n3, n4, n5, n6, n7])
+        return n
+
+    def get_extrapolated_shape_functions(self, natural_point):
+        # this functions used for stress extrapolations
+        r = natural_point.r
+        s = natural_point.s
+        if self.element_type in ("Q4", "Q8R"):
+            n = np.matrix([
+                0.25 * (1 - r) * (1 - s),
+                0.25 * (1 + r) * (1 - s),
+                0.25 * (1 + r) * (1 + s),
+                0.25 * (1 - r) * (1 + s),
+            ])
+        return n
+
     # REF: Cook (2002), p230.
     def get_extrapolated_natural_point(self, natural_point):
         if self.element_type == "Q4R":
@@ -104,31 +141,6 @@ class PlateMember:
         if self.element_type == "Q8":
             extrapolated_point = None
         return extrapolated_point
-
-    def get_extrapolation_shape_functions(self, natural_point):
-        r = natural_point.r
-        s = natural_point.s
-        if self.element_type in ("Q4", "Q8R"):
-            n = np.matrix([
-                0.25 * (1 - r) * (1 - s),
-                0.25 * (1 + r) * (1 - s),
-                0.25 * (1 + r) * (1 + s),
-                0.25 * (1 - r) * (1 + s),
-            ])
-        elif self.element_type in ("Q8"):
-            # TODO: correct shape functions for Q8 and Q4R gauss points
-            n1 = 0.5 * (1 - r ** 2) * (1 - s)
-            n3 = 0.5 * (1 + r) * (1 - s ** 2)
-            n5 = 0.5 * (1 - r ** 2) * (1 + s)
-            n7 = 0.5 * (1 - r) * (1 - s ** 2)
-
-            n0 = 0.25 * (1 - r) * (1 - s) - 0.5 * (n7 + n1)
-            n2 = 0.25 * (1 + r) * (1 - s) - 0.5 * (n1 + n3)
-            n4 = 0.25 * (1 + r) * (1 + s) - 0.5 * (n3 + n5)
-            n6 = 0.25 * (1 - r) * (1 + s) - 0.5 * (n5 + n7)
-
-            n = np.matrix([n0, n1, n2, n3, n4, n5, n6, n7])
-        return n
 
     def get_jacobian(self, natural_point):
         r = natural_point.r
@@ -230,14 +242,14 @@ class PlateMember:
 
     def get_natural_point_moment(self, natural_point, nodal_disp, fixed_internal):
         extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
-        shape_functions = self.get_extrapolation_shape_functions(extrapolated_natural_point)
+        extrapolated_shape_functions = self.get_extrapolated_shape_functions(extrapolated_natural_point)
         gauss_points_moments = self.get_gauss_points_moments(nodal_disp)
 
         if fixed_internal.any():
             for i in range(self.gauss_points_count):
                 gauss_points_moments[i, :] += fixed_internal[3 * i:3 * (i + 1), 0].T
 
-        natural_point_moment = np.dot(gauss_points_moments.T, shape_functions.T)
+        natural_point_moment = np.dot(gauss_points_moments.T, extrapolated_shape_functions.T)
         return Moment(x=natural_point_moment[0, 0], y=natural_point_moment[1, 0], xy=natural_point_moment[2, 0])
 
     def get_gauss_points_moments(self, nodal_disp):
@@ -311,3 +323,13 @@ class PlateMember:
             nodal_moments=self.get_nodal_moments(nodal_disp, fixed_internal),
         )
         return response
+
+    def get_distributed_equivalent_load_vector(self, q):
+        rs = np.matrix(np.zeros((self.nodes_count, 1)))
+        for gauss_point in self.gauss_points:
+            n = self.get_nodal_shape_functions(gauss_point)
+            j = self.get_jacobian(gauss_point)
+            j_det = np.linalg.det(j)
+            gauss_point_rs = gauss_point.weight * n.T * j_det
+            rs += gauss_point_rs
+        return q * rs
