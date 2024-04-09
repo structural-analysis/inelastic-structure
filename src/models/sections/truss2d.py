@@ -15,17 +15,19 @@ class Geometry:
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.is_direct_capacity = input_nonlinear["is_direct_capacity"]
-        self.ap = float(input_nonlinear["ap"]) if self.is_direct_capacity else geometry.a * material.sy
+        self.ap_positive = float(input_nonlinear["ap_positive"]) if self.is_direct_capacity else geometry.a * material.sy
+        self.ap_negative = float(input_nonlinear["ap_negative"]) if self.is_direct_capacity else geometry.a * material.sy
 
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
+        self.sifted_pieces_count = 2
         self.phi = self.create_phi(nonlinear)
         self.components_count = 1
         self.pieces_count = self.phi.shape[1]
 
     def create_phi(self, nonlinear):
-        phi = np.matrix([-1 / nonlinear.ap, 1 / nonlinear.ap])
+        phi = np.matrix([-1 / nonlinear.ap_negative, 1 / nonlinear.ap_positive])
         return phi
 
 

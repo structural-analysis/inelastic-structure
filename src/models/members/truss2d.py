@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from ..points import Node
 from ..sections.truss2d import Truss2DSection
+from ..yield_models import MemberYieldSpecs
 
 
 @dataclass
@@ -29,12 +30,13 @@ class Mass:
 class Truss2DMember:
     def __init__(self, num: int, nodes: tuple[Node, Node], section: Truss2DSection, mass: Mass = None):
         self.num = num
+        self.yield_points_count = 1
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.node_dofs_count = 2
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.section = section
-        self.yield_specs = YieldSpecs(self.section)
+        self.yield_specs = MemberYieldSpecs(self.section, points_count=self.yield_points_count)
         self.l = self._length()
         self.mass = mass if mass else None
         self.m = self._mass() if mass else None

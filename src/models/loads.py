@@ -88,7 +88,7 @@ class Loads:
         zero_i = 0
         zero_mass_dofs_i = 0
         for dof in range(structure.dofs_count):
-            if dof == structure.zero_mass_dofs[zero_mass_dofs_i]:
+            if structure.zero_mass_dofs.any() and dof == structure.zero_mass_dofs[zero_mass_dofs_i]:
                 pt = np.delete(pt, dof - zero_i, 0)
                 zero_i += 1
                 zero_mass_dofs_i += 1

@@ -1,0 +1,11 @@
+rod:
+  material:
+    e: 70.0e+9
+    sy: 240.0e+6
+  geometry:
+    a: 4000.0e-6
+  nonlinear:
+    is_direct_capacity: true
+    ap_positive: 130000
+    ap_negative: 130000
+  softening: null
