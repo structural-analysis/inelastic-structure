@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
-    examples_to_test = list(set(Examples.plates))
+    examples_to_test = list(set(Examples.all))
 
 
 settings = Settings()
