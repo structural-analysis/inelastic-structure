@@ -1,0 +1,5 @@
+structure_dim: 2d
+structure_type: "PLATE2D"
+inelastic:
+  enabled: false
+  include_softening: false
