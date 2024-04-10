@@ -24,6 +24,8 @@ all = [
         "wall-1element-inelastic",
         "wall-4element-inelastic-q8r",
         "plate-1element-elastic-q8r",
+        "plate-1element-elastic-q8r-distributed",
+        "plate-4element-elastic-q8r-distributed",
         "plate-4element-elastic-q8r",
         "plate-9element-confined-elastic",
         "plate-confined-elastic",
@@ -60,6 +62,8 @@ statics = statics + [
     "wall-1element-inelastic",
     "wall-4element-inelastic-q8r",
     "plate-1element-elastic-q8r",
+    "plate-1element-elastic-q8r-distributed",
+    "plate-4element-elastic-q8r-distributed",
     "plate-4element-elastic-q8r",
     "plate-9element-confined-elastic",
     "plate-confined-elastic",
@@ -73,6 +77,7 @@ statics = statics + [
     "tripod-corner",
     "tripod-unload",
 ]
+
 dynamics = [analysis for analysis in all if "-dynamic" in analysis]
 two_d_frames = [
     "simple-beam-static-elastic",
