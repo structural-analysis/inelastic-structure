@@ -96,10 +96,11 @@ two_d_frames = [
     "2story-dynamic-inelastic",
     "1story-dynamic-inelastic-ll1.0-ap400k",
 ]
-three_d_frames = [analysis for analysis in all if "-3d" in analysis]
-plates = [analysis for analysis in all if "-plate" in analysis]
-walls = [analysis for analysis in all if "-wall" in analysis]
-trusses = [analysis for analysis in all if "-truss" in analysis]
+
+three_d_frames = [analysis for analysis in all if "3d-" in analysis]
+plates = [analysis for analysis in all if "plate-" in analysis]
+walls = [analysis for analysis in all if "wall-" in analysis]
+trusses = [analysis for analysis in all if "truss" in analysis]
 softenings = [analysis for analysis in all if "-softening" in analysis]
 elastics = [analysis for analysis in all if "-elastic" in analysis]
 inelastics = [analysis for analysis in all if "-inelastic" in analysis]
