@@ -10,12 +10,13 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-16element-elastic-q8r-distributed-navier-verify"
+    example_name: str = "wall-1element-dynamic-inelastic"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
-    examples_to_test = list(set(Examples.all))
+    examples_to_test = Examples.statics + Examples.inelastics
+    examples_to_test = list(set(examples_to_test))
 
 
 settings = Settings()

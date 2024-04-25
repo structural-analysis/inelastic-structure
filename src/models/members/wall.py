@@ -201,6 +201,34 @@ class WallMember:
             b[2, :] = du[1, :] + dv[0, :]
         return b
 
+    def get_shape_function(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
+        n = np.matrix(np.zeros((2, 2 * self.nodes_count)))
+        if self.element_type in ("Q4", "Q4R"):
+            n1 = 0.25 * (1 - r) * (1 - s)
+            n2 = 0.25 * (1 + r) * (1 - s)
+            n3 = 0.25 * (1 + r) * (1 + s)
+            n4 = 0.25 * (1 - r) * (1 + s)
+            n = np.matrix([
+                [n1, 0, n2, 0, n3, 0, n4, 0],
+                [0, n1, 0, n2, 0, n3, 0, n4]
+            ])
+        elif self.element_type in ("Q8", "Q8R"):
+            n1 = 0.25 * (1 - r) * (1 - s) * (-r - s - 1)
+            n2 = 0.5 * (1 + r) * (1 - r) * (1 - s)
+            n3 = 0.25 * (1 + r) * (1 - s) * (r - s - 1)
+            n4 = 0.5 * (1 + r) * (1 + s) * (1 - s)
+            n5 = 0.25 * (1 + r) * (1 + s) * (r + s - 1)
+            n6 = 0.5 * (1 + r) * (1 - r) * (1 + s)
+            n7 = 0.25 * (1 - r) * (1 + s) * (-r + s - 1)
+            n8 = 0.5 * (1 - r) * (1 + s) * (1 - s)
+            n = np.matrix([
+                [n1, 0, n2, 0, n3, 0, n4, 0, n5, 0, n6, 0, n7, 0, n8, 0],
+                [0, n1, 0, n2, 0, n3, 0, n4, 0, n5, 0, n6, 0, n7, 0, n8]
+            ])
+        return n
+
     def get_stiffness(self):
         k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for gauss_point in self.gauss_points:
