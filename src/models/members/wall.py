@@ -44,7 +44,7 @@ class WallMember:
         self.yield_specs = MemberYieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
         self.t = self.get_transform()
-        self.m = None
+        self.m = self.get_mass() if self.section.material.rho else None
         # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
         # udet: unit distorsions equivalent tractions (stress, force, moment, ...) in gauss points
         self.udefs, self.udets = self.get_nodal_forces_from_unit_distortions()
@@ -211,6 +211,22 @@ class WallMember:
             gauss_point_k = gauss_point.weight * b.T * self.section.ce * b * j_det * self.section.geometry.thickness
             k += gauss_point_k
         return k
+
+    def get_mass(self):
+        m = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        for gauss_point in self.gauss_points:
+            n = self.get_shape_function(gauss_point)
+            j = self.get_jacobian(gauss_point)
+            j_det = np.linalg.det(j)
+            gauss_point_m = gauss_point.weight * n.T * self.section.material.rho * n * j_det * self.section.geometry.thickness
+            m += gauss_point_m
+        # diagonal_mass = self.diagonalize_mass(m)
+        return m
+
+    def diagonalize_mass(self, m):
+        diagonal_m = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        np.fill_diagonal(diagonal_m, m.diagonal())
+        return m.sum() / m.diagonal().sum() * diagonal_m
 
     def get_transform(self):
         return np.matrix(np.eye(self.dofs_count))

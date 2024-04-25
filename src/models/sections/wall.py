@@ -7,6 +7,7 @@ class Material:
         self.e = input_material["e"]
         self.sy = input_material["sy"]
         self.nu = input_material["nu"]
+        self.rho = input_material.get("rho")
 
 
 class Geometry:
