@@ -267,7 +267,7 @@ class MahiniMethod:
                 for basic_variable in basic_variables:
                     if basic_variable < self.landa_var:
                         unsifted_primary_vars.append(basic_variable)
-                print(f"{unsifted_primary_vars=}")
+                # print(f"{unsifted_primary_vars=}")
 
             # print(f"{bbar[will_out_row]=}")
             # print(f"{sorted_zipped_ba=}")
@@ -309,7 +309,7 @@ class MahiniMethod:
                     self.landa_var,
                     self.structure_sifted_yield_pieces_current,
                 )
-                print(f"input {plastic_vars_in_basic_variables_prev=}")
+                # print(f"input {plastic_vars_in_basic_variables_prev=}")
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):

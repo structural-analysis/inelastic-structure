@@ -399,8 +399,8 @@ class Sifting:
                     score=scores[violated_piece_num],
                 )
             )
-        print("//// score of violated pieces: ")
-        print_specific_properties(violated_pieces, ["num_in_structure", "score"])
+        # print("//// score of violated pieces: ")
+        # print_specific_properties(violated_pieces, ["num_in_structure", "score"])
         return violated_pieces
 
     def get_point_changed_pieces(self, sifted_pieces_prev, sifted_pieces_current):
