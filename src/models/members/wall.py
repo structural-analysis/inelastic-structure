@@ -249,7 +249,7 @@ class WallMember:
             gauss_point_m = gauss_point.weight * n.T * self.section.material.rho * n * j_det * self.section.geometry.thickness
             m += gauss_point_m
         diagonal_mass = self.diagonalize_mass(m)
-        return m
+        return diagonal_mass
 
     def diagonalize_mass(self, m):
         diagonal_m = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
