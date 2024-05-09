@@ -1,5 +1,4 @@
 import shutil
-import numpy as np
 from datetime import datetime
 
 from src.settings import settings
@@ -7,10 +6,9 @@ from src.analysis.initial_analysis import AnalysisType
 from src.analysis.inelastic_analysis import InitialAnalysis, InelasticAnalysis
 from src.aggregate import aggregate_responses
 from src.workshop import get_structure_input, get_loads_input, get_general_properties
-from src.response import calculate_responses, write_static_responses_to_file, write_dynamic_responses_to_file
+from src.response import calculate_responses, write_static_responses_to_file, write_dynamic_responses_to_file, DesiredResponse
 from .models.structure import Structure
 from .models.loads import Loads
-from .functions import get_elastoplastic_response
 
 
 def run(example_name):
@@ -48,18 +46,7 @@ def run(example_name):
     print(f"{analysis_time.microseconds=}")
     responses = calculate_responses(initial_analysis, inelastic_analysis)
     structure_type = "inelastic" if initial_analysis.structure.is_inelastic else "elastic"
-    desired_responses = [
-        "load_levels",
-        "nodal_disp",
-        "nodal_strains",
-        "nodal_stresses",
-        "nodal_moments",
-        "members_disps",
-        "members_nodal_forces",
-        "members_nodal_strains",
-        "members_nodal_stresses",
-        "members_nodal_moments",
-    ]
+    desired_responses = DesiredResponse[structure.type]
     if initial_analysis.analysis_type == "static":
         write_static_responses_to_file(
             example_name=example_name,
@@ -74,7 +61,7 @@ def run(example_name):
             desired_responses=desired_responses,
             time_steps=initial_analysis.time_steps,
         )
-        aggregate_responses(example_name)
+        aggregate_responses(example_name, desired_responses)
 
 
 def get_analysis_type(general_info):

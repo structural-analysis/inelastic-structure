@@ -4,18 +4,12 @@ from src.settings import settings
 
 outputs_dir = "output/examples/"
 
-desired_responses = [
-    "nodal_disp",
-    "members_nodal_forces",
-    "members_disps",
-]
 
-
-def aggregate_dynamic_responses(structure_type_path):
+def aggregate_dynamic_responses(structure_type_path, desired_responses):
     increments_path = os.path.join(structure_type_path, "increments")
     time_steps = len(get_inner_folders(increments_path)) + 1
     time_step_list = [str(time_step) for time_step in range(1, time_steps)]
-    responses = initialize_responses(increments_path)
+    responses = initialize_responses(increments_path, desired_responses)
 
     for time_step in time_step_list:
         time_step_path = os.path.join(increments_path, time_step)
@@ -42,7 +36,7 @@ def get_inner_folders(path):
     return dirs_list
 
 
-def initialize_responses(increments_path):
+def initialize_responses(increments_path, desired_responses):
     responses = {}
     for response in desired_responses:
         responses[response] = {}
@@ -79,9 +73,9 @@ def get_structure_types(example_name):
     return structure_types
 
 
-def aggregate_responses(example_name):
+def aggregate_responses(example_name, desired_responses):
     structure_types = get_structure_types(example_name)
     for structure_type in structure_types:
         structure_type_path = os.path.join(outputs_dir, example_name, structure_type)
-        responses = aggregate_dynamic_responses(structure_type_path)
+        responses = aggregate_dynamic_responses(structure_type_path, desired_responses)
         write_responses(responses, structure_type_path)
