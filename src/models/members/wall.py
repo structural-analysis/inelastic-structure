@@ -44,7 +44,7 @@ class WallMember:
         self.yield_specs = MemberYieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
         self.t = self.get_transform()
-        self.m = None
+        self.m = self.get_mass() if self.section.material.rho else None
         # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
         # udet: unit distorsions equivalent tractions (stress, force, moment, ...) in gauss points
         self.udefs, self.udets = self.get_nodal_forces_from_unit_distortions()
@@ -201,6 +201,34 @@ class WallMember:
             b[2, :] = du[1, :] + dv[0, :]
         return b
 
+    def get_shape_function(self, natural_point):
+        r = natural_point.r
+        s = natural_point.s
+        n = np.matrix(np.zeros((2, 2 * self.nodes_count)))
+        if self.element_type in ("Q4", "Q4R"):
+            n1 = 0.25 * (1 - r) * (1 - s)
+            n2 = 0.25 * (1 + r) * (1 - s)
+            n3 = 0.25 * (1 + r) * (1 + s)
+            n4 = 0.25 * (1 - r) * (1 + s)
+            n = np.matrix([
+                [n1, 0, n2, 0, n3, 0, n4, 0],
+                [0, n1, 0, n2, 0, n3, 0, n4]
+            ])
+        elif self.element_type in ("Q8", "Q8R"):
+            n1 = 0.25 * (1 - r) * (1 - s) * (-r - s - 1)
+            n2 = 0.5 * (1 + r) * (1 - r) * (1 - s)
+            n3 = 0.25 * (1 + r) * (1 - s) * (r - s - 1)
+            n4 = 0.5 * (1 + r) * (1 + s) * (1 - s)
+            n5 = 0.25 * (1 + r) * (1 + s) * (r + s - 1)
+            n6 = 0.5 * (1 + r) * (1 - r) * (1 + s)
+            n7 = 0.25 * (1 - r) * (1 + s) * (-r + s - 1)
+            n8 = 0.5 * (1 - r) * (1 + s) * (1 - s)
+            n = np.matrix([
+                [n1, 0, n2, 0, n3, 0, n4, 0, n5, 0, n6, 0, n7, 0, n8, 0],
+                [0, n1, 0, n2, 0, n3, 0, n4, 0, n5, 0, n6, 0, n7, 0, n8]
+            ])
+        return n
+
     def get_stiffness(self):
         k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
         for gauss_point in self.gauss_points:
@@ -211,6 +239,22 @@ class WallMember:
             gauss_point_k = gauss_point.weight * b.T * self.section.ce * b * j_det * self.section.geometry.thickness
             k += gauss_point_k
         return k
+
+    def get_mass(self):
+        m = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        for gauss_point in self.gauss_points:
+            n = self.get_shape_function(gauss_point)
+            j = self.get_jacobian(gauss_point)
+            j_det = np.linalg.det(j)
+            gauss_point_m = gauss_point.weight * n.T * self.section.material.rho * n * j_det * self.section.geometry.thickness
+            m += gauss_point_m
+        diagonal_mass = self.diagonalize_mass(m)
+        return diagonal_mass
+
+    def diagonalize_mass(self, m):
+        diagonal_m = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        np.fill_diagonal(diagonal_m, m.diagonal())
+        return m.sum() / m.diagonal().sum() * diagonal_m
 
     def get_transform(self):
         return np.matrix(np.eye(self.dofs_count))
