@@ -1,4 +1,5 @@
 import os
+import yaml
 import numpy as np
 from dataclasses import dataclass
 
@@ -98,18 +99,7 @@ def generate_mesh(xsize, ysize, xnum, ynum):
     return nodes, members
 
 
-def write_nodes_to_csv(nodes, filename='nodes.csv'):
-    nodes_array = np.array([[node.num, node.x, node.y] for node in nodes])
-    np.savetxt(filename, nodes_array, delimiter=',', header='num,x,y', comments='', fmt='%d,%.2f,%.2f')
-
-
-def write_members_to_csv(members, filename='members.csv'):
-    members_array = np.array([[i, 'plate', 'Q8R', tuple_to_dash_string(nodes)] for i, nodes in enumerate(members)], dtype=object)
-    header = 'num,section,member_type,nodes'
-    np.savetxt(filename, members_array, delimiter=',', header=header, comments='', fmt='%s')
-
-
-def write_boundaries_to_csv(boundaries, filename='boundaries.csv'):
+def write_boundaries_to_csv(boundaries, filename):
     boundaries_list = []
     for corner in boundaries.corners:
         boundaries_list.append((corner.num, 0))
@@ -130,18 +120,79 @@ def write_boundaries_to_csv(boundaries, filename='boundaries.csv'):
     np.savetxt(filename, boundaries_array, delimiter=',', header='node,dof', comments='', fmt='%d,%d')
 
 
-def create_example(name, xsize, ysize, xnum, ynum):
+def write_limits_to_csv(filename, limit):
+    np.savetxt(f"{filename}/disp.csv", np.array([[]]), delimiter=',', header='node,dof,limit', comments='', fmt='%s')
+    np.savetxt(f"{filename}/load.csv", np.array([[limit]]), delimiter=',', header='load_limit', comments='', fmt='%s')
+
+
+def write_loads_to_csv(filename):
+    np.savetxt(filename, np.array([[-1]]), delimiter=',', header='load_magnitude', comments='', fmt='%d')
+
+
+def write_members_to_csv(members, filename):
+    members_array = np.array([[i, 'plate', 'Q8R', tuple_to_dash_string(nodes)] for i, nodes in enumerate(members)], dtype=object)
+    header = 'num,section,member_type,nodes'
+    np.savetxt(filename, members_array, delimiter=',', header=header, comments='', fmt='%s')
+
+
+def write_sections_to_yaml(filename, t):
+    data = {
+        "plate": {
+            "material": {
+                "e": 2.0e+11,
+                "sy": 240.0e+6,
+                "nu": 0.3,
+            },
+            "geometry": {
+                "t": t,
+            },
+            "nonlinear": {
+                "yield_surface": "mises",
+            },
+            "softening": None,
+        },
+    }
+    with open(filename, 'w') as file:
+        yaml.dump(data, file, default_flow_style=False)
+
+
+def write_general_to_yaml(filename):
+    data = {
+        "structure_dim": "2d",
+        "structure_type": "PLATE2D",
+        "inelastic": {
+            "enabled": True,
+            "include_softening": False,
+        }
+    }
+    with open(filename, 'w') as file:
+        yaml.dump(data, file, default_flow_style=False)
+
+
+def write_nodes_to_csv(nodes, filename):
+    nodes_array = np.array([[node.num, node.x, node.y] for node in nodes])
+    np.savetxt(filename, nodes_array, delimiter=',', header='num,x,y', comments='', fmt='%d,%.2f,%.2f')
+
+
+def create_example(name, xsize, ysize, xnum, ynum, limit, t):
     nodes, members = generate_mesh(xsize, ysize, xnum, ynum)
     boundaries = get_boundaries(nodes, xsize, ysize)
 
     example_path = f"input/examples/{name}"
-    memebers_path = f"{example_path}/members"
-    boundaries_path = f"{example_path}/boundaries"
+    directories_to_create = [
+        f"{example_path}/boundaries",
+        f"{example_path}/limits",
+        f"{example_path}/loads/static",
+        f"{example_path}/members",
+        f"{example_path}/sections",
+    ]
+    for dir in directories_to_create:
+        os.makedirs(dir, exist_ok=True)
 
-    os.makedirs(example_path, exist_ok=True)
-    os.makedirs(memebers_path, exist_ok=True)
-    os.makedirs(boundaries_path, exist_ok=True)
-
-    write_nodes_to_csv(nodes, f"{example_path}/nodes.csv")
-    write_members_to_csv(members, f"{example_path}/members/plates.csv")
     write_boundaries_to_csv(boundaries, f"{example_path}/boundaries/nodal.csv")
+    write_limits_to_csv(f"{example_path}/limits", limit)
+    write_loads_to_csv(f"{example_path}/loads/static/distributed_load.csv")
+    write_members_to_csv(members, f"{example_path}/members/plates.csv")
+    write_sections_to_yaml(f"{example_path}/sections/plates.yaml", t)
+    write_general_to_yaml(f"{example_path}/general.yaml")
+    write_nodes_to_csv(nodes, f"{example_path}/nodes.csv")
