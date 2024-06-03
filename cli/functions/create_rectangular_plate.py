@@ -59,6 +59,7 @@ def get_boundaries(nodes, xsize, ysize):
             corners.append(node)
         if node.x == 0 and node.y == ysize:
             corners.append(node)
+
     return Boundaries(
         corners=corners,
         bottoms=bottoms,
@@ -83,19 +84,20 @@ def generate_mesh(xsize, ysize, xnum, ynum):
             k += 1
 
     members = []
-    for j in range(ynum):
-        for i in range(xnum):
-            n0 = (4 * xnum - 1) * j + 2 * i
+    for my in range(1, ynum + 1):
+        for mx in range(1, xnum + 1):
+            ybase = (my - 1) * (3 * xnum + 2)
+            n0 = ybase + 2 * (mx - 1)
             n1 = n0 + 1
             n2 = n0 + 2
-            n3 = (4 * xnum - 1) * j + 2 * xnum + 2 + i
-            n4 = (4 * xnum - 1) * j + (4 * xnum + 1) + 2 * i
+            n3 = ybase + 2 * xnum + mx + 1
+            n4 = ybase + 3 * xnum + 2 * mx + 2
             n5 = n4 - 1
             n6 = n4 - 2
             n7 = n3 - 1
-            
+
             members.append((n0, n1, n2, n3, n4, n5, n6, n7))
-    
+
     return nodes, members
 
 
@@ -131,7 +133,7 @@ def write_loads_to_csv(filename):
 
 def write_members_to_csv(members, filename):
     members_array = np.array([[i, 'plate', 'Q8R', tuple_to_dash_string(nodes)] for i, nodes in enumerate(members)], dtype=object)
-    header = 'num,section,member_type,nodes'
+    header = 'num,section,element_type,nodes'
     np.savetxt(filename, members_array, delimiter=',', header=header, comments='', fmt='%s')
 
 
