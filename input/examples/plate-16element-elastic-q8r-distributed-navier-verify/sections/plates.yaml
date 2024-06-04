@@ -1,10 +1,10 @@
 plate:
-  material:
-    e: 2.0e+11
-    sy: 240.0e+6
-    nu: 0.3
   geometry:
     t: 0.05
+  material:
+    e: 200000000000.0
+    nu: 0.3
+    sy: 240000000.0
   nonlinear:
-    yield_surface: mises # simple or mises
+    yield_surface: mises
   softening: null

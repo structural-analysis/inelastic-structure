@@ -173,7 +173,7 @@ def write_general_to_yaml(filename):
 
 def write_nodes_to_csv(nodes, filename):
     nodes_array = np.array([[node.num, node.x, node.y] for node in nodes])
-    np.savetxt(filename, nodes_array, delimiter=',', header='num,x,y', comments='', fmt='%d,%.2f,%.2f')
+    np.savetxt(filename, nodes_array, delimiter=',', header='num,x,y', comments='', fmt='%d,%f,%f')
 
 
 def create_example(name, xsize, ysize, xnum, ynum, limit, t):
