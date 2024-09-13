@@ -1,0 +1,57 @@
+IPB240:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+    g: 7.692e+10
+  geometry:
+    a: 106.0e-4
+    i33: 11260.0e-8
+    i22: 3920.0e-8
+    j: 8.6041e-07
+  nonlinear:
+    is_direct_capacity: false
+    zp33: 1.0159e-03
+    zp22: 4.9475e-04
+    ap: 2.5440e+06
+    mp33: 2.4382e+05
+    mp22: 1.1874e+05
+  softening: null
+IPB180:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+    g: 7.692e+10
+  geometry:
+    a: 65.3e-4
+    i33: 3830.0e-8
+    i22: 1360.0e-8
+    j: 3.6326e-07
+  nonlinear:
+    is_direct_capacity: false
+    zp33: 4.6742e-04
+    zp22: 2.2955e-04
+    ap: 1.5672e+06
+    mp33: 1.1218e+05
+    mp22: 5.5091e+04
+  softening: null
+IPE270:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+    g: 7.692e+10
+  geometry:
+    a: 45.9e-4
+    i33: 5790.0e-8
+    i22: 420.0e-8
+    j: 1.20406e-07
+  nonlinear:
+    is_direct_capacity: false
+    zp33: 4.6054e-04
+    zp22: 9.5666e-05
+    ap: 1.1016e+06
+    mp33: 1.1053e+05
+    mp22: 2.2960e+04
+  softening: null

@@ -1,0 +1,8 @@
+structure_dim: 3d
+structure_type: "FRAME3D"
+inelastic:
+  enabled: true
+  include_softening: false
+dynamic_analysis:
+  enabled: true
+  damping: 0.0
