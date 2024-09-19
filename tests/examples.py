@@ -38,6 +38,7 @@ all = [
         "plate-4element-inelastic-q8r",
         "plate-9element-confined-inelastic",
         "plate-confined-inelastic",
+        "plate-curved-coarse",
 
         # DYNAMIC EXAMPLES:
         "truss-kassimali-115-dynamic-elastic",
@@ -78,6 +79,7 @@ statics = statics + [
     "plate-4element-inelastic-q8r",
     "plate-9element-confined-inelastic",
     "plate-confined-inelastic",
+    "plate-curved-coarse",
     "tripod-corner",
     "tripod-unload",
 ]
@@ -110,7 +112,8 @@ elastics = [analysis for analysis in all if "-elastic" in analysis]
 inelastics = [analysis for analysis in all if "-inelastic" in analysis]
 inelastics = inelastics + [
     "tripod-corner",
-    "tripod-unload", 
+    "tripod-unload",
+    "plate-curved-coarse",
 ]
 
 
