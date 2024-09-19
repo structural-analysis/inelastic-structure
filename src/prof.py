@@ -9,7 +9,7 @@ if __name__ == "__main__":
     profiler.enable()
 
     # Call the function or code you want to profile
-    run("wall-4element-inelastic-q8r")
+    run("wall-9element-inelastic-profing")
 
     profiler.disable()
     profiler.dump_stats("profile_data.prof")

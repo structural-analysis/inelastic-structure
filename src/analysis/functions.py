@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import cho_solve
 from dataclasses import dataclass
+from functools import lru_cache
 
 
 @dataclass
@@ -263,6 +264,7 @@ def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, moda
     return modal_disps, a2s, b2s
 
 
+@lru_cache()
 def get_i_duhamel(damping, t1, t2, wn, wd):
     wd = np.sqrt(1 - damping ** 2) * wn
     i12 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
@@ -276,6 +278,7 @@ def get_i_duhamel(damping, t1, t2, wn, wd):
     return i1, i2, i3, i4
 
 
+@lru_cache()
 def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
     deltat = t2 - t1
     deltap = p2 - p1
