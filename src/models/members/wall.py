@@ -259,81 +259,65 @@ class WallMember:
     def get_transform(self):
         return np.matrix(np.eye(self.dofs_count))
 
-    def get_nodal_strains(self, nodal_disp):
+    def get_nodal_strains_and_stresses(self, nodal_disp, fixed_internal):
         nodal_strains = np.matrix(np.zeros((3 * self.nodes_count, 1)))
-        i = 0
-        for natural_node in self.natural_nodes:
-            nodal_strains[i, 0] = self.get_natural_point_strain(natural_node, nodal_disp).x
-            nodal_strains[i + 1, 0] = self.get_natural_point_strain(natural_node, nodal_disp).y
-            nodal_strains[i + 2, 0] = self.get_natural_point_strain(natural_node, nodal_disp).xy
-            i += 3
-        return nodal_strains
-
-    def get_nodal_stresses(self, nodal_disp, fixed_internal):
         nodal_stresses = np.matrix(np.zeros((3 * self.nodes_count, 1)))
         i = 0
         for natural_node in self.natural_nodes:
-            natural_point_stress = self.get_natural_point_stress(natural_node, nodal_disp, fixed_internal)
+            natural_point_strain, natural_point_stress, yield_components_force = self.get_natural_point_strain_and_stress(natural_node, nodal_disp, fixed_internal)
+            nodal_strains[i, 0] = natural_point_strain.x
+            nodal_strains[i + 1, 0] = natural_point_strain.y
+            nodal_strains[i + 2, 0] = natural_point_strain.xy
+
             nodal_stresses[i, 0] = natural_point_stress.x
             nodal_stresses[i + 1, 0] = natural_point_stress.y
             nodal_stresses[i + 2, 0] = natural_point_stress.xy
             i += 3
-        return nodal_stresses
+        return nodal_strains, nodal_stresses, yield_components_force
 
-    def get_natural_point_strain(self, natural_point, nodal_disp):
+    def get_natural_point_strain_and_stress(self, natural_point, nodal_disp, fixed_internal):
         extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
         shape_functions = self.get_extrapolation_shape_functions(extrapolated_natural_point)
-        gauss_points_strains = self.get_gauss_points_strains(nodal_disp)
-        natural_point_strain = np.dot(gauss_points_strains.T, shape_functions.T)
-        return Strain(x=natural_point_strain[0, 0], y=natural_point_strain[1, 0], xy=natural_point_strain[2, 0])
-
-    def get_natural_point_stress(self, natural_point, nodal_disp, fixed_internal):
-        extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
-        shape_functions = self.get_extrapolation_shape_functions(extrapolated_natural_point)
-        gauss_points_stresses = self.get_gauss_points_stresses(nodal_disp)
-
+        gauss_points_strains, gauss_points_stresses, yield_components_force = self.get_gauss_points_responses(nodal_disp)
         if fixed_internal.any():
             for i in range(self.gauss_points_count):
                 gauss_points_stresses[i, :] += fixed_internal[3 * i:3 * (i + 1), 0].T
 
+        natural_point_strain = np.dot(gauss_points_strains.T, shape_functions.T)
         natural_point_stress = np.dot(gauss_points_stresses.T, shape_functions.T)
-        return Stress(x=natural_point_stress[0, 0], y=natural_point_stress[1, 0], xy=natural_point_stress[2, 0])
+        natural_point_strain_object = Strain(x=natural_point_strain[0, 0], y=natural_point_strain[1, 0], xy=natural_point_strain[2, 0])
+        natural_point_stress_object = Stress(x=natural_point_stress[0, 0], y=natural_point_stress[1, 0], xy=natural_point_stress[2, 0])
+        return natural_point_strain_object, natural_point_stress_object, yield_components_force
 
-    def get_gauss_points_strains(self, nodal_disp):
+    def get_gauss_points_responses(self, nodal_disp):
         gauss_points_strains = np.matrix(np.zeros((self.gauss_points_count, 3)))
-        for i, gauss_point in enumerate(self.gauss_points):
-            gauss_points_strains[i, 0] = self.get_gauss_point_strain(gauss_point, nodal_disp).x
-            gauss_points_strains[i, 1] = self.get_gauss_point_strain(gauss_point, nodal_disp).y
-            gauss_points_strains[i, 2] = self.get_gauss_point_strain(gauss_point, nodal_disp).xy
-        return gauss_points_strains
-
-    def get_gauss_points_stresses(self, nodal_disp):
         gauss_points_stresses = np.matrix(np.zeros((self.gauss_points_count, 3)))
+        yield_components_force = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
+        j = 0
         for i, gauss_point in enumerate(self.gauss_points):
-            gauss_points_stresses[i, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).x
-            gauss_points_stresses[i, 1] = self.get_gauss_point_stress(gauss_point, nodal_disp).y
-            gauss_points_stresses[i, 2] = self.get_gauss_point_stress(gauss_point, nodal_disp).xy
-        return gauss_points_stresses
+            gauss_point_strain, gauss_point_stress = self.get_gauss_point_strain_and_stress(gauss_point, nodal_disp)
+            gauss_points_strains[i, 0] = gauss_point_strain.x
+            gauss_points_strains[i, 1] = gauss_point_strain.y
+            gauss_points_strains[i, 2] = gauss_point_strain.xy
 
-    def get_gauss_point_strain(self, gauss_point, nodal_disp):
+            gauss_points_stresses[i, 0] = gauss_point_stress.x
+            gauss_points_stresses[i, 1] = gauss_point_stress.y
+            gauss_points_stresses[i, 2] = gauss_point_stress.xy
+
+            yield_components_force[j, 0] = gauss_point_stress.x
+            yield_components_force[j + 1, 0] = gauss_point_stress.y
+            yield_components_force[j + 2, 0] = gauss_point_stress.xy
+            j += 3
+
+        return gauss_points_strains, gauss_points_stresses, yield_components_force
+
+    def get_gauss_point_strain_and_stress(self, gauss_point, nodal_disp):
         gauss_point_b = self.get_shape_derivatives(gauss_point)
         e = gauss_point_b * nodal_disp
-        return Strain(x=e[0, 0], y=e[1, 0], xy=e[2, 0])
-
-    def get_gauss_point_stress(self, gauss_point, nodal_disp):
-        gauss_point_b = self.get_shape_derivatives(gauss_point)
-        s = self.section.ce * gauss_point_b * nodal_disp
-        return Stress(x=s[0, 0], y=s[1, 0], xy=s[2, 0])
-
-    def get_yield_components_force(self, nodal_disp):
-        yield_components_force = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
-        i = 0
-        for gauss_point in self.gauss_points:
-            yield_components_force[i, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).x
-            yield_components_force[i + 1, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).y
-            yield_components_force[i + 2, 0] = self.get_gauss_point_stress(gauss_point, nodal_disp).xy
-            i += 3
-        return yield_components_force
+        s = self.section.ce * e
+        gauss_point_strain = Strain(x=e[0, 0], y=e[1, 0], xy=e[2, 0])
+        gauss_point_stress = Stress(x=s[0, 0], y=s[1, 0], xy=s[2, 0])
+        return gauss_point_strain, gauss_point_stress
 
     def get_unit_distortion(self, gauss_point_component_num):
         distortion = np.matrix(np.zeros((3, 1)))
@@ -377,10 +361,11 @@ class WallMember:
         else:
             nodal_force = self.k * nodal_disp
 
+        nodal_strains, nodal_stresses, yield_components_force = self.get_nodal_strains_and_stresses(nodal_disp, fixed_internal)
         response = Response(
             nodal_force=nodal_force,
-            yield_components_force=self.get_yield_components_force(nodal_disp),
-            nodal_strains=self.get_nodal_strains(nodal_disp),
-            nodal_stresses=self.get_nodal_stresses(nodal_disp, fixed_internal),
+            yield_components_force=yield_components_force,
+            nodal_strains=nodal_strains,
+            nodal_stresses=nodal_stresses,
         )
         return response
