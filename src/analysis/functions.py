@@ -35,18 +35,11 @@ class DynamicSensitivity:
 
 
 def get_nodal_disp(structure, loads, total_load):
-    j = 0
-    o = 0
-    reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof, total_load)
+    reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof_mask, total_load)
     reduced_disp = cho_solve(structure.kc, reduced_total_load)
     nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
     disp = np.matrix(np.zeros((structure.dofs_count, 1)))
-    for i in range(structure.dofs_count):
-        if (j != structure.boundaries_dof.shape[0] and i == structure.boundaries_dof[j]):
-            j += 1
-        else:
-            disp[i, 0] = reduced_disp[o, 0]
-            o += 1
+    disp[structure.boundaries_dof_mask] = reduced_disp
     nodal_disp[0, 0] = disp
     return nodal_disp
 
@@ -225,10 +218,9 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
 
     ut = np.dot(modes, modal_disps[0, 0])
     u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
-    unrestrianed_ut = structure.undo_disp_boundary_condition(ut, structure.mass_bounds)
-    unrestrianed_u0 = structure.undo_disp_boundary_condition(u0, structure.zero_mass_bounds)
 
-    disp = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
+    disp = structure.undo_disp_condensation(ut, u0)
+
     nodal_disp[0, 0] = disp
     return a2s, b2s, modal_loads, nodal_disp
 
