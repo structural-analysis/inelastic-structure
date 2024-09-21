@@ -38,8 +38,7 @@ def get_nodal_disp(structure, loads, total_load):
     reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof_mask, total_load)
     reduced_disp = cho_solve(structure.kc, reduced_total_load)
     nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
-    disp = np.matrix(np.zeros((structure.dofs_count, 1)))
-    disp[structure.boundaries_dof_mask] = reduced_disp
+    disp = structure.undo_disp_boundaries(reduced_disp)
     nodal_disp[0, 0] = disp
     return nodal_disp
 

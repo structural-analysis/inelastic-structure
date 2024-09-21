@@ -324,6 +324,11 @@ class Structure:
         disp[self.zero_mass_boundaries_mask] = ut
         return disp
 
+    def undo_disp_boundaries(self, reduced_disp):
+        disp = np.matrix(np.zeros((self.dofs_count, 1)))
+        disp[self.boundaries_dof_mask] = reduced_disp
+        return disp
+
     def map_member_node_dofs(self, member):
         member_type = member.__class__.__name__
         if self.type == "TRUSS2D":
