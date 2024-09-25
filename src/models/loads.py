@@ -73,12 +73,8 @@ class Loads:
                     f_total = f_total + self.assemble_joint_load(structure, loads_dict[load], time_step)
         return f_total
 
-    def apply_boundary_conditions(self, boundaries_dof, load):
-        reduced_load = load
-        row_deleted_counter = 0
-        for boundary in boundaries_dof:
-            reduced_load = np.delete(reduced_load, boundary - row_deleted_counter, 0)
-            row_deleted_counter += 1
+    def apply_boundary_conditions(self, boundaries_dof_mask, load):
+        reduced_load = load[boundaries_dof_mask][:, 0]
         return reduced_load
 
     def get_zero_and_nonzero_mass_load(self, structure: Structure, load):
@@ -98,11 +94,8 @@ class Loads:
         return pt, p0
 
     def apply_static_condensation(self, structure: Structure, load):
-        pt, p0 = self.get_zero_and_nonzero_mass_load(structure, load)
-        mass_bounds = structure.mass_bounds
-        zero_mass_bounds = structure.zero_mass_bounds
-        reduced_pt = self.apply_boundary_conditions(mass_bounds, pt)
-        reduced_p0 = self.apply_boundary_conditions(zero_mass_bounds, p0)
+        reduced_pt = self.apply_boundary_conditions(structure.zero_mass_boundaries_mask, load)
+        reduced_p0 = self.apply_boundary_conditions(structure.mass_boundaries_mask, load)
         condensed_load = reduced_pt - np.dot(np.transpose(structure.reduced_k0t), np.dot(structure.reduced_k00_inv, reduced_p0))
         return condensed_load, reduced_p0
 

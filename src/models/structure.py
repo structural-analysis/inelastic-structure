@@ -43,12 +43,13 @@ class Structure:
         self.linear_boundaries = input["linear_boundaries"]
         self.boundaries = self.aggregate_boundaries()
         self.boundaries_dof = self.get_boundaries_dof()
+        self.boundaries_dof_mask = self.get_boundaries_dof_mask()
         self.loads = input["loads"]
         self.limits = input["limits"]
         self.k = self.get_stiffness()
         self.reduced_k = self.apply_boundary_conditions(
-            row_boundaries_dof=self.boundaries_dof,
-            col_boundaries_dof=self.boundaries_dof,
+            row_boundaries_dof=self.boundaries_dof_mask,
+            col_boundaries_dof=self.boundaries_dof_mask,
             structure_prop=self.k,
         )
         self.kc = cho_factor(self.reduced_k)
@@ -58,7 +59,7 @@ class Structure:
             self.damping = self.general_properties["dynamic_analysis"].get("damping") \
                 if self.general_properties["dynamic_analysis"].get("damping") else 0
             self.zero_mass_dofs = self.get_zero_mass_dofs()
-            self.mass_bounds, self.zero_mass_bounds = self.condense_boundary()
+            self.mass_dof_mask, self.zero_mass_dof_mask, self.mass_boundaries_mask, self.zero_mass_boundaries_mask = self.get_dynamic_masks()
             condensation_params = self.apply_static_condensation()
             self.condensed_k = condensation_params["condensed_k"]
             self.condensed_m = condensation_params["condensed_m"]
@@ -137,36 +138,8 @@ class Structure:
         return structure_stiffness
 
     def apply_boundary_conditions(self, row_boundaries_dof, col_boundaries_dof, structure_prop):
-        reduced_structure_prop = structure_prop
-        row_deleted_counter = 0
-        col_deleted_counter = 0
-        if np.array_equal(row_boundaries_dof, col_boundaries_dof):
-            for boundary in row_boundaries_dof:
-                reduced_structure_prop = np.delete(reduced_structure_prop, boundary - row_deleted_counter, 0)
-                reduced_structure_prop = np.delete(reduced_structure_prop, boundary - col_deleted_counter, 1)
-                row_deleted_counter += 1
-                col_deleted_counter += 1
-
-        else:
-            for boundary in col_boundaries_dof:
-                reduced_structure_prop = np.delete(reduced_structure_prop, boundary - col_deleted_counter, 1)
-                col_deleted_counter += 1
-
-            for boundary in row_boundaries_dof:
-                reduced_structure_prop = np.delete(reduced_structure_prop, boundary - row_deleted_counter, 0)
-                row_deleted_counter += 1
-
+        reduced_structure_prop = structure_prop[row_boundaries_dof][:, col_boundaries_dof]
         return reduced_structure_prop
-
-    def apply_load_boundry_conditions(self, force):
-        reduced_f = force
-        deleted_counter = 0
-        for i in range(len(self.boundaries_dof)):
-            reduced_f = np.delete(
-                reduced_f, self.boundaries_dof[i] - deleted_counter, 0
-            )
-            deleted_counter += 1
-        return reduced_f
 
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
@@ -220,16 +193,6 @@ class Structure:
                     f_total = f_total + self._assemble_joint_load(self.loads[load], time_step)
         return f_total
 
-    def apply_load_boundary_conditions(self, force):
-        reduced_f = force
-        deleted_counter = 0
-        for i in range(len(self.boundaries_dof)):
-            reduced_f = np.delete(
-                reduced_f, self.boundaries_dof[i] - deleted_counter, 0
-            )
-            deleted_counter += 1
-        return reduced_f
-
     def get_global_dof(self, node_num, dof):
         global_dof = int(self.node_dofs_count * node_num + dof)
         return global_dof
@@ -281,72 +244,43 @@ class Structure:
             boundaries_dof[i] = int(self.node_dofs_count * self.boundaries[i].node.num + self.boundaries[i].dof)
         return np.sort(boundaries_dof)
 
-    def condense_boundary(self):
-        mass_dof_i = 0
-        zero_mass_dof_i = 0
+    def get_boundaries_dof_mask(self):
+        boundaries_dof_mask = np.ones(self.dofs_count, dtype=bool)
+        boundaries_dof_mask[self.boundaries_dof] = False
+        return boundaries_dof_mask
 
-        mass_bounds = self.boundaries_dof.copy()
-        zero_mass_bounds = self.boundaries_dof.copy()
+    def get_dynamic_masks(self):
+        mass_dof_mask = np.zeros(self.dofs_count, dtype=bool)
+        mass_dof_mask[self.zero_mass_dofs] = True
+        zero_mass_dof_mask = np.ones(self.dofs_count, dtype=bool)
+        zero_mass_dof_mask[self.zero_mass_dofs] = False
 
-        bound_i = 0
-        mass_bound_i = 0
-        zero_mass_bound_i = 0
-        if self.zero_mass_dofs.any():
-            for dof in range(self.dofs_count):
-                if dof == self.zero_mass_dofs[zero_mass_dof_i]:
-                    if bound_i < self.boundaries_dof.shape[0]:
-                        if dof == self.boundaries_dof[bound_i]:
-                            mass_bounds = np.delete(mass_bounds, bound_i - mass_bound_i, 0)
-                            mass_bound_i += 1
-
-                            zero_mass_bounds[bound_i - zero_mass_bound_i] = zero_mass_bounds[bound_i - zero_mass_bound_i] - mass_dof_i
-
-                            bound_i += 1
-                    else:
-                        break
-                    zero_mass_dof_i += 1
-                else:
-                    if bound_i < self.boundaries_dof.shape[0]:
-                        if dof == self.boundaries_dof[bound_i]:
-                            mass_bounds[bound_i - mass_bound_i] = mass_bounds[bound_i - mass_bound_i] - zero_mass_dof_i
-
-                            zero_mass_bounds = np.delete(zero_mass_bounds, bound_i - zero_mass_bound_i, 0)
-                            zero_mass_bound_i += 1
-
-                            bound_i += 1
-                    else:
-                        break
-                    mass_dof_i += 1
-        else:
-            zero_mass_bounds = np.zeros(0)
-        return mass_bounds, zero_mass_bounds
+        zero_mass_boundaries_mask = zero_mass_dof_mask.copy()
+        zero_mass_boundaries_mask[self.boundaries_dof] = False
+        mass_boundaries_mask = mass_dof_mask.copy()
+        mass_boundaries_mask[self.boundaries_dof] = False
+        return mass_dof_mask, zero_mass_dof_mask, mass_boundaries_mask, zero_mass_boundaries_mask
 
     def apply_static_condensation(self):
-        mtt, ktt, k00, k0t = self.get_zero_and_nonzero_mass_props()
-        mass_bounds = self.mass_bounds
-        zero_mass_bounds = self.zero_mass_bounds
-        # reduced_ktt = self.apply_boundary_conditions(mass_bounds, ktt)
         reduced_ktt = self.apply_boundary_conditions(
-            row_boundaries_dof=mass_bounds,
-            col_boundaries_dof=mass_bounds,
-            structure_prop=ktt,
+            row_boundaries_dof=self.zero_mass_boundaries_mask,
+            col_boundaries_dof=self.zero_mass_boundaries_mask,
+            structure_prop=self.k,
         )
-        # condensed_m = self.apply_boundary_conditions(mass_bounds, mtt)
         condensed_m = self.apply_boundary_conditions(
-            row_boundaries_dof=mass_bounds,
-            col_boundaries_dof=mass_bounds,
-            structure_prop=mtt,
+            row_boundaries_dof=self.zero_mass_boundaries_mask,
+            col_boundaries_dof=self.zero_mass_boundaries_mask,
+            structure_prop=self.m,
         )
-        # reduced_k00 = self.apply_boundary_conditions(zero_mass_bounds, k00)
         reduced_k00 = self.apply_boundary_conditions(
-            row_boundaries_dof=zero_mass_bounds,
-            col_boundaries_dof=zero_mass_bounds,
-            structure_prop=k00,
+            row_boundaries_dof=self.mass_boundaries_mask,
+            col_boundaries_dof=self.mass_boundaries_mask,
+            structure_prop=self.k,
         )
         reduced_k0t = self.apply_boundary_conditions(
-            row_boundaries_dof=zero_mass_bounds,
-            col_boundaries_dof=mass_bounds,
-            structure_prop=k0t,
+            row_boundaries_dof=self.mass_boundaries_mask,
+            col_boundaries_dof=self.zero_mass_boundaries_mask,
+            structure_prop=self.k,
         )
         reduced_k00_inv = np.linalg.inv(reduced_k00)
         ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
@@ -360,32 +294,6 @@ class Structure:
             "reduced_k0t": reduced_k0t,
         }
         return condensation_params
-
-    def get_zero_and_nonzero_mass_props(self):
-        mtt = self.m.copy()
-        ktt = self.k.copy()
-        k00 = self.k.copy()
-        k0t = self.k.copy()
-        # for zero mass rows and columns
-        mass_i = 0
-        # for non-zero mass rows and columns
-        zero_i = 0
-        zero_mass_dofs_i = 0
-        for dof in range(self.dofs_count):
-            if self.zero_mass_dofs.any() and dof == self.zero_mass_dofs[zero_mass_dofs_i]:
-                mtt = np.delete(mtt, dof - zero_i, 1)
-                mtt = np.delete(mtt, dof - zero_i, 0)
-                ktt = np.delete(ktt, dof - zero_i, 1)
-                ktt = np.delete(ktt, dof - zero_i, 0)
-                k0t = np.delete(k0t, dof - zero_i, 1)
-                zero_i += 1
-                zero_mass_dofs_i += 1
-            else:
-                k00 = np.delete(k00, dof - mass_i, 1)
-                k00 = np.delete(k00, dof - mass_i, 0)
-                k0t = np.delete(k0t, dof - mass_i, 0)
-                mass_i += 1
-        return mtt, ktt, k00, k0t
 
     def get_modal_property(self, property, modes):
         property_modal = np.dot(np.transpose(modes), np.dot(property, modes))
@@ -410,32 +318,15 @@ class Structure:
         c = alpha * m + beta * k
         return c
 
-    def undo_disp_boundary_condition(self, disp, boundaries_dof):
-        free_i = 0
-        bound_i = 0
-        unrestrianed_dofs = disp.shape[0] + boundaries_dof.shape[0]
-        unrestrianed_disp = np.matrix(np.zeros((unrestrianed_dofs, 1)))
-        for dof in range(unrestrianed_dofs):
-            if bound_i < boundaries_dof.shape[0] and dof == boundaries_dof[bound_i]:
-                bound_i += 1
-            else:
-                unrestrianed_disp[dof, 0] = disp[free_i, 0]
-                free_i += 1
-        return unrestrianed_disp
-
     def undo_disp_condensation(self, ut, u0):
         disp = np.matrix(np.zeros((self.dofs_count, 1)))
-        u0_i = 0
-        ut_i = 0
-        zero_mass_dofs_i = 0
-        for dof in range(self.dofs_count):
-            if self.zero_mass_dofs.any() and dof == self.zero_mass_dofs[zero_mass_dofs_i]:
-                disp[dof, 0] = u0[u0_i, 0]
-                u0_i += 1
-                zero_mass_dofs_i += 1
-            else:
-                disp[dof, 0] = ut[ut_i, 0]
-                ut_i += 1
+        disp[self.mass_boundaries_mask] = u0
+        disp[self.zero_mass_boundaries_mask] = ut
+        return disp
+
+    def undo_disp_boundaries(self, reduced_disp):
+        disp = np.matrix(np.zeros((self.dofs_count, 1)))
+        disp[self.boundaries_dof_mask] = reduced_disp
         return disp
 
     def map_member_node_dofs(self, member):
