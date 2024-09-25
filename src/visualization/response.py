@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from ..settings import settings
 
-node_num = 2
+node_num = 4
 dof = 0
 outputs_dir = "output/examples/"
 
