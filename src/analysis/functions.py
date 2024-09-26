@@ -398,15 +398,15 @@ def get_a_and_b_sensitivity(structure, modes, time, time_step, i_duhamels: IDuha
     dt = t2 - t1
 
     for component_num in range(structure.yield_specs.intact_components_count):
-        np.savetxt(f"temp/modal_load-c{component_num}-step-{time_step}", modal_unit_loads[0, component_num], delimiter="\n")
+        # np.savetxt(f"temp/modal_load-c{component_num}-step-{time_step}", modal_unit_loads[0, component_num], delimiter="\n")
         for mode_num in range(modes_count):
             p = modal_unit_loads[0, component_num][mode_num, 0]
             a2[mode_num, 0] = p / dt * (i_duhamels.i4[mode_num, 0] - t1 * i_duhamels.i1[mode_num, 0])
             b2[mode_num, 0] = p / dt * (i_duhamels.i3[mode_num, 0] - t1 * i_duhamels.i2[mode_num, 0])  
         a2s[0, 0] = a2
         b2s[0, 0] = b2
-        np.savetxt(f"temp/ad-c{component_num}-step-{time_step}", a2, delimiter="\n")
-        np.savetxt(f"temp/bd-c{component_num}-step-{time_step}", b2, delimiter="\n")
+        # np.savetxt(f"temp/ad-c{component_num}-step-{time_step}", a2, delimiter="\n")
+        # np.savetxt(f"temp/bd-c{component_num}-step-{time_step}", b2, delimiter="\n")
         a2_sensitivity[0, component_num] = a2s[0, 0]
         b2_sensitivity[0, component_num] = b2s[0, 0]
     return a2_sensitivity, b2_sensitivity

@@ -242,11 +242,13 @@ class InitialAnalysis:
                 modal_unit_loads=self.modal_unit_loads,
             )
             self.pv_prev = self.pv_history[time_step - 1, 0]
+            np.savetxt(f"temp/pv_prev-step-{time_step}", self.pv_prev, delimiter="\n")
             self.pv_history[time_step, 0] = self.sensitivity.pv
+            np.savetxt(f"temp/pv-step-{time_step}", self.sensitivity.pv, delimiter="\n")
             self.nodal_disp_sensitivity_history[time_step, 0] = self.sensitivity.nodal_disp
             self.members_nodal_forces_sensitivity_history[time_step, 0] = self.sensitivity.members_nodal_forces
             self.members_disps_sensitivity_history[time_step, 0] = self.sensitivity.members_disps
-            self.modal_loads_sensitivity_history[time_step, 0] = self.sensitivity.modal_loads
+            self.modal_loads_sensitivity_history[time_step, 0] = self.modal_unit_loads
 
             self.dv = get_nodal_disp_limits_sensitivity_rows(
                 structure=self.structure,

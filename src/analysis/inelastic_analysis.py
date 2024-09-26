@@ -68,7 +68,9 @@ class InelasticAnalysis:
         initial_analysis.a_duhamel[time_step, 0] = elastoplastic_a2s
         initial_analysis.b_duhamel[time_step, 0] = elastoplastic_b2s
         initial_analysis.modal_loads[time_step, 0] = elastoplastic_modal_loads
-
+        np.savetxt(f"temp/elastoplastic_a2s-step-{time_step}", elastoplastic_a2s[0, 0], delimiter="\n")
+        np.savetxt(f"temp/elastoplastic_b2s-step-{time_step}", elastoplastic_b2s[0, 0], delimiter="\n")
+        np.savetxt(f"temp/elastoplastic_modal_loads-step-{time_step}", elastoplastic_modal_loads[0, 0], delimiter="\n")
         # elastoplastic_nodal_disp = get_elastoplastic_response(
         #     load_level=final_inc_load_level,
         #     phi_x=final_inc_phi_pms,
