@@ -10,8 +10,10 @@ from .functions import (
     get_sensitivity,
     get_nodal_disp_limits,
     get_dynamic_nodal_disp,
-    get_modal_disp,
     get_dynamic_sensitivity,
+    get_modes_i1_to_i4,
+    get_modal_unit_loads,
+    get_a_and_b_sensitivity,
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
@@ -126,6 +128,19 @@ class InitialAnalysis:
             b_duhamel = np.matrix(np.zeros((modes_count, 1)))
             b_duhamels = np.matrix(np.zeros((1, 1)), dtype=object)
             self.b_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
+            i1_duhamel = np.matrix(np.zeros((modes_count, 1)))
+            self.i1_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
+            i2_duhamel = np.matrix(np.zeros((modes_count, 1)))
+            self.i2_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
+            i3_duhamel = np.matrix(np.zeros((modes_count, 1)))
+            self.i3_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
+            i4_duhamel = np.matrix(np.zeros((modes_count, 1)))
+            self.i4_duhamel = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
+
             b_duhamels[0, 0] = b_duhamel
             self.b_duhamel[0, 0] = b_duhamels
             # self.modal_disp_history = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
@@ -158,9 +173,34 @@ class InitialAnalysis:
                 self.load_level = 0
 
                 self.plastic_multipliers_prev = np.matrix(np.zeros((self.initial_data.intact_pieces_count, 1)))
+                i_duhamels = get_modes_i1_to_i4(
+                    time=self.time,
+                    time_step=1,
+                    damping=self.structure.damping,
+                    modes=self.structure.modes,
+                    wns=self.structure.wns,
+                    wds=self.structure.wds
+                )
+                self.sensitivity = get_dynamic_sensitivity(
+                    structure=self.structure,
+                    loads=self.loads,
+                    time=self.time,
+                    time_step=1,
+                    modes=self.structure.modes,
+                    i_duhamels=i_duhamels,
+                )
+                self.modal_unit_loads = get_modal_unit_loads(self.structure, self.loads, self.structure.modes)
 
     def update_dynamic_time_step(self, time_step):
         self.total_load = self.loads.get_total_load(self.structure, self.loads, time_step)
+        i_duhamels = get_modes_i1_to_i4(
+            time=self.time,
+            time_step=time_step,
+            damping=self.structure.damping,
+            modes=self.structure.modes,
+            wns=self.structure.wns,
+            wds=self.structure.wds
+        )
 
         elastic_a2s, elastic_b2s, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
             structure=self.structure,
@@ -172,6 +212,7 @@ class InitialAnalysis:
             total_load=self.total_load,
             a1s=self.a_duhamel[time_step - 1, 0],
             b1s=self.b_duhamel[time_step - 1, 0],
+            i_duhamels=i_duhamels,
         )
 
         self.a_duhamel[time_step, 0] = elastic_a2s
@@ -192,24 +233,25 @@ class InitialAnalysis:
             self.p0_prev = self.p0_history[time_step - 1, 0]
             self.p0_history[time_step, 0] = internal_responses.p0
             self.d0_history[time_step, 0] = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp[0, 0])
-
-            sensitivity = get_dynamic_sensitivity(
+            self.a2_sensitivity_history[time_step, 0], self.b2_sensitivity_history[time_step, 0] = get_a_and_b_sensitivity(
                 structure=self.structure,
-                loads=self.loads,
+                modes=self.structure.modes,
                 time=self.time,
                 time_step=time_step,
-                modes=self.structure.modes,
+                i_duhamels=i_duhamels,
+                modal_unit_loads=self.modal_unit_loads,
             )
             self.pv_prev = self.pv_history[time_step - 1, 0]
-            self.pv_history[time_step, 0] = sensitivity.pv
-            self.nodal_disp_sensitivity_history[time_step, 0] = sensitivity.nodal_disp
-            self.members_nodal_forces_sensitivity_history[time_step, 0] = sensitivity.members_nodal_forces
-            self.members_disps_sensitivity_history[time_step, 0] = sensitivity.members_disps
-            self.modal_loads_sensitivity_history[time_step, 0] = sensitivity.modal_loads
-            self.a2_sensitivity_history[time_step, 0] = sensitivity.a2s
-            self.b2_sensitivity_history[time_step, 0] = sensitivity.b2s
+            self.pv_history[time_step, 0] = self.sensitivity.pv
+            self.nodal_disp_sensitivity_history[time_step, 0] = self.sensitivity.nodal_disp
+            self.members_nodal_forces_sensitivity_history[time_step, 0] = self.sensitivity.members_nodal_forces
+            self.members_disps_sensitivity_history[time_step, 0] = self.sensitivity.members_disps
+            self.modal_loads_sensitivity_history[time_step, 0] = self.sensitivity.modal_loads
 
-            self.dv = get_nodal_disp_limits_sensitivity_rows(structure=self.structure, nodal_disp_sensitivity=sensitivity.nodal_disp)
+            self.dv = get_nodal_disp_limits_sensitivity_rows(
+                structure=self.structure,
+                nodal_disp_sensitivity=self.sensitivity.nodal_disp,
+            )
             self.load_level_prev = self.load_level
 
             self.analysis_data.p0 = self.p0_history[time_step, 0]

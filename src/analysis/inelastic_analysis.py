@@ -34,6 +34,16 @@ class InelasticAnalysis:
         self.final_inc_phi_pms_prev = final_inc_phi_pms
         self.plastic_vars_history[time_step, 0] = self.plastic_vars
         self.final_inc_phi_pms_history[time_step, 0] = final_inc_phi_pms
+        # print(f"{initial_analysis.a_duhamel[time_step, 0].shape=}")
+        # print(f"{initial_analysis.a_duhamel[time_step, 0][0, 0].shape=}")
+        # print(f"{initial_analysis.a_duhamel[time_step, 0][0, 0][0, 0].shape=}")
+
+
+        # print(f"{initial_analysis.a2_sensitivity_history[time_step, 0].shape=}")
+        # print(f"{initial_analysis.a_duhamel[time_step, 0][0, 0].shape=}")
+        # print(f"{initial_analysis.a_duhamel[time_step, 0][0, 0][0, 0].shape=}")
+        # print(f"{initial_analysis.a_duhamel[time_step, 0][0, 0][0, 0][0, 0].shape=}")
+
         elastoplastic_a2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,

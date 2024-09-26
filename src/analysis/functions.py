@@ -30,8 +30,14 @@ class DynamicSensitivity:
     members_nodal_forces: np.matrix
     members_disps: np.matrix
     modal_loads: np.matrix
-    a2s: np.matrix
-    b2s: np.matrix
+
+
+@dataclass
+class IDuhamels:
+    i1: np.matrix
+    i2: np.matrix
+    i3: np.matrix
+    i4: np.matrix
 
 
 def get_nodal_disp(structure, loads, total_load):
@@ -195,11 +201,10 @@ def get_nodal_disp_limits_sensitivity_rows(structure, nodal_disp_sensitivity):
     return dv
 
 
-def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_modal_loads, total_load, a1s, b1s):
+def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_modal_loads, total_load, a1s, b1s, i_duhamels):
 
     nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
     modal_loads = np.matrix(np.zeros((1, 1), dtype=object))
-
     condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
     modal_loads[0, 0] = loads.get_modal_load(condense_load, modes)
     modal_disps, a2s, b2s = get_modal_disp(
@@ -207,12 +212,11 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
         time=time,
         time_step=time_step,
         modes=modes,
-        # previous_modal_loads=self.modal_loads[time_step - 1, 0],
         previous_modal_loads=previous_modal_loads,
         modal_loads=modal_loads,
         a1s=a1s,
         b1s=b1s,
-        # b1s=self.b_duhamel[time_step - 1, 0],
+        i_duhamels=i_duhamels,
     )
 
     ut = np.dot(modes, modal_disps[0, 0])
@@ -224,7 +228,7 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
     return a2s, b2s, modal_loads, nodal_disp
 
 
-def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s):
+def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s, i_duhamels: IDuhamels):
     modes_count = modes.shape[1]
 
     modal_disp = np.matrix(np.zeros((modes_count, 1)))
@@ -239,18 +243,25 @@ def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, moda
     for mode_num in range(modes_count):
         wn = structure.wns[mode_num]
         wd = structure.wds[mode_num]
-        i1, i2, i3, i4 = get_i_duhamel(structure.damping, t1, t2, wn, wd)
+
+        i1 = i_duhamels.i1[mode_num, 0]
+        i2 = i_duhamels.i2[mode_num, 0]
+        i3 = i_duhamels.i3[mode_num, 0]
+        i4 = i_duhamels.i4[mode_num, 0]
 
         mn = structure.m_modal[mode_num, mode_num]
         p1 = previous_modal_loads[0, 0][mode_num, 0]
         p2 = modal_loads[0, 0][mode_num, 0]
         a1 = a1s[0, 0][mode_num, 0]
         b1 = b1s[0, 0][mode_num, 0]
-        a2[mode_num, 0], b2[mode_num, 0], modal_disp[mode_num, 0] = get_abx_duhamel(structure.damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2)
-
+        a2_mode, b2_mode, modal_disp_mode = get_abx_duhamel(
+            structure.damping, t1, t2, i1, i2, i3, i4, wn, wd, mn, a1, b1, p1, p2
+        )
+        a2[mode_num, 0] = a2_mode
+        b2[mode_num, 0] = b2_mode
+        modal_disp[mode_num, 0] = modal_disp_mode
     a2s[0, 0] = a2
     b2s[0, 0] = b2
-
     modal_disps[0, 0] = modal_disp
     return modal_disps, a2s, b2s
 
@@ -269,18 +280,16 @@ def get_i_duhamel(damping, t1, t2, wn, wd):
     return i1, i2, i3, i4
 
 
-@lru_cache()
-def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
+def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, wd, mn, a1, b1, p1, p2):
     deltat = t2 - t1
     deltap = p2 - p1
-    wd = np.sqrt(1 - damping ** 2) * wn
     a2 = a1 + (p1 - t1 * deltap / deltat) * i1 + (deltap / deltat) * i4
     b2 = b1 + (p1 - t1 * deltap / deltat) * i2 + (deltap / deltat) * i3
     un = (np.exp(-1 * damping * wn * t2) / (mn * wd)) * (a2 * np.sin(wd * t2) - b2 * np.cos(wd * t2))
     return a2, b2, un
 
 
-def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
+def get_dynamic_sensitivity(structure, loads, time, time_step, modes, i_duhamels):
     modes_count = modes.shape[1]
     # fv: equivalent global force vector for a yield component's udef
     members = structure.members
@@ -340,6 +349,7 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
                 total_load=fv,
                 a1s=a1s,
                 b1s=b1s,
+                i_duhamels=i_duhamels,
             )
             nodal_disp_sensitivity[0, pv_column] = affected_struc_disp[0, 0]
             modal_load_sensitivity[0, pv_column] = affected_modal_load[0, 0]
@@ -365,7 +375,80 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
         members_nodal_forces=members_nodal_forces_sensitivity,
         members_disps=members_disps_sensitivity,
         modal_loads=modal_load_sensitivity,
-        a2s=a2_sensitivity,
-        b2s=b2_sensitivity,
     )
     return sensitivity
+
+
+def get_a_and_b_sensitivity(structure, modes, time, time_step, i_duhamels: IDuhamels, modal_unit_loads):
+    modes_count = modes.shape[1]
+
+    a2 = np.matrix(np.zeros((modes_count, 1)))
+    a2s = np.matrix(np.zeros((1, 1), dtype=object))
+    b2 = np.matrix(np.zeros((modes_count, 1)))
+    b2s = np.matrix(np.zeros((1, 1), dtype=object))
+    a2_sensitivity = np.matrix(np.zeros((
+        1, structure.yield_specs.intact_components_count), dtype=object
+    ))
+    b2_sensitivity = np.matrix(np.zeros((
+        1, structure.yield_specs.intact_components_count), dtype=object
+    ))
+
+    t1 = time[time_step - 1, 0]
+    t2 = time[time_step, 0]
+    dt = t2 - t1
+
+    for component_num in range(structure.yield_specs.intact_components_count):
+        np.savetxt(f"temp/modal_load-c{component_num}-step-{time_step}", modal_unit_loads[0, component_num], delimiter="\n")
+        for mode_num in range(modes_count):
+            p = modal_unit_loads[0, component_num][mode_num, 0]
+            a2[mode_num, 0] = p / dt * (i_duhamels.i4[mode_num, 0] - t1 * i_duhamels.i1[mode_num, 0])
+            b2[mode_num, 0] = p / dt * (i_duhamels.i3[mode_num, 0] - t1 * i_duhamels.i2[mode_num, 0])  
+        a2s[0, 0] = a2
+        b2s[0, 0] = b2
+        np.savetxt(f"temp/ad-c{component_num}-step-{time_step}", a2, delimiter="\n")
+        np.savetxt(f"temp/bd-c{component_num}-step-{time_step}", b2, delimiter="\n")
+        a2_sensitivity[0, component_num] = a2s[0, 0]
+        b2_sensitivity[0, component_num] = b2s[0, 0]
+    return a2_sensitivity, b2_sensitivity
+
+
+def get_modes_i1_to_i4(time, time_step, damping, modes, wns, wds):
+    modes_count = modes.shape[1]
+
+    i1s = np.matrix(np.zeros((modes_count, 1)))
+    i2s = np.matrix(np.zeros((modes_count, 1)))
+    i3s = np.matrix(np.zeros((modes_count, 1)))
+    i4s = np.matrix(np.zeros((modes_count, 1)))
+
+    t1 = time[time_step - 1, 0]
+    t2 = time[time_step, 0]
+    for mode_num in range(modes_count):
+        wn = wns[mode_num]
+        wd = wds[mode_num]
+        i1, i2, i3, i4 = get_i_duhamel(damping, t1, t2, wn, wd)
+        i1s[mode_num, 0] = i1
+        i2s[mode_num, 0] = i2
+        i3s[mode_num, 0] = i3
+        i4s[mode_num, 0] = i4
+    return IDuhamels(i1=i1s, i2=i2s, i3=i3s, i4=i4s)
+
+
+def get_modal_unit_loads(structure, loads, modes):
+    # fv: equivalent global force vector for a yield component's udef
+    modal_unit_loads = np.matrix(np.zeros((1, structure.yield_specs.intact_components_count), dtype=object))
+    component_counter = 0
+    for member in structure.members:
+        for load in member.udefs.T:
+            fv = np.matrix(np.zeros((structure.dofs_count, 1)))
+            global_load = member.t.T * load.T
+            local_node_base_dof = 0
+            for node in member.nodes:
+                global_node_base_dof = structure.node_dofs_count * node.num
+                for i in range(structure.node_dofs_count):
+                    fv[global_node_base_dof + i] = global_load[local_node_base_dof + i]
+                local_node_base_dof += structure.node_dofs_count
+            condense_load, _ = loads.apply_static_condensation(structure, fv)
+            modal_loads = loads.get_modal_load(condense_load, modes)
+            modal_unit_loads[0, component_counter] = modal_loads
+            component_counter += 1
+    return modal_unit_loads
