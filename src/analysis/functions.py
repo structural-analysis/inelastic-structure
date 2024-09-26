@@ -407,8 +407,8 @@ def get_a_and_b_sensitivity(structure, modes, time, time_step, i_duhamels: IDuha
         b2s[0, 0] = b2
         # np.savetxt(f"temp/ad-c{component_num}-step-{time_step}", a2, delimiter="\n")
         # np.savetxt(f"temp/bd-c{component_num}-step-{time_step}", b2, delimiter="\n")
-        a2_sensitivity[0, component_num] = a2s[0, 0]
-        b2_sensitivity[0, component_num] = b2s[0, 0]
+        a2_sensitivity[0, component_num] = a2s[0, 0].copy()
+        b2_sensitivity[0, component_num] = b2s[0, 0].copy()
     return a2_sensitivity, b2_sensitivity
 
 
