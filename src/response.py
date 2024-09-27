@@ -235,6 +235,8 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
 
             members_disps_sensitivity = members_disps_sensitivity_history[time_step, 0]
             members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
+            print(f"response--------------------------------")
+            print(f"{time_step=}")
             for i in range(increments_count):
                 phi_pms = phi_pms_history[i] + final_inc_phi_pms_prev
                 load_level = load_level_history[i]
@@ -247,6 +249,11 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     elastic_response=elastic_nodal_disp_history[time_step, 0],
                     sensitivity=nodal_disp_sensitivity,
                 )
+                print(f"{phi_pms=}")
+                print(f"{load_level=}")
+                print(f"{elastic_nodal_disp_history[time_step, 0]=}")
+                print(f"{nodal_disp_sensitivity=}")
+                print(f"{elastoplastic_nodal_disp=}")
                 nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
 
                 elastoplastic_members_nodal_forces = get_elastoplastic_response(
@@ -266,7 +273,8 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 )
                 for j in range(structure.members_count):
                     members_disps[i, j] = elastoplastic_members_disps[j, 0]
-
+            print(f"=========================================")
+            input()
             responses[time_step, 0] = {
                 "nodal_disp": nodal_disp,
                 "members_nodal_forces": members_nodal_forces,
