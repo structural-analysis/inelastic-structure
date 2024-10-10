@@ -21,6 +21,7 @@ class StaticSensitivity:
     members_disps: np.matrix
     members_nodal_strains: np.matrix
     members_nodal_stresses: np.matrix
+    members_nodal_moments: np.matrix
 
 
 @dataclass
@@ -118,6 +119,7 @@ def get_sensitivity(structure, loads):
     members_disps_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
     members_nodal_strains_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
     members_nodal_stresses_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
+    members_nodal_moments_sensitivity = np.matrix(np.zeros((structure.members_count, structure.yield_specs.intact_components_count), dtype=object))
     pv_column = 0
 
     for member_num, member in enumerate(members):
@@ -156,8 +158,10 @@ def get_sensitivity(structure, loads):
                 affected_member_response = structure.members[affected_member_num].get_response(affected_member_disp[0, 0], fixed_external, fixed_internal)
                 affected_member_nodal_force = affected_member_response.nodal_force
                 affected_member_yield_components_force = affected_member_response.yield_components_force
-                if member.__class__.__name__ in ["WallMember", "PlateMember"]:
-                    # FIXME: GENERALIZE PLEASE
+
+                # FIXME: GENERALIZE PLEASE
+                # for wall members:
+                if member.__class__.__name__ in ["WallMember"]:
                     if member_num == affected_member_num:
                         udet = structure.members[affected_member_num].udets.T[comp_num]
                         affected_member_yield_components_force -= udet.T
@@ -165,6 +169,15 @@ def get_sensitivity(structure, loads):
                     affected_member_nodal_stresses = affected_member_response.nodal_stresses
                     members_nodal_strains_sensitivity[affected_member_num, pv_column] = affected_member_nodal_strains
                     members_nodal_stresses_sensitivity[affected_member_num, pv_column] = affected_member_nodal_stresses
+
+                # for plate members:
+                if member.__class__.__name__ in ["PlateMember"]:
+                    if member_num == affected_member_num:
+                        udet = structure.members[affected_member_num].udets.T[comp_num]
+                        affected_member_yield_components_force -= udet.T
+                    affected_member_nodal_moments = affected_member_response.nodal_moments
+                    members_nodal_moments_sensitivity[affected_member_num, pv_column] = affected_member_nodal_moments
+
                 members_nodal_forces_sensitivity[affected_member_num, pv_column] = affected_member_nodal_force
                 members_disps_sensitivity[affected_member_num, pv_column] = affected_member_disp[0, 0]
                 pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
@@ -178,6 +191,7 @@ def get_sensitivity(structure, loads):
         members_disps=members_disps_sensitivity,
         members_nodal_strains=members_nodal_strains_sensitivity,
         members_nodal_stresses=members_nodal_stresses_sensitivity,
+        members_nodal_moments=members_nodal_moments_sensitivity,
     )
     return sensitivity
 

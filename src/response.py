@@ -40,11 +40,11 @@ class DesiredResponse(list, Enum):
     ]
     PLATE2D = [
         "load_levels",
-        "nodal_disp",
-        "nodal_strains",
-        "nodal_stresses",
         "members_disps",
         "members_nodal_forces",
+        "nodal_disp",
+        "nodal_moments",
+        "members_nodal_moments",
     ]
 
 
@@ -78,6 +78,10 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         members_nodal_stresses_sensitivity = initial_analysis.members_nodal_stresses_sensitivity
         members_nodal_stresses = np.zeros([increments_count, structure.members_count], dtype=object)
         nodal_stresses = np.zeros([increments_count, 1], dtype=object)
+
+        members_nodal_moments_sensitivity = initial_analysis.members_nodal_moments_sensitivity
+        members_nodal_moments = np.zeros([increments_count, structure.members_count], dtype=object)
+        nodal_moments = np.zeros([increments_count, 1], dtype=object)
 
         members_disps_sensitivity = initial_analysis.members_disps_sensitivity
         members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
@@ -113,10 +117,17 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 elastic_response=initial_analysis.elastic_members_nodal_stresses,
                 sensitivity=members_nodal_stresses_sensitivity,
             )
+            elastoplastic_members_nodal_moments = get_elastoplastic_response(
+                load_level=load_level,
+                phi_x=phi_x,
+                elastic_response=initial_analysis.elastic_members_nodal_moments,
+                sensitivity=members_nodal_moments_sensitivity,
+            )
             for j in range(structure.members_count):
                 members_nodal_forces[i, j] = elastoplastic_members_nodal_forces[j, 0]
                 members_nodal_strains[i, j] = elastoplastic_members_nodal_strains[j, 0]
                 members_nodal_stresses[i, j] = elastoplastic_members_nodal_stresses[j, 0]
+                members_nodal_moments[i, j] = elastoplastic_members_nodal_moments[j, 0]
 
             elastoplastic_members_disps = get_elastoplastic_response(
                 load_level=load_level,
@@ -124,9 +135,13 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 elastic_response=initial_analysis.elastic_members_disps,
                 sensitivity=members_disps_sensitivity,
             )
+
             if has_any_response(members_nodal_strains):
                 nodal_strains[i, 0] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_strains.T)
                 nodal_stresses[i, 0] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_stresses.T)
+
+            if has_any_response(members_nodal_moments):
+                nodal_moments[i, 0] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_moments.T)
 
             for j in range(structure.members_count):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
@@ -138,12 +153,21 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
             "members_nodal_forces": members_nodal_forces,
             "members_nodal_strains": members_nodal_strains,
             "members_nodal_stresses": members_nodal_stresses,
+            "members_nodal_moments": members_nodal_moments,
         }
+
         if has_any_response(members_nodal_strains):
             responses.update(
                 {
                     "nodal_strains": nodal_strains,
                     "nodal_stresses": nodal_stresses,
+                }
+            )
+
+        if has_any_response(members_nodal_moments):
+            responses.update(
+                {
+                    "nodal_moments": nodal_moments,
                 }
             )
 
@@ -153,8 +177,10 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         members_nodal_forces = np.zeros([1, structure.members_count], dtype=object)
         members_nodal_strains = np.zeros([1, structure.members_count], dtype=object)
         members_nodal_stresses = np.zeros([1, structure.members_count], dtype=object)
+        members_nodal_moments = np.zeros([1, structure.members_count], dtype=object)
         nodal_strains = np.zeros([1, 1], dtype=object)
         nodal_stresses = np.zeros([1, 1], dtype=object)
+        nodal_moments = np.zeros([1, 1], dtype=object)
         load_levels = np.zeros([1, 1], dtype=object)
 
         load_levels[0, 0] = np.matrix([[structure.limits["load_limit"][0]]])
@@ -164,10 +190,14 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
             members_nodal_forces[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_forces[i, 0]
             members_nodal_strains[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_strains[i, 0]
             members_nodal_stresses[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_stresses[i, 0]
+            members_nodal_moments[0, i] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_moments[i, 0]
 
         if has_any_response(members_nodal_strains):
             nodal_strains[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains)
             nodal_stresses[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_stresses)
+
+        if has_any_response(members_nodal_moments):
+            nodal_moments[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_moments)
 
         responses = {
             "load_levels": load_levels,
@@ -176,7 +206,9 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
             "members_nodal_forces": members_nodal_forces,
             "members_nodal_strains": members_nodal_strains,
             "members_nodal_stresses": members_nodal_stresses,
+            "members_nodal_moments": members_nodal_moments,
         }
+
         if has_any_response(members_nodal_strains):
             responses.update(
                 {
@@ -184,6 +216,14 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     "nodal_stresses": nodal_stresses,
                 }
             )
+
+        if has_any_response(members_nodal_moments):
+            responses.update(
+                {
+                    "nodal_moments": nodal_moments,
+                }
+            )
+
     return responses
 
 

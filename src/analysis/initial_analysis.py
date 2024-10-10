@@ -92,6 +92,7 @@ class InitialAnalysis:
                 self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
                 self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
                 self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
+                self.members_nodal_moments_sensitivity = sensitivity.members_nodal_moments
 
                 self.analysis_data.p0 = internal_responses.p0
                 self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp[0, 0])
