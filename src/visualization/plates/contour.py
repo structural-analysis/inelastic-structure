@@ -3,16 +3,17 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
+from scipy.ndimage import gaussian_filter
 from matplotlib.path import Path
 
 # General settings
 example_name = "plate-curved-fine"
 selected = "von_mises_moment"  # nodal_disp, von_mises_moment
 increment = 194  # 82 kn/m2
-contour_levels = 6
+contour_levels = 9
 min_limit = 50000  # Set your minimum limit here
 max_limit = 150000  # Set your maximum limit here
-colormap_choice = "Grays"  # "Spectral" or "Grays" for white-to-black
+colormap_choice = "Spectral"  # "Spectral" or "Grays" for white-to-black
 inputs_dir = "input/examples/"
 outputs_dir = "output/examples/"
 
@@ -74,7 +75,7 @@ def create_grid(x, y, values, mask_elements=True, elements=None, grid_size=200):
     return xi, yi, zi
 
 # Function to plot the contour of a given response
-def plot_contour(xi, yi, zi, response_name, x, y, elements, contour_levels):
+def plot_contour(xi, yi, zi, response_name, response_title, x, y, elements, contour_levels):
     # Determine the minimum and maximum limits for the contour levels
     organic_min = np.nanmin(zi)
     organic_max = np.nanmax(zi)
@@ -91,12 +92,13 @@ def plot_contour(xi, yi, zi, response_name, x, y, elements, contour_levels):
     levels = np.linspace(actual_min, actual_max, contour_levels)
 
     plt.figure(figsize=(10, 8))
-    contour = plt.contourf(xi, yi, zi, levels=levels, cmap=colormap_choice, extend='both')
+    contour = plt.contourf(xi, yi, zi, levels=levels, cmap=colormap_choice)
 
-    # Create the colorbar inside the plot area and make it smaller
-    cbar = plt.colorbar(contour, ticks=levels, extend='both', shrink=0.7, aspect=15, pad=0.02)
+    # Create the colorbar with a title and smaller size
+    cbar = plt.colorbar(contour, ticks=levels, shrink=0.4, aspect=4, pad=0.05)
     cbar.set_label(f'{response_name}')
     cbar.ax.tick_params(labelsize=8)
+    cbar.set_label(f'{response_name} {response_title}', fontsize=10, labelpad=10)
     plt.title(f'Contour of {response_name}')
     plt.xlabel('X Coordinate')
     plt.ylabel('Y Coordinate')
@@ -127,9 +129,11 @@ def plot_response(response_type='nodal_disp'):
     if response_type == 'nodal_disp':
         values = load_displacement(displacements_path)
         response_name = 'Vertical Displacement (dz)'
+        response_title = '(U3, m)'
     elif response_type == 'von_mises_moment':
         values = load_von_mises_moment(moments_path)
         response_name = 'Von Mises Moment'
+        response_title = '(Mises-M, Pa)'
     else:
         raise ValueError(f"Unknown response type: {response_type}")
 
@@ -137,7 +141,7 @@ def plot_response(response_type='nodal_disp'):
     xi, yi, zi = create_grid(x, y, values, mask_elements=True, elements=elements)
     
     # Plot the contour
-    plot_contour(xi, yi, zi, response_name, x, y, elements, contour_levels)
+    plot_contour(xi, yi, zi, response_name, response_title, x, y, elements, contour_levels)
 
 if __name__ == "__main__":
     plot_response(selected)
