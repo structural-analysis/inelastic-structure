@@ -110,7 +110,8 @@ class InitialAnalysis:
 
             self.m_modal = structure.m_modal
             self.k_modal = structure.k_modal
-            modes_count = structure.modes_count
+            # modes_count = structure.modes_count
+            modes_count = structure.selected_modes_count
 
             self.modal_loads = np.matrix(np.zeros((self.time_steps, 1), dtype=object))
             modal_load = np.matrix(np.zeros((modes_count, 1)))
@@ -167,7 +168,7 @@ class InitialAnalysis:
             loads=self.loads,
             time=self.time,
             time_step=time_step,
-            modes=self.structure.modes,
+            modes=self.structure.selected_modes,
             previous_modal_loads=self.modal_loads[time_step - 1, 0],
             total_load=self.total_load,
             a1s=self.a_duhamel[time_step - 1, 0],
@@ -198,7 +199,7 @@ class InitialAnalysis:
                 loads=self.loads,
                 time=self.time,
                 time_step=time_step,
-                modes=self.structure.modes,
+                modes=self.structure.selected_modes_count,
             )
             self.pv_prev = self.pv_history[time_step - 1, 0]
             self.pv_history[time_step, 0] = sensitivity.pv

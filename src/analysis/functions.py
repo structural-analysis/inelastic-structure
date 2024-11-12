@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import cho_solve
 from dataclasses import dataclass
+from functools import lru_cache
 
 
 @dataclass
@@ -34,18 +35,10 @@ class DynamicSensitivity:
 
 
 def get_nodal_disp(structure, loads, total_load):
-    j = 0
-    o = 0
-    reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof, total_load)
+    reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof_mask, total_load)
     reduced_disp = cho_solve(structure.kc, reduced_total_load)
     nodal_disp = np.matrix(np.zeros((1, 1), dtype=object))
-    disp = np.matrix(np.zeros((structure.dofs_count, 1)))
-    for i in range(structure.dofs_count):
-        if (j != structure.boundaries_dof.shape[0] and i == structure.boundaries_dof[j]):
-            j += 1
-        else:
-            disp[i, 0] = reduced_disp[o, 0]
-            o += 1
+    disp = structure.undo_disp_boundaries(reduced_disp)
     nodal_disp[0, 0] = disp
     return nodal_disp
 
@@ -208,7 +201,7 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
     modal_loads = np.matrix(np.zeros((1, 1), dtype=object))
 
     condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
-    modal_loads[0, 0] = loads.get_modal_load(condense_load, modes)
+    modal_loads[0, 0] = loads.cached_get_modal_load(condense_load, structure.selected_modes)
     modal_disps, a2s, b2s = get_modal_disp(
         structure=structure,
         time=time,
@@ -224,16 +217,16 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
 
     ut = np.dot(modes, modal_disps[0, 0])
     u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
-    unrestrianed_ut = structure.undo_disp_boundary_condition(ut, structure.mass_bounds)
-    unrestrianed_u0 = structure.undo_disp_boundary_condition(u0, structure.zero_mass_bounds)
 
-    disp = structure.undo_disp_condensation(unrestrianed_ut, unrestrianed_u0)
+    disp = structure.undo_disp_condensation(ut, u0)
+
     nodal_disp[0, 0] = disp
     return a2s, b2s, modal_loads, nodal_disp
 
 
 def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s):
-    modes_count = modes.shape[1]
+    # modes_count = modes.shape[1]
+    modes_count = structure.selected_modes_count
 
     modal_disp = np.matrix(np.zeros((modes_count, 1)))
     modal_disps = np.matrix(np.zeros((1, 1), dtype=object))
@@ -262,7 +255,7 @@ def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, moda
     modal_disps[0, 0] = modal_disp
     return modal_disps, a2s, b2s
 
-
+@lru_cache(maxsize=192)
 def get_i_duhamel(damping, t1, t2, wn, wd):
     wd = np.sqrt(1 - damping ** 2) * wn
     i12 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
@@ -276,6 +269,7 @@ def get_i_duhamel(damping, t1, t2, wn, wd):
     return i1, i2, i3, i4
 
 
+@lru_cache(maxsize=192)
 def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
     deltat = t2 - t1
     deltap = p2 - p1
@@ -287,7 +281,8 @@ def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
 
 
 def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
-    modes_count = modes.shape[1]
+    # modes_count = modes.shape[1]
+    modes_count = structure.selected_modes_count
     # fv: equivalent global force vector for a yield component's udef
     members = structure.members
     pv = np.matrix(np.zeros((
@@ -341,7 +336,7 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
                 loads=loads,
                 time=time,
                 time_step=time_step,
-                modes=modes,
+                modes=structure.selected_modes,
                 previous_modal_loads=initial_modal_loads,
                 total_load=fv,
                 a1s=a1s,

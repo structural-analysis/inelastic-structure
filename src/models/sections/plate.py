@@ -102,7 +102,7 @@ class PlateSection:
 
 
 # FIXME: FIX OPTIMIZED NOT WITH CACHING
-@lru_cache
+@lru_cache(maxsize=192)
 def get_von_mises_matrix(mp):
     si = np.array([1.9, 1.7, 1.2, 1, 0.5, 0, -0.5, -1, -1.2, -1.7, -1.9])
     m = 40

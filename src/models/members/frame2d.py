@@ -132,12 +132,9 @@ class Frame2DMember:
         # fixed external: fixed external forces like force, moment, ... nodes of a member
 
         if fixed_external is None:
-            fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
-
-        if fixed_external.any():
-            nodal_force = self.k * nodal_disp + fixed_external
-        else:
             nodal_force = self.k * nodal_disp
+        else:
+            nodal_force = self.k * nodal_disp + fixed_external
 
         if self.section.nonlinear.has_axial_yield:
             yield_components_force = np.matrix(np.zeros((4, 1)))

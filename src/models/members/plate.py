@@ -172,7 +172,7 @@ class PlateMember:
             ])
         return j
 
-    @lru_cache
+    @lru_cache(maxsize=192)
     def get_shape_derivatives(self, natural_point):
         r = natural_point.r
         s = natural_point.s

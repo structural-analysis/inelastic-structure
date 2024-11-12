@@ -189,13 +189,11 @@ class Frame3DMember:
 
     def get_response(self, nodal_disp, fixed_force=None, fixed_stress=None):
         # nodal_disp: numpy matrix
-        if fixed_force is None:
-            fixed_force = np.matrix(np.zeros((self.dofs_count, 1)))
 
-        if fixed_force.any():
-            nodal_force = self.k * nodal_disp + fixed_force
-        else:
+        if fixed_force is None:
             nodal_force = self.k * nodal_disp
+        else:
+            nodal_force = self.k * nodal_disp + fixed_force
 
         yield_components_force = np.matrix(np.zeros((6, 1)))
         yield_components_force[0, 0] = nodal_force[0, 0]
