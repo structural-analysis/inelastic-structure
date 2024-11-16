@@ -40,6 +40,7 @@ class Frame3DMember:
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces
         self.udefs = self.get_nodal_forces_from_unit_distortions()
+        self.yield_components_force_empty = np.matrix(np.zeros((6, 1)))
         # print(f"{self.udefs=}")
 
     def _length(self):
@@ -195,7 +196,7 @@ class Frame3DMember:
         else:
             nodal_force = self.k * nodal_disp + fixed_force
 
-        yield_components_force = np.matrix(np.zeros((6, 1)))
+        yield_components_force = self.yield_components_force_empty
         yield_components_force[0, 0] = nodal_force[0, 0]
         yield_components_force[1, 0] = nodal_force[4, 0]
         yield_components_force[2, 0] = nodal_force[5, 0]

@@ -379,11 +379,11 @@ def write_dynamic_responses_to_file(example_name, structure_type, responses, des
                     "increments",
                     str(time_step),
                 )
-                write_response_to_file(
-                    example_name=example_name_with_time_step,
-                    response=responses[time_step, 0][response],
-                    response_name=response,
-                )
+                # write_response_to_file(
+                #     example_name=example_name_with_time_step,
+                #     response=responses[time_step, 0][response],
+                #     response_name=response,
+                # )
 
 
 def write_response_to_file(example_name, response, response_name):

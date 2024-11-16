@@ -44,19 +44,22 @@ def get_nodal_disp(structure, loads, total_load):
 
 
 def get_members_disps(structure, disp):
-    members_disps = np.matrix(np.zeros((structure.members_count, 1), dtype=object))
-    for i_member, member in enumerate(structure.members):
-        member_dofs_count = member.dofs_count
-        member_nodes_count = len(member.nodes)
-        member_node_dofs_count = int(member_dofs_count / member_nodes_count)
-        v = np.zeros((member_dofs_count, 1))
-        v = np.matrix(v)
-        for i in range(member_dofs_count):
-            member_node = i // member_node_dofs_count
-            node_dof = i % member_node_dofs_count
-            v[i, 0] = disp[member_node_dofs_count * member.nodes[member_node].num + node_dof, 0]
-        u = member.t * v
-        members_disps[i_member, 0] = u
+    members_disps = np.zeros((structure.members_count, 1), dtype=object)
+    member_dofs_counts = np.array([member.dofs_count for member in structure.members])
+    member_nodes_counts = np.array([len(member.nodes) for member in structure.members])
+    member_node_dofs_counts = member_dofs_counts // member_nodes_counts
+    
+    all_node_nums = np.concatenate([np.array([node.num for node in member.nodes]) for member in structure.members])
+    t_matrices = np.array([member.t for member in structure.members])
+    member_offsets = np.repeat(np.arange(structure.members_count), member_dofs_counts)
+    node_offsets = np.repeat(all_node_nums, np.repeat(member_node_dofs_counts, member_nodes_counts))
+    dof_offsets = np.tile(np.arange(member_node_dofs_counts[0]), sum(member_nodes_counts))
+
+    v = disp[member_node_dofs_counts[0] * node_offsets + dof_offsets].reshape(-1, 1)
+
+    
+    v_split = np.split(v, np.cumsum(member_dofs_counts)[:-1])
+    members_disps = np.array([t @ v for t, v in zip(t_matrices, v_split)])
     return members_disps
 
 
@@ -70,7 +73,7 @@ def get_internal_responses(structure, members_disps):
     base_p0_row = 0
 
     for i, member in enumerate(structure.members):
-        member_response = member.get_response(members_disps[i, 0])
+        member_response = member.get_response(members_disps[i, :, :])
         yield_components_force = member_response.yield_components_force
         p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = yield_components_force
         base_p0_row = base_p0_row + member.yield_specs.components_count
@@ -201,83 +204,70 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
     modal_loads = np.matrix(np.zeros((1, 1), dtype=object))
 
     condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
-    modal_loads[0, 0] = loads.cached_get_modal_load(condense_load, structure.selected_modes)
+    modal_loads[0, 0] = loads.get_modal_load(condense_load, structure.selected_modes)
     modal_disps, a2s, b2s = get_modal_disp(
         structure=structure,
         time=time,
         time_step=time_step,
-        modes=modes,
-        # previous_modal_loads=self.modal_loads[time_step - 1, 0],
         previous_modal_loads=previous_modal_loads,
         modal_loads=modal_loads,
         a1s=a1s,
         b1s=b1s,
-        # b1s=self.b_duhamel[time_step - 1, 0],
     )
-
-    ut = np.dot(modes, modal_disps[0, 0])
+    ut = np.dot(modes, modal_disps).T
     u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
 
     disp = structure.undo_disp_condensation(ut, u0)
-
     nodal_disp[0, 0] = disp
     return a2s, b2s, modal_loads, nodal_disp
 
 
-def get_modal_disp(structure, time, time_step, modes, previous_modal_loads, modal_loads, a1s, b1s):
-    # modes_count = modes.shape[1]
-    modes_count = structure.selected_modes_count
-
-    modal_disp = np.matrix(np.zeros((modes_count, 1)))
-    modal_disps = np.matrix(np.zeros((1, 1), dtype=object))
-    a2 = np.matrix(np.zeros((modes_count, 1)))
-    a2s = np.matrix(np.zeros((1, 1), dtype=object))
-    b2 = np.matrix(np.zeros((modes_count, 1)))
-    b2s = np.matrix(np.zeros((1, 1), dtype=object))
-
+def get_modal_disp(structure, time, time_step, previous_modal_loads, modal_loads, a1s, b1s):
     t1 = time[time_step - 1, 0]
     t2 = time[time_step, 0]
-    for mode_num in range(modes_count):
-        wn = structure.wns[mode_num]
-        wd = structure.wds[mode_num]
-        i1, i2, i3, i4 = get_i_duhamel(structure.damping, t1, t2, wn, wd)
+    deltat = t2 - t1
 
-        mn = structure.m_modal[mode_num, mode_num]
-        p1 = previous_modal_loads[0, 0][mode_num, 0]
-        p2 = modal_loads[0, 0][mode_num, 0]
-        a1 = a1s[0, 0][mode_num, 0]
-        b1 = b1s[0, 0][mode_num, 0]
-        a2[mode_num, 0], b2[mode_num, 0], modal_disp[mode_num, 0] = get_abx_duhamel(structure.damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2)
+    wns = np.array(structure.wns)
+    wds = np.array(structure.wds)
+    mns = np.diag(structure.m_modal)
+    p1s = np.array(previous_modal_loads[0, 0]).flatten()
+    p2s = np.array(modal_loads[0, 0]).flatten()
+    a1s = np.array(a1s[0, 0]).flatten()
+    b1s = np.array(b1s[0, 0]).flatten()
 
-    a2s[0, 0] = a2
-    b2s[0, 0] = b2
+    i1s, i2s, i3s, i4s = get_is_duhamel(structure.damping, t1, t2, wns, wds)
 
-    modal_disps[0, 0] = modal_disp
+    deltaps = p2s - p1s
+
+    a2s = get_a_duhamel(t1, deltat, i1s, i4s, a1s, p1s, deltaps)
+    b2s = get_b_duhamel(t1, deltat, i2s, i3s, b1s, p1s, deltaps)
+    modal_disps = get_disps_duhamel(structure.damping, t2, wns, wds, mns, a2s, b2s)
+
     return modal_disps, a2s, b2s
 
-@lru_cache(maxsize=192)
-def get_i_duhamel(damping, t1, t2, wn, wd):
-    wd = np.sqrt(1 - damping ** 2) * wn
-    i12 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t2) + wd * np.sin(wd * t2))
-    i11 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.cos(wd * t1) + wd * np.sin(wd * t1))
+
+def get_is_duhamel(damping, t1, t2, wns, wds):
+    i12 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t2) + wds * np.sin(wds * t2))
+    i11 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t1) + wds * np.sin(wds * t1))
     i1 = i12 - i11
-    i22 = (np.exp(damping * wn * t2) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t2) - wd * np.cos(wd * t2))
-    i21 = (np.exp(damping * wn * t1) / ((damping * wn) ** 2 + wd ** 2)) * (damping * wn * np.sin(wd * t1) - wd * np.cos(wd * t1))
+    i22 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t2) - wds * np.cos(wds * t2))
+    i21 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t1) - wds * np.cos(wds * t1))
     i2 = i22 - i21
-    i3 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i22 + (wd / ((damping * wn) ** 2 + wd ** 2)) * i12 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i21 + (wd / ((damping * wn) ** 2 + wd ** 2)) * i11)
-    i4 = (t2 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i12 - (wd / ((damping * wn) ** 2 + wd ** 2)) * i22 - ((t1 - (damping * wn / ((damping * wn) ** 2 + wd ** 2))) * i11 - (wd / ((damping * wn) ** 2 + wd ** 2)) * i21)
+    i3 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i22 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i12 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i21 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i11)
+    i4 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i12 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i22 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i11 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i21)
     return i1, i2, i3, i4
 
 
-@lru_cache(maxsize=192)
-def get_abx_duhamel(damping, t1, t2, i1, i2, i3, i4, wn, mn, a1, b1, p1, p2):
-    deltat = t2 - t1
-    deltap = p2 - p1
-    wd = np.sqrt(1 - damping ** 2) * wn
-    a2 = a1 + (p1 - t1 * deltap / deltat) * i1 + (deltap / deltat) * i4
-    b2 = b1 + (p1 - t1 * deltap / deltat) * i2 + (deltap / deltat) * i3
-    un = (np.exp(-1 * damping * wn * t2) / (mn * wd)) * (a2 * np.sin(wd * t2) - b2 * np.cos(wd * t2))
-    return a2, b2, un
+def get_a_duhamel(t1, deltat, i1s, i4s, a1s, p1s, deltaps):
+    return a1s + (p1s - t1 * deltaps / deltat) * i1s + (deltaps / deltat) * i4s
+
+
+def get_b_duhamel(t1, deltat, i2s, i3s, b1s, p1s, deltaps):
+    return b1s + (p1s - t1 * deltaps / deltat) * i2s + (deltaps / deltat) * i3s
+
+
+def get_disps_duhamel(damping, t2, wns, wds, mns, a2s, b2s):
+    return (np.exp(-1 * damping * wns * t2) / (mns * wds)) * (a2s * np.sin(wds * t2) - b2s * np.cos(wds * t2))
 
 
 def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
@@ -309,6 +299,14 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
         1, structure.yield_specs.intact_components_count), dtype=object
     ))
 
+    a1_empty = np.matrix(np.zeros((modes_count, 1)))
+    a1s_empty = np.matrix((1, 1), dtype=object)
+    b1_empty = np.matrix(np.zeros((modes_count, 1)))
+    b1s_empty = np.matrix((1, 1), dtype=object)
+    initial_modal_load_empty = np.matrix(np.zeros((modes_count, 1)))
+    initial_modal_loads_empty = np.matrix((1, 1), dtype=object)
+
+
     for member_num, member in enumerate(members):
         for load in member.udefs.T:
             fv = np.matrix(np.zeros((structure.dofs_count, 1)))
@@ -321,14 +319,14 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
                 local_node_base_dof += structure.node_dofs_count
 
                 # affected_struc_disp, p2_modes, a2_modes, b2_mdoes = self.get_dynamic_unit_nodal_disp(fv, modes, time_step)
-                a1 = np.matrix(np.zeros((modes_count, 1)))
-                a1s = np.matrix((1, 1), dtype=object)
+                a1 = a1_empty
+                a1s = a1s_empty
                 a1s[0, 0] = a1
-                b1 = np.matrix(np.zeros((modes_count, 1)))
-                b1s = np.matrix((1, 1), dtype=object)
+                b1 = b1_empty
+                b1s = b1s_empty
                 b1s[0, 0] = b1
-                initial_modal_load = np.matrix(np.zeros((modes_count, 1)))
-                initial_modal_loads = np.matrix((1, 1), dtype=object)
+                initial_modal_load = initial_modal_load_empty
+                initial_modal_loads = initial_modal_loads_empty
                 initial_modal_loads[0, 0] = initial_modal_load
 
             affected_a2s, affected_b2s, affected_modal_load, affected_struc_disp = get_dynamic_nodal_disp(
@@ -344,8 +342,8 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
             )
             nodal_disp_sensitivity[0, pv_column] = affected_struc_disp[0, 0]
             modal_load_sensitivity[0, pv_column] = affected_modal_load[0, 0]
-            a2_sensitivity[0, pv_column] = affected_a2s[0, 0]
-            b2_sensitivity[0, pv_column] = affected_b2s[0, 0]
+            a2_sensitivity[0, pv_column] = affected_a2s
+            b2_sensitivity[0, pv_column] = affected_b2s
             affected_member_disps = get_members_disps(structure, affected_struc_disp[0, 0])
             current_affected_member_ycns = 0
 

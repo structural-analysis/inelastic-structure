@@ -100,20 +100,6 @@ class Loads:
         condensed_load = reduced_pt - np.dot(np.transpose(structure.reduced_k0t), np.dot(structure.reduced_k00_inv, reduced_p0))
         return condensed_load, reduced_p0
 
-    # @lru_cache
-    # def get_modal_load(self, load, modes):
-    #     return np.dot(np.transpose(modes), load)
 
-
-    @lru_cache(maxsize=192)  # You can adjust maxsize as needed
-    def get_modal_load(self, load_tuple, modes_tuple):
-        # Convert tuples back to np.matrix for computation
-        load = np.matrix(load_tuple)
-        modes = np.matrix(modes_tuple)
+    def get_modal_load(self, load, modes):
         return np.dot(np.transpose(modes), load)
-
-    def cached_get_modal_load(self, load, modes):
-        # Convert np.matrix to tuple for caching
-        load_tuple = tuple(map(tuple, load.tolist()))
-        modes_tuple = tuple(map(tuple, modes.tolist()))
-        return self.get_modal_load(load_tuple, modes_tuple)
