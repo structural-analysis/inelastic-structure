@@ -57,11 +57,12 @@ class MahiniMethod:
             )
             self.sifted_results_current: SiftedResults = self.sifting.create(scores=initial_scores)
             self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces.copy()
-            self.phi = self.sifted_results_current.structure_sifted_phi
-            # self.q
-            # self.h
-            # self.w
-            # self.cs
+            self.phi = self.sifted_results_current.structure_sifted_output.phi
+            self.q = self.sifted_results_current.structure_sifted_output.q
+            self.h = self.sifted_results_current.structure_sifted_output.h
+            self.w = self.sifted_results_current.structure_sifted_output.w
+            self.cs = self.sifted_results_current.structure_sifted_output.cs
+
             self.points_count = len(self.sifted_results_current.sifted_yield_points)
             self.components_count = self.sifted_results_current.sifted_components_count
             self.pieces_count = self.sifted_results_current.sifted_pieces_count
@@ -77,7 +78,7 @@ class MahiniMethod:
         self.landa_bar_var = 2 * self.landa_var + 1
         self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
         self.final_inc_phi_pms_prev = final_inc_phi_pms_prev
-    
+
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
 
@@ -488,13 +489,14 @@ class MahiniMethod:
                             will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
                         )
                         self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
-                        self.phi = self.sifted_results_current.structure_sifted_phi
+                        self.phi = self.sifted_results_current.structure_sifted_output.phi
+                        self.q = self.sifted_results_current.structure_sifted_output.q
+                        self.h = self.sifted_results_current.structure_sifted_output.h
+                        self.w = self.sifted_results_current.structure_sifted_output.w
+                        self.cs = self.sifted_results_current.structure_sifted_output.cs
+
                         b_matrix_inv = self.sifted_results_current.b_matrix_inv_updated
                         bbar = self.sifted_results_current.bbar_updated
-                        # self.q
-                        # self.h
-                        # self.w
-                        # self.cs
                         # in_structure_indices = [num.num_in_structure for num in self.structure_sifted_yield_pieces_current]
                         # print(f"##################{in_structure_indices}")
                         basic_variables = basic_variables_prev
@@ -874,7 +876,14 @@ class MahiniMethod:
 
     def get_plastic_vars_in_basic_variables(self, basic_variables, landa_var, structure_sifted_yield_pieces):
         plastic_vars = []
+        print(f"{len(basic_variables)=}")
         for basic_variable in basic_variables:
-            if basic_variable < landa_var:
+            if basic_variable < len(structure_sifted_yield_pieces):
+                print(f"{landa_var=}")
+                print(f"{len(structure_sifted_yield_pieces)=}")
+                print(f"{basic_variable=}")
+                print(f"{structure_sifted_yield_pieces[basic_variable]=}")
+                print(f"{structure_sifted_yield_pieces[basic_variable].num_in_structure=}")
                 plastic_vars.append(structure_sifted_yield_pieces[basic_variable].num_in_structure)
+
         return plastic_vars

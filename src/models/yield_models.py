@@ -4,6 +4,13 @@ from typing import List
 
 
 @dataclass
+class SofteningVar:
+    ref_yield_point_num: int
+    num_in_yield_point: int
+    num_in_structure: int
+
+
+@dataclass
 class YieldPiece:
     ref_yield_point_num: int
     num_in_yield_point: int
@@ -29,6 +36,7 @@ class YieldPoint:
     components_count: int
     pieces: List[YieldPiece]
     pieces_count: int
+    softening_vars: tuple[SofteningVar, SofteningVar]
     phi: np.matrix
     q: np.matrix
     h: np.matrix
@@ -61,6 +69,7 @@ class SiftedYieldPoint:
     components_count: int
     pieces: List[SiftedYieldPiece]
     pieces_count: int
+    softening_vars: tuple[SofteningVar, SofteningVar]
     sifted_yield_pieces_nums_in_intact_yield_point: list
     phi: np.matrix
     q: np.matrix
@@ -119,6 +128,18 @@ class MemberYieldSpecs:
                     components_count=self.section.yield_specs.components_count,
                     pieces=yield_pieces,
                     pieces_count=self.section.yield_specs.pieces_count,
+                    softening_vars=(
+                        SofteningVar(
+                            ref_yield_point_num=-1,
+                            num_in_yield_point=0,
+                            num_in_structure=-1,
+                        ),
+                        SofteningVar(
+                            ref_yield_point_num=-1,
+                            num_in_yield_point=1,
+                            num_in_structure=-1,
+                        ),
+                    ),
                     phi=self.section.yield_specs.phi,
                     q=self.section.softening.q,
                     h=self.section.softening.h,
@@ -151,6 +172,7 @@ class StructureYieldSpecs:
         intact_components_count = 0
         point_num = 0
         piece_num = 0
+        softening_var_num = 0
         for member_num, member in enumerate(self.members):
             for point in member.yield_specs.yield_points:
                 point.ref_member_num = member_num
@@ -161,6 +183,10 @@ class StructureYieldSpecs:
                     piece.num_in_structure = piece_num
                     intact_pieces.append(piece)
                     piece_num += 1
+                for softening_var in point.softening_vars:
+                    softening_var.ref_yield_point_num = point_num
+                    softening_var.num_in_structure = softening_var_num
+                    softening_var_num += 1
                 intact_components_count += point.components_count
                 point_num += 1
         return IntactYieldPointsResults(

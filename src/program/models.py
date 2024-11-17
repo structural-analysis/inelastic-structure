@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 from dataclasses import dataclass, field
 from .functions import print_specific_properties
@@ -28,39 +27,24 @@ class SlackCandidate():
 
 
 @dataclass
+class StructureSiftedOutput:
+    phi: np.matrix
+    q: np.matrix
+    h: np.matrix
+    w: np.matrix
+    cs: np.matrix
+
+
+@dataclass
 class SiftedResults:
     sifted_yield_points: list
     sifted_components_count: int
     sifted_pieces_count: int
     structure_sifted_yield_pieces: list
-    structure_sifted_phi: np.matrix
+    structure_sifted_output: StructureSiftedOutput
     modified_structure_sifted_yield_pieces_indices: list = field(default_factory=list)
     bbar_updated: np.array = np.zeros((1, 1))
     b_matrix_inv_updated: np.array = np.zeros((1, 1))
-
-    # def __copy__(self):
-    #     # Create a new instance of the class
-    #     new_obj = SiftedResults(
-    #         copy.copy(self.sifted_yield_points),
-    #         copy.copy(self.structure_sifted_yield_pieces),
-    #         copy.copy(self.structure_sifted_phi),
-    #         copy.copy(self.modified_structure_sifted_yield_pieces_indices),
-    #         copy.copy(self.bbar_updated),
-    #         copy.copy(self.b_matrix_inv_updated)
-    #     )
-    #     return new_obj
-
-    # def __deepcopy__(self, memo):
-    #     # Create a new instance of the class
-    #     new_obj = SiftedResults(
-    #         copy.deepcopy(self.sifted_yield_points, memo),
-    #         copy.deepcopy(self.structure_sifted_yield_pieces, memo),
-    #         copy.deepcopy(self.structure_sifted_phi, memo),
-    #         copy.deepcopy(self.modified_structure_sifted_yield_pieces_indices, memo),
-    #         copy.deepcopy(self.bbar_updated, memo),
-    #         copy.deepcopy(self.b_matrix_inv_updated, memo)
-    #     )
-    #     return new_obj
 
 
 class Sifting:
@@ -108,6 +92,7 @@ class Sifting:
                     components_count=point.components_count,
                     pieces=point_sifted_yield_pieces,
                     pieces_count=len(point_sifted_yield_pieces),
+                    softening_vars=point.softening_vars,
                     sifted_yield_pieces_nums_in_intact_yield_point=point_sifted_yield_pieces_nums_in_intact_yield_point,
                     phi=point.phi[:, point_sifted_yield_pieces_nums_in_intact_yield_point],
                     q=point.q[:, point_sifted_yield_pieces_nums_in_intact_yield_point],
@@ -119,7 +104,7 @@ class Sifting:
             sifted_components_count += point.components_count
             sifted_pieces_count += len(point_sifted_yield_pieces)
 
-        structure_sifted_phi = self.get_structure_sifted_phi(
+        structure_sifted_output = self.get_structure_sifted_output(
             sifted_yield_points=sifted_yield_points,
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count
@@ -130,7 +115,7 @@ class Sifting:
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count,
             structure_sifted_yield_pieces=structure_sifted_yield_pieces,
-            structure_sifted_phi=structure_sifted_phi,
+            structure_sifted_output=structure_sifted_output,
         )
 
     def update(
@@ -285,11 +270,13 @@ class Sifting:
             )
             sifted_components_count += point.components_count
             sifted_pieces_count += len(point_pieces_updated)
-        structure_sifted_phi = self.get_structure_sifted_phi(
+
+        structure_sifted_output = self.get_structure_sifted_output(
             sifted_yield_points=sifted_yield_points_updated,
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count
         )
+
         if increment == 22:  # use when sifted
             pass
             # print(f"{will_in_col=}")
@@ -316,7 +303,7 @@ class Sifting:
             sifted_components_count=sifted_components_count,
             sifted_pieces_count=sifted_pieces_count,
             structure_sifted_yield_pieces=structure_sifted_yield_pieces_updated,
-            structure_sifted_phi=structure_sifted_phi,
+            structure_sifted_output=structure_sifted_output,
             modified_structure_sifted_yield_pieces_indices=modified_structure_sifted_yield_pieces_indices,
             bbar_updated=bbar_updated,
             b_matrix_inv_updated=self.get_b_matrix_inv_updated(
@@ -325,7 +312,7 @@ class Sifting:
                 basic_variables_prev=basic_variables_prev,
                 landa_row=landa_row,
                 landa_var=landa_var,
-                phi=structure_sifted_phi,
+                phi=structure_sifted_output.phi,
                 pv=pv,
                 p0=p0,
             ),
@@ -343,45 +330,36 @@ class Sifting:
         ]
         return violated_points
 
-    def get_structure_sifted_phi(self, sifted_yield_points, sifted_components_count, sifted_pieces_count):
-        structure_sifted_phi = np.matrix(np.zeros((sifted_components_count, sifted_pieces_count)))
+    def get_structure_sifted_output(self, sifted_yield_points, sifted_components_count, sifted_pieces_count):
+        sifted_points_count = len(sifted_yield_points)
+        phi = np.matrix(np.zeros((sifted_components_count, sifted_pieces_count)))
+        q = np.matrix(np.zeros((2 * sifted_points_count, sifted_pieces_count)))
+        h = np.matrix(np.zeros((sifted_pieces_count, 2 * sifted_points_count)))
+        w = np.matrix(np.zeros((2 * sifted_points_count, 2 * sifted_points_count)))
+        cs = np.matrix(np.zeros((2 * sifted_points_count, 1)))
+
+        pieces_counter = 0
         current_row_start = 0
         current_column_start = 0
-        for yield_point in sifted_yield_points:
+        for i, yield_point in enumerate(sifted_yield_points):
             current_row_end = current_row_start + yield_point.components_count
             current_column_end = current_column_start + yield_point.pieces_count
-            structure_sifted_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.phi
+            phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.phi
+            q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
+            h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
+            w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
+            cs[2 * i:2 * i + 2, 0] = yield_point.cs
+
             current_row_start = current_row_end
             current_column_start = current_column_end
-        return structure_sifted_phi
+            pieces_counter += yield_point.pieces_count
 
-    # def get_sifted_q(self):
-    #     sifted_q = np.matrix(np.zeros((2 * self.sifted_points_count, self.sifted_pieces_count)))
-    #     pieces_counter = 0
-    #     for i, yield_point in enumerate(self.sifted_yield_points):
-    #         sifted_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
-    #         pieces_counter += yield_point.pieces_count
-    #     return sifted_q
-
-    # def get_sifted_h(self):
-    #     sifted_h = np.matrix(np.zeros((self.sifted_pieces_count, 2 * self.sifted_points_count)))
-    #     pieces_counter = 0
-    #     for i, yield_point in enumerate(self.sifted_yield_points):
-    #         sifted_h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
-    #         pieces_counter += yield_point.pieces_count
-    #     return sifted_h
-
-    # def get_sifted_w(self):
-    #     sifted_w = np.matrix(np.zeros((2 * self.sifted_points_count, 2 * self.sifted_points_count)))
-    #     for i, yield_point in enumerate(self.sifted_yield_points):
-    #         sifted_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
-    #     return sifted_w
-
-    # def get_sifted_cs(self):
-    #     sifted_cs = np.matrix(np.zeros((2 * self.sifted_points_count, 1)))
-    #     for i, yield_point in enumerate(self.sifted_yield_points):
-    #         sifted_cs[2 * i:2 * i + 2, 0] = yield_point.cs
-    #     return sifted_cs
+        return StructureSiftedOutput(
+            phi=phi,
+            q=q,
+            h=h,
+            w=w,
+            cs=cs,)
 
     def check_violation(self, scores, structure_sifted_yield_pieces_old):
         for piece in structure_sifted_yield_pieces_old:
