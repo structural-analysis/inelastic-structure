@@ -118,7 +118,6 @@ class MahiniMethod:
                 self.activated_costs = self.cb.copy()
                 self.costs = c.copy()
 
-
     # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
     def _get_b_column(self):
         yield_pieces_count = self.plastic_vars_count

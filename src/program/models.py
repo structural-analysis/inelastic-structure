@@ -92,13 +92,13 @@ class Sifting:
                     components_count=point.components_count,
                     pieces=point_sifted_yield_pieces,
                     pieces_count=len(point_sifted_yield_pieces),
-                    softening_vars=point.softening_vars,
                     sifted_yield_pieces_nums_in_intact_yield_point=point_sifted_yield_pieces_nums_in_intact_yield_point,
                     phi=point.phi[:, point_sifted_yield_pieces_nums_in_intact_yield_point],
                     q=point.q[:, point_sifted_yield_pieces_nums_in_intact_yield_point],
                     h=point.h[point_sifted_yield_pieces_nums_in_intact_yield_point, :],
                     w=point.w,
                     cs=point.cs,
+                    softening_vars=point.softening_vars,
                 )
             )
             sifted_components_count += point.components_count
@@ -267,6 +267,7 @@ class Sifting:
                 h=point_h_updated,
                 w=point_w_updated,
                 cs=point_cs_updated,
+                softening_vars=point.softening_vars,
             )
             sifted_components_count += point.components_count
             sifted_pieces_count += len(point_pieces_updated)

@@ -19,11 +19,11 @@ def run(example_name):
     loads_input = get_loads_input(example_name)
     general_info = get_general_properties(example_name)
     structure = Structure(structure_input)
-    for point in structure.yield_specs.intact_yield_points_results.intact_points:
-        for softening_var in point.softening_vars:
-            print(f"{softening_var.ref_yield_point_num=}")
-            print(f"{softening_var.num_in_yield_point=}")
-            print(f"{softening_var.num_in_structure=}")
+    # for point in structure.yield_specs.intact_yield_points_results.intact_points:
+    #     for softening_var in point.softening_vars:
+    #         print(f"{softening_var.ref_yield_point_num=}")
+    #         print(f"{softening_var.num_in_yield_point=}")
+    #         print(f"{softening_var.num_in_structure=}")
 
     loads = Loads(loads_input)
     analysis_type = get_analysis_type(general_info)

@@ -21,7 +21,7 @@ class Mass:
 
 
 class Frame3DMember:
-    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
+    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, include_softening: bool, roll_angle: float = 0, mass: Mass = None):
         self.num = num
         self.yield_points_count = 2
         self.nodes = nodes
@@ -31,7 +31,11 @@ class Frame3DMember:
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
         self.section = section
-        self.yield_specs = MemberYieldSpecs(self.section, points_count=self.yield_points_count)
+        self.yield_specs = MemberYieldSpecs(
+            section=self.section,
+            points_count=self.yield_points_count,
+            include_softening=include_softening,
+        )
         self.roll_angle = np.deg2rad(roll_angle)
         self.l = self._length()
         self.mass = mass if mass else None
