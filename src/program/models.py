@@ -56,12 +56,6 @@ class Sifting:
         self.intact_pieces = intact_pieces
         self.intact_phi = intact_phi
 
-        # TODO: in create and update: calculate all q,h, ... in one loop of yield points.
-        # self.sifted_q = self.get_sifted_q()
-        # self.sifted_h = self.get_sifted_h()
-        # self.sifted_w = self.get_sifted_w()
-        # self.sifted_cs = self.get_sifted_cs()
-
     def create(self, scores):
         piece_num_in_structure = 0
         sifted_yield_points = []
@@ -142,6 +136,7 @@ class Sifting:
         cumulative_point_pieces_count = 0
         modified_structure_sifted_yield_pieces_indices = []
         bbar_updated = bbar_prev
+
         # NOTE: SIFTING+:
         # we can not use intact_points anymore
         # insead of using point_num we should use num_in_structure somehow

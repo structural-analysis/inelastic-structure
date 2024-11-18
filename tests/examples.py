@@ -1,5 +1,4 @@
 all = [
-        # "3story-static-inelastic-softening",    # still not fixed after sifting
         # "plate-semiconfined-inelastic",  # possible-bifurcation # wierd behavior on multiple runs # infinite loop in sifting
         # "3d-simple-beam-static-inelastic",  # possible bifurcation
 
@@ -14,6 +13,7 @@ all = [
         "tripod-unload",
         "3story-static-elastic",
         "3story-static-inelastic-perfect",
+        "3story-static-inelastic-softening",
         "3d-2side-static-elastic",
         "3d-simple-beam-static-elastic",
         "3d-2side-static-inelastic",
@@ -94,6 +94,7 @@ two_d_frames = [
     "tripod-unload",
     "3story-static-elastic",
     "3story-static-inelastic-perfect",
+    "3story-static-inelastic-softening",
     "simple-beam-dynamic-elastic",
     "torre-dynamic-elastic",
     "1story-dynamic-elastic",

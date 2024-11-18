@@ -42,7 +42,6 @@ class InitialData:
     intact_points_count: int
     intact_components_count: int
     intact_pieces_count: int
-    yield_points_indices: list
     intact_phi: np.matrix
     intact_q: np.matrix
     intact_h: np.matrix
@@ -68,7 +67,6 @@ class InitialAnalysis:
         self.initial_data.intact_points_count = self.structure.yield_specs.intact_points_count
         self.initial_data.intact_components_count = self.structure.yield_specs.intact_components_count
         self.initial_data.intact_pieces_count = self.structure.yield_specs.intact_pieces_count
-        self.initial_data.yield_points_indices = self.structure.yield_specs.yield_points_indices
         self.initial_data.intact_phi = self.structure.yield_specs.intact_phi
         self.initial_data.intact_q = self.structure.yield_specs.intact_q
         self.initial_data.intact_h = self.structure.yield_specs.intact_h

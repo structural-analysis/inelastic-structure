@@ -24,7 +24,6 @@ class MahiniMethod:
         self.intact_pieces_count = initial_data.intact_pieces_count
         self.intact_plastic_vars_count = self.intact_pieces_count
 
-        self.yield_points_indices = initial_data.yield_points_indices
         self.intact_phi = initial_data.intact_phi
         self.intact_q = initial_data.intact_q
         self.intact_h = initial_data.intact_h
@@ -193,13 +192,20 @@ class MahiniMethod:
         bbar = self.b
         b_matrix_inv = np.eye(self.slack_vars_count)
         phi_pms_cumulative = np.matrix(np.zeros((self.intact_components_count, 1)))
-        load_level_cumulative = 0
         phi_pms_history = []
+
+        load_level_cumulative = 0
         load_level_history = []
+
+        if self.include_softening:
+            h_sms_cumulative = np.matrix(np.zeros((self.intact_pieces_count, 1)))
+            h_sms_history = []
+
         fpm = FPM(
             var=self.landa_var,
             cost=0,
         )
+
         increment = 0
         print("-------------------------------")
         print(f"{increment=}")
@@ -221,23 +227,39 @@ class MahiniMethod:
         if settings.sifting_type is SiftingType.not_used:
             pms = x[0:self.plastic_vars_count]
             phi_pms = self.intact_phi * pms
-            load_level = x[self.landa_var][0, 0]
             phi_pms_cumulative += phi_pms
-            load_level_cumulative += load_level
             phi_pms_history.append(phi_pms_cumulative.copy())
+
+            load_level = x[self.landa_var][0, 0]
+            load_level_cumulative += load_level
             load_level_history.append(load_level_cumulative)
+
+            if self.include_softening:
+                sms = x[self.plastic_vars_count:self.landa_var]
+                h_sms = self.intact_h * sms
+                h_sms_cumulative += h_sms
+                h_sms_history.append(h_sms_cumulative.copy())
+
         if settings.sifting_type is SiftingType.mahini:
-            intact_phi_pms = self.get_unsifted_pms(
+            intact_phi_pms = self.get_unsifted_phi_pms(
                 x=x,
                 structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
             )
-            load_level = x[self.landa_var][0, 0]
             phi_pms_cumulative += intact_phi_pms
-            load_level_cumulative += load_level
             phi_pms_history.append(phi_pms_cumulative.copy())
+
+            load_level = x[self.landa_var][0, 0]
+            load_level_cumulative += load_level
             load_level_history.append(load_level_cumulative)
 
+            if self.include_softening:
+                sms = x[self.plastic_vars_count:self.landa_var]
+                h_sms = self.intact_h * sms
+                h_sms_cumulative += h_sms
+                h_sms_history.append(h_sms_cumulative.copy())
+
         while self.limits_slacks.issubset(set(basic_variables)):
+
             increment = len(load_level_history)
             print("-------------------------------")
             print(f"{increment=}")
@@ -245,6 +267,12 @@ class MahiniMethod:
             print(f"will_in_col=x-{will_in_col}")
             print(f"{will_out_row=}")
             print(f"{will_out_var=}")
+
+            # if settings.sifting_type == SiftingType.not_used:
+            #     print("basic_variables:")
+            #     for basic_variable in basic_variables:
+            #         if basic_variable < self.landa_var:
+            #             print(basic_variable)
 
             # if settings.sifting_type == SiftingType.mahini:
             #     print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
@@ -304,12 +332,18 @@ class MahiniMethod:
                 bbar_prev = bbar.copy()
                 x_prev = x.copy()
                 fpm_prev = FPM(var=fpm.var, cost=fpm.cost)
+
+                # for basic in basic_variables:
+                #     if basic < self.plastic_vars_count:
+                #         print(f"{self.structure_sifted_yield_pieces_current[basic].num_in_structure}")
+                #     elif basic < self.landa_var:
+                #         print(f"{basic - self.sifted_results_current.sifted_pieces_count + self.intact_pieces_count}")
+
                 plastic_vars_in_basic_variables_prev = self.get_plastic_vars_in_basic_variables(
                     basic_variables_prev,
                     self.landa_var,
                     self.structure_sifted_yield_pieces_current,
                 )
-                # print(f"input {plastic_vars_in_basic_variables_prev=}")
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -423,31 +457,44 @@ class MahiniMethod:
             #     ],
             # )
             # input()
+
             if settings.sifting_type is SiftingType.not_used:
                 pms = x[0:self.plastic_vars_count]
                 phi_pms = self.intact_phi * pms
-                load_level = x[self.landa_var][0, 0]
                 phi_pms_cumulative += phi_pms
-                load_level_cumulative += load_level
                 phi_pms_history.append(phi_pms_cumulative.copy())
+
+                load_level = x[self.landa_var][0, 0]
+                load_level_cumulative += load_level
                 load_level_history.append(load_level_cumulative)
 
+                if self.include_softening:
+                    sms = x[self.plastic_vars_count:self.landa_var]
+                    h_sms = self.intact_h * sms
+                    h_sms_cumulative += h_sms
+                    h_sms_history.append(h_sms_cumulative.copy())
+
             if settings.sifting_type is SiftingType.mahini:
-                intact_phi_pms = self.get_unsifted_pms(
+                intact_phi_pms = self.get_unsifted_phi_pms(
                     x=x,
                     structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
                 )
                 phi_pms_cumulative += intact_phi_pms
+
                 load_level = x[self.landa_var][0, 0]
                 load_level_cumulative += load_level
 
+                if self.include_softening:
+                    sms = x[self.plastic_vars_count:self.landa_var]
+                    h_sms = self.intact_h * sms
+                    h_sms_cumulative += h_sms
+
                 if check_violation:
-                    scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
-                    # if increment == 23:
-                    #     print(f"{scores_current[2131]=}")
-                    #     print(f"{scores_current[2132]=}")
-                    #     print(f"{scores_current.shape=}")
-                    #     input()
+                    if self.include_softening:
+                        scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative, h_sms_cumulative)
+                    else:
+                        scores_current = self.calc_violation_scores(phi_pms_cumulative, load_level_cumulative)
+
                     sifted_results_old = self.sifted_results_current
                     structure_sifted_yield_pieces_old = self.structure_sifted_yield_pieces_current
                     violated_pieces = self.sifting.check_violation(
@@ -459,7 +506,11 @@ class MahiniMethod:
                         # we want to roll back table to previous increment
                         # so we use previous increment plastic multipliers and load level to get sifted data and sorted pieces
                         # then we will modify previous increment to consider current increment's violated pieces in it's sifted data
-                        scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
+                        if self.include_softening:
+                            scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1], h_sms_history[-1])
+                        else:
+                            scores_prev = self.calc_violation_scores(phi_pms_history[-1], load_level_history[-1])
+
                         print("++++ piece violation ++++")
                         print_specific_properties(violated_pieces, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure"])
                         # print(f"{violated_pieces=}")
@@ -523,12 +574,18 @@ class MahiniMethod:
                         x = x_prev
                         phi_pms_cumulative -= intact_phi_pms
                         load_level_cumulative -= load_level
+                        if self.include_softening:
+                            h_sms_cumulative -= h_sms
                     else:
                         phi_pms_history.append(phi_pms_cumulative.copy())
                         load_level_history.append(load_level_cumulative)
+                        if self.include_softening:
+                            h_sms_history.append(h_sms_cumulative.copy())
                 else:
                     phi_pms_history.append(phi_pms_cumulative.copy())
                     load_level_history.append(load_level_cumulative)
+                    if self.include_softening:
+                        h_sms_history.append(h_sms_cumulative.copy())
 
         if self.final_inc_phi_pms_prev is not None:
             final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
@@ -752,6 +809,10 @@ class MahiniMethod:
         return True if will_out_var < (self.primary_vars_count - 1) else False
 
     def update_basic_variables(self, basic_variables, will_out_row, will_in_col):
+        # print(f"{will_in_col=}")
+        # for basic in basic_variables:
+        #     if basic < self.landa_var:
+        #         print(f"{basic=}")
         basic_variables[will_out_row] = will_in_col
         return basic_variables
 
@@ -807,10 +868,11 @@ class MahiniMethod:
         return row
 
     def get_plastic_var_yield_point(self, pm):
-        for i, yield_point_indices in enumerate(self.yield_points_indices):
-            if yield_point_indices["begin"] <= pm and pm <= yield_point_indices["end"]:
-                yield_point = i
-                break
+        if settings.sifting_type is SiftingType.not_used:
+            yield_point = self.intact_pieces[pm].ref_yield_point_num
+        elif settings.sifting_type is SiftingType.mahini:
+            yield_point = self.structure_sifted_yield_pieces_current[pm].ref_yield_point_num
+
         return yield_point
 
     def get_softening_var_yield_point(self, sm):
@@ -862,11 +924,14 @@ class MahiniMethod:
         d[:self.total_vars_count] = table.sum(axis=0)[:self.total_vars_count]
         return d
 
-    def calc_violation_scores(self, intact_phi_pms, load_level):
-        scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - np.matrix(np.ones((self.intact_pieces_count, 1)))
+    def calc_violation_scores(self, intact_phi_pms, load_level, intact_h_sms=None):
+        if self.include_softening:
+            scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - intact_h_sms - np.matrix(np.ones((self.intact_pieces_count, 1)))
+        else:
+            scores = self.intact_phi.T * self.pv * intact_phi_pms + self.intact_phi.T * self.p0 * load_level - np.matrix(np.ones((self.intact_pieces_count, 1)))
         return scores
 
-    def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
+    def get_unsifted_phi_pms(self, x, structure_sifted_yield_pieces):
         intact_pms = np.matrix(np.zeros((self.intact_phi.shape[1], 1)))
         for piece in structure_sifted_yield_pieces:
             intact_pms[piece.num_in_structure, 0] = x[piece.sifted_num_in_structure, 0]
@@ -875,14 +940,7 @@ class MahiniMethod:
 
     def get_plastic_vars_in_basic_variables(self, basic_variables, landa_var, structure_sifted_yield_pieces):
         plastic_vars = []
-        print(f"{len(basic_variables)=}")
         for basic_variable in basic_variables:
             if basic_variable < len(structure_sifted_yield_pieces):
-                print(f"{landa_var=}")
-                print(f"{len(structure_sifted_yield_pieces)=}")
-                print(f"{basic_variable=}")
-                print(f"{structure_sifted_yield_pieces[basic_variable]=}")
-                print(f"{structure_sifted_yield_pieces[basic_variable].num_in_structure=}")
                 plastic_vars.append(structure_sifted_yield_pieces[basic_variable].num_in_structure)
-
         return plastic_vars

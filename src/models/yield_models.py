@@ -121,8 +121,8 @@ class MemberYieldSpecs:
                     ref_yield_point_num=-1,
                     num_in_yield_point=1,
                     num_in_structure=-1,
-                ),
-            ),
+                )
+            )
         else:
             softening_vars = None
 
@@ -173,7 +173,6 @@ class StructureYieldSpecs:
         self.intact_h = self.create_intact_h()
         self.intact_w = self.create_intact_w()
         self.intact_cs = self.create_intact_cs()
-        self.yield_points_indices = self.get_yield_points_indices()
 
     def get_intact_yield_points_results(self):
         intact_points = []
@@ -245,17 +244,3 @@ class StructureYieldSpecs:
         for i, yield_point in enumerate(self.intact_points):
             intact_cs[2 * i:2 * i + 2, 0] = yield_point.cs
         return intact_cs
-
-    # TODO: can't we get yield point piece numbers from yield_points data?
-    def get_yield_points_indices(self):
-        yield_points_indices = []
-        index_counter = 0
-        for yield_point in self.intact_points:
-            yield_points_indices.append(
-                {
-                    "begin": index_counter,
-                    "end": index_counter + yield_point.pieces_count - 1,
-                }
-            )
-            index_counter += yield_point.pieces_count
-        return yield_points_indices
