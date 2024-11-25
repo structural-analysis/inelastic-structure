@@ -1,4 +1,4 @@
 load,node,dof(0:x|1:y|2:teta_z),load_magnitude
-load-init-0.002,1,0,0.75
-load-init-0.002,2,2,-0.3
-load-init-0.002,3,1,0.15
+load-init,1,0,0.75
+load-init,2,2,-0.3
+load-init,3,1,0.15

@@ -36,7 +36,7 @@ class YieldSpecs:
 
     def create_phi(self, nonlinear):
         if nonlinear.has_axial_yield:
-            phi = np.matrix([
+            phi = np.array([
                 [
                     1 / nonlinear.ap,
                     0,
@@ -55,7 +55,7 @@ class YieldSpecs:
                 ]
             ])
         else:
-            phi = np.matrix([-1 / nonlinear.mp, 1 / nonlinear.mp])
+            phi = np.array([[-1 / nonlinear.mp, 1 / nonlinear.mp]])
         return phi
 
 

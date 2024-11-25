@@ -45,6 +45,7 @@ def run(example_name):
     print(f"{analysis_time=}")
     print(f"{analysis_time.microseconds=}")
     responses = calculate_responses(initial_analysis, inelastic_analysis)
+
     structure_type = "inelastic" if initial_analysis.structure.is_inelastic else "elastic"
     desired_responses = DesiredResponse[structure.type]
     if initial_analysis.analysis_type == "static":

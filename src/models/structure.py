@@ -53,6 +53,8 @@ class Structure:
             structure_prop=self.k,
         )
         self.kc = cho_factor(self.reduced_k)
+        self.max_member_dofs_count = self.get_max_member_dofs_count()
+        self.max_member_components_count = self.get_max_member_components_count()
 
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
@@ -125,7 +127,7 @@ class Structure:
 
     def get_stiffness(self):
         # TODO: we must add mapping of element dof to structure dofs.
-        structure_stiffness = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        structure_stiffness = np.zeros((self.dofs_count, self.dofs_count))
         for member in self.members:
             member_global_stiffness = self._transform_loc_2d_matrix_to_glob(member.t, member.k)
             mapped_member_node_dofs = self.map_member_node_dofs(member)
@@ -134,7 +136,7 @@ class Structure:
                 mapped_node_dofs=mapped_member_node_dofs,
             )
             mapped_dofs_count = self.node_dofs_count * member.nodes_count
-            mapped_k = np.matrix(np.zeros((mapped_dofs_count, mapped_dofs_count)))
+            mapped_k = np.zeros((mapped_dofs_count, mapped_dofs_count))
             mapped_k[np.ix_(mapped_element_dofs, mapped_element_dofs)] = member_global_stiffness
             structure_stiffness = self._assemble_members(member, mapped_k, structure_stiffness)
         return structure_stiffness
@@ -146,7 +148,7 @@ class Structure:
     def get_mass(self):
         # mass per length is applied in global direction so there is no need to transform.
         # TODO: map nodes of member to nodes of structure
-        structure_mass = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        structure_mass =np.zeros((self.dofs_count, self.dofs_count))
         for member in self.members:
             if member.m is not None:
                 mapped_member_node_dofs = self.map_member_node_dofs(member)
@@ -155,7 +157,7 @@ class Structure:
                     mapped_node_dofs=mapped_member_node_dofs,
                 )
                 mapped_dofs_count = self.node_dofs_count * member.nodes_count
-                mapped_m = np.matrix(np.zeros((mapped_dofs_count, mapped_dofs_count)))
+                mapped_m = np.zeros((mapped_dofs_count, mapped_dofs_count))
                 mapped_m[np.ix_(mapped_element_dofs, mapped_element_dofs)] = member.m
                 structure_mass = self._assemble_members(member, member.m, structure_mass)
         return structure_mass
@@ -178,7 +180,6 @@ class Structure:
 
     def _assemble_joint_load(self, loads, time_step=None):
         f_total = np.zeros((self.dofs_count, 1))
-        f_total = np.matrix(f_total)
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step else load.magnitude
             f_total[self.node_dofs_count * load.node + load.dof] = f_total[self.node_dofs_count * load.node + load.dof] + load_magnitude
@@ -186,7 +187,6 @@ class Structure:
 
     def get_load_vector(self, time_step=None):
         f_total = np.zeros((self.dofs_count, 1))
-        f_total = np.matrix(f_total)
         for load in self.loads:
             if self.loads[load]:
                 if load == "joint":
@@ -313,7 +313,6 @@ class Structure:
         wd = np.sqrt(1 - damping ** 2) * wn
         print(f"{eigvals=}")
         print(f"{wn=}")
-        modes = np.matrix(modes)
         modes_count = modes.shape[1]
         return wn, wd, modes, modes_count
 
@@ -326,13 +325,16 @@ class Structure:
         return c
 
     def undo_disp_condensation(self, ut, u0):
-        disp = np.matrix(np.zeros((self.dofs_count, 1)))
+        disp = np.zeros(self.dofs_count)
+        # print(f"{u0.shape=}")
+        # print(f"{type(u0)=}")
+        # print(f"{u0=}")
         disp[self.mass_boundaries_mask] = u0
         disp[self.zero_mass_boundaries_mask] = ut
         return disp
 
     def undo_disp_boundaries(self, reduced_disp):
-        disp = np.matrix(np.zeros((self.dofs_count, 1)))
+        disp = np.zeros((self.dofs_count, 1))
         disp[self.boundaries_dof_mask] = reduced_disp
         return disp
 
@@ -374,3 +376,9 @@ class Structure:
             for mapped_node_dof in mapped_node_dofs:
                 element_dofs.append(mapped_node_dof + member_node_num * self.node_dofs_count)
         return element_dofs
+
+    def get_max_member_dofs_count(self):
+        return np.max([member.dofs_count for member in self.members])
+
+    def get_max_member_components_count(self):
+        return np.max([member.yield_specs.components_count for member in self.members])

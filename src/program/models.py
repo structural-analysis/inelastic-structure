@@ -33,7 +33,7 @@ class SiftedResults:
     sifted_components_count: int
     sifted_pieces_count: int
     structure_sifted_yield_pieces: list
-    structure_sifted_phi: np.matrix
+    structure_sifted_phi: np.array
     modified_structure_sifted_yield_pieces_indices: list = field(default_factory=list)
     bbar_updated: np.array = np.zeros((1, 1))
     b_matrix_inv_updated: np.array = np.zeros((1, 1))
@@ -344,7 +344,7 @@ class Sifting:
         return violated_points
 
     def get_structure_sifted_phi(self, sifted_yield_points, sifted_components_count, sifted_pieces_count):
-        structure_sifted_phi = np.matrix(np.zeros((sifted_components_count, sifted_pieces_count)))
+        structure_sifted_phi = np.zeros((sifted_components_count, sifted_pieces_count))
         current_row_start = 0
         current_column_start = 0
         for yield_point in sifted_yield_points:

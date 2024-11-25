@@ -8,11 +8,11 @@ from ..yield_models import MemberYieldSpecs
 
 @dataclass
 class Response:
-    nodal_force: np.matrix
-    yield_components_force: np.matrix
-    nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_force: np.array
+    yield_components_force: np.array
+    nodal_strains: np.array = np.zeros([1, 1])
+    nodal_stresses: np.array = np.zeros([1, 1])
+    nodal_moments: np.array = np.zeros([1, 1])
 
 
 class Mass:
@@ -39,6 +39,10 @@ class Frame2DMember:
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces (force, moment, ...) in nodes
         self.udefs = self.get_nodal_forces_from_unit_distortions()
+        if self.section.nonlinear.has_axial_yield:
+            self.yield_components_dofs = [0, 2, 3, 5]
+        else:
+            self.yield_components_dofs = [2, 5]
 
     def _length(self):
         a = self.nodes[0]
@@ -58,7 +62,7 @@ class Frame2DMember:
         ends_fixity = self.ends_fixity
 
         if (ends_fixity == "fix_fix"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, -e * a / l, 0, 0],
                 [0, 12 * e * i / (l ** 3), 6 * e * i / (l ** 2), 0, -12 * e * i / (l ** 3), 6 * e * i / (l ** 2)],
                 [0, 6 * e * i / (l ** 2), 4 * e * i / (l), 0, -6 * e * i / (l ** 2), 2 * e * i / (l)],
@@ -68,7 +72,7 @@ class Frame2DMember:
 
         # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 343
         elif (ends_fixity == "hinge_fix"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, -e * a / l, 0, 0],
                 [0, 3 * e * i / (l ** 3), 0, 0, -3 * e * i / (l ** 3), 3 * e * i / (l ** 2)],
                 [0, 0, 0, 0, 0, 0],
@@ -77,7 +81,7 @@ class Frame2DMember:
                 [0, 3 * e * i / (l ** 2), 0, 0, -3 * e * i / (l ** 2), 3 * e * i / (l)]])
 
         elif (ends_fixity == "fix_hinge"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, -e * a / l, 0, 0],
                 [0, 3 * e * i / (l ** 3), 3 * e * i / (l ** 2), 0, -3 * e * i / (l ** 3), 0],
                 [0, 3 * e * i / (l ** 2), 3 * e * i / (l), 0, -3 * e * i / (l ** 2), 0],
@@ -86,7 +90,7 @@ class Frame2DMember:
                 [0, 0, 0, 0, 0, 0]])
 
         elif (ends_fixity == "hinge_hinge"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, -e * a / l, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
@@ -99,7 +103,7 @@ class Frame2DMember:
     def _mass(self):
         l = self.l
         mass = self.mass.magnitude
-        m = np.matrix(
+        m = np.array(
             [
                 [mass * l / 2, 0, 0, 0, 0, 0],
                 [0, mass * l / 2, 0, 0, 0, 0],
@@ -118,7 +122,7 @@ class Frame2DMember:
         a = self.nodes[0]
         b = self.nodes[1]
         l = self.l
-        t = np.matrix([
+        t = np.array([
             [(b.x - a.x) / l, (b.y - a.y) / l, 0.0, 0.0, 0.0, 0.0],
             [-(b.y - a.y) / l, (b.x - a.x) / l, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
@@ -132,20 +136,10 @@ class Frame2DMember:
         # fixed external: fixed external forces like force, moment, ... nodes of a member
 
         if fixed_external is None:
-            nodal_force = self.k * nodal_disp
+            nodal_force = np.dot(self.k, nodal_disp)
         else:
-            nodal_force = self.k * nodal_disp + fixed_external
-
-        if self.section.nonlinear.has_axial_yield:
-            yield_components_force = np.matrix(np.zeros((4, 1)))
-            yield_components_force[0, 0] = nodal_force[0, 0]
-            yield_components_force[1, 0] = nodal_force[2, 0]
-            yield_components_force[2, 0] = nodal_force[3, 0]
-            yield_components_force[3, 0] = nodal_force[5, 0]
-        else:
-            yield_components_force = np.matrix(np.zeros((2, 1)))
-            yield_components_force[0, 0] = nodal_force[2, 0]
-            yield_components_force[1, 0] = nodal_force[5, 0]
+            nodal_force = np.dot(self.k, nodal_disp) + fixed_external
+        yield_components_force = nodal_force[self.yield_components_dofs]
 
         response = Response(
             nodal_force=nodal_force,
@@ -154,7 +148,7 @@ class Frame2DMember:
         return response
 
     def get_nodal_forces_from_unit_distortions(self):
-        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
+        nodal_forces = np.zeros((self.dofs_count, self.yield_specs.components_count))
         if self.section.nonlinear.has_axial_yield:
             nodal_forces[:, 0] = self.k[:, 0]
             nodal_forces[:, 1] = self.k[:, 2]

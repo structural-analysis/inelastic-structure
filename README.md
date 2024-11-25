@@ -19,3 +19,10 @@ payanname mahini:
 pivot optimization:
 لازم نیست وقتی میخواهیم پیوت انجام دهیم تمام جدول را به روز کنیم
 کد ماهینی را نگاه کنیم و ایده بگیریم
+
+for profiling do the steps below:
+in prof.py choose the example:
+## to run the example to profile, run the script:
+python -m src.prof
+## to visualize profiling results run the script:
+snakeviz .\profile_data.prof

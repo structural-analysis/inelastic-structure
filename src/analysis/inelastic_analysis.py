@@ -15,9 +15,9 @@ class InelasticAnalysis:
             self.plastic_vars = mahini_method.solve()
 
         elif self.analysis_type is AnalysisType.DYNAMIC:
-            self.final_inc_phi_pms_prev = np.matrix(np.zeros((initial_analysis.initial_data.intact_components_count, 1)))
-            self.plastic_vars_history = np.matrix(np.zeros((initial_analysis.time_steps, 1), dtype=object))
-            self.final_inc_phi_pms_history = np.matrix(np.zeros((initial_analysis.time_steps, 1), dtype=object))
+            self.final_inc_phi_pms_prev = np.zeros(initial_analysis.initial_data.intact_components_count)
+            self.plastic_vars_history = np.zeros((initial_analysis.time_steps, 1), dtype=object)
+            self.final_inc_phi_pms_history = np.zeros((initial_analysis.time_steps, initial_analysis.initial_data.intact_components_count))
 
 
     def update_dynamic_time_step(self, analysis_data):
@@ -33,31 +33,32 @@ class InelasticAnalysis:
         final_inc_load_level = self.plastic_vars["load_level_history"][-1]
         self.final_inc_phi_pms_prev = final_inc_phi_pms
         self.plastic_vars_history[time_step, 0] = self.plastic_vars
-        self.final_inc_phi_pms_history[time_step, 0] = final_inc_phi_pms
+
+        self.final_inc_phi_pms_history[time_step, :] = final_inc_phi_pms
         elastoplastic_a2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.a_duhamel[time_step, 0],
-            sensitivity=initial_analysis.a2_sensitivity_history[time_step, 0],
+            elastic_response=initial_analysis.a_duhamels[time_step, :],
+            sensitivity=initial_analysis.a2_sensitivity_history[time_step, :, :],
         )
 
         elastoplastic_b2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.b_duhamel[time_step, 0],
-            sensitivity=initial_analysis.b2_sensitivity_history[time_step, 0],
+            elastic_response=initial_analysis.b_duhamels[time_step, :],
+            sensitivity=initial_analysis.b2_sensitivity_history[time_step, :, :],
         )
 
         elastoplastic_modal_loads = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.modal_loads[time_step, 0],
-            sensitivity=initial_analysis.modal_loads_sensitivity_history[time_step, 0],
+            elastic_response=initial_analysis.modal_loads[time_step, :],
+            sensitivity=initial_analysis.modal_loads_sensitivity_history[time_step, :, :],
         )
 
-        initial_analysis.a_duhamel[time_step, 0] = elastoplastic_a2s
-        initial_analysis.b_duhamel[time_step, 0] = elastoplastic_b2s
-        initial_analysis.modal_loads[time_step, 0] = elastoplastic_modal_loads
+        initial_analysis.a_duhamels[time_step, :] = elastoplastic_a2s
+        initial_analysis.b_duhamels[time_step, :] = elastoplastic_b2s
+        initial_analysis.modal_loads[time_step, :] = elastoplastic_modal_loads
 
         # elastoplastic_nodal_disp = get_elastoplastic_response(
         #     load_level=final_inc_load_level,

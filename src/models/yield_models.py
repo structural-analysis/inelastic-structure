@@ -170,7 +170,7 @@ class StructureYieldSpecs:
         )
 
     def create_intact_phi(self):
-        intact_phi = np.matrix(np.zeros((self.intact_components_count, self.intact_pieces_count)))
+        intact_phi = np.zeros((self.intact_components_count, self.intact_pieces_count))
         current_row_start = 0
         current_column_start = 0
         for yield_point in self.intact_points:
@@ -182,7 +182,7 @@ class StructureYieldSpecs:
         return intact_phi
 
     def create_intact_q(self):
-        intact_q = np.matrix(np.zeros((2 * self.intact_points_count, self.intact_pieces_count)))
+        intact_q = np.zeros((2 * self.intact_points_count, self.intact_pieces_count))
         pieces_counter = 0
         for i, yield_point in enumerate(self.intact_points):
             intact_q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
@@ -190,7 +190,7 @@ class StructureYieldSpecs:
         return intact_q
 
     def create_intact_h(self):
-        intact_h = np.matrix(np.zeros((self.intact_pieces_count, 2 * self.intact_points_count)))
+        intact_h = np.zeros((self.intact_pieces_count, 2 * self.intact_points_count))
         pieces_counter = 0
         for i, yield_point in enumerate(self.intact_points):
             intact_h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
@@ -198,15 +198,15 @@ class StructureYieldSpecs:
         return intact_h
 
     def create_intact_w(self):
-        intact_w = np.matrix(np.zeros((2 * self.intact_points_count, 2 * self.intact_points_count)))
+        intact_w = np.zeros((2 * self.intact_points_count, 2 * self.intact_points_count))
         for i, yield_point in enumerate(self.intact_points):
             intact_w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
         return intact_w
 
     def create_intact_cs(self):
-        intact_cs = np.matrix(np.zeros((2 * self.intact_points_count, 1)))
+        intact_cs = np.zeros((2 * self.intact_points_count, 1))
         for i, yield_point in enumerate(self.intact_points):
-            intact_cs[2 * i:2 * i + 2, 0] = yield_point.cs
+            intact_cs[2 * i:2 * i + 2] = yield_point.cs
         return intact_cs
 
     # TODO: can't we get yield point piece numbers from yield_points data?

@@ -217,57 +217,53 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         elastic_members_disps_history = initial_analysis.elastic_members_disps_history
         elastic_nodal_disp_history = initial_analysis.elastic_nodal_disp_history
 
-        responses = np.matrix(np.zeros((initial_analysis.time_steps, 1), dtype=object))
+        responses = np.zeros(initial_analysis.time_steps, dtype=object)
         for time_step in range(1, initial_analysis.time_steps):
             plastic_vars = plastic_vars_history[time_step, 0]
             phi_pms_history = plastic_vars["phi_pms_history"]
             load_level_history = plastic_vars["load_level_history"]
-            final_inc_phi_pms_prev = final_inc_phi_pms_history[time_step - 1, 0]
+            final_inc_phi_pms_prev = final_inc_phi_pms_history[time_step - 1, :]
 
             increments_count = len(load_level_history)
-            load_levels = np.zeros([increments_count, 1], dtype=object)
+            load_levels = np.zeros(increments_count)
 
-            nodal_disp_sensitivity = nodal_disp_sensitivity_history[time_step, 0]
-            nodal_disp = np.zeros([increments_count, 1], dtype=object)
+            nodal_disp_sensitivity = nodal_disp_sensitivity_history[time_step, :, :]
+            nodal_disp = np.zeros((increments_count, structure.dofs_count))
 
-            members_nodal_forces_sensitivity = members_nodal_forces_sensitivity_history[time_step, 0]
-            members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
+            members_nodal_forces_sensitivity = members_nodal_forces_sensitivity_history[time_step, :, :, :]
+            members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
 
-            members_disps_sensitivity = members_disps_sensitivity_history[time_step, 0]
-            members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
+            members_disps_sensitivity = members_disps_sensitivity_history[time_step, :, :, :]
+            members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
             for i in range(increments_count):
                 phi_pms = phi_pms_history[i] + final_inc_phi_pms_prev
                 load_level = load_level_history[i]
 
-                load_levels[i, 0] = np.matrix([[load_level]])
-
+                load_levels[i] = load_level
                 elastoplastic_nodal_disp = get_elastoplastic_response(
                     load_level=load_level,
                     phi_x=phi_pms,
-                    elastic_response=elastic_nodal_disp_history[time_step, 0],
+                    elastic_response=elastic_nodal_disp_history[time_step, :],
                     sensitivity=nodal_disp_sensitivity,
                 )
-                nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
+                nodal_disp[i, :] = elastoplastic_nodal_disp
 
                 elastoplastic_members_nodal_forces = get_elastoplastic_response(
                     load_level=load_level,
                     phi_x=phi_pms,
-                    elastic_response=elastic_members_nodal_forces_history[time_step, 0],
+                    elastic_response=elastic_members_nodal_forces_history[time_step, :, :],
                     sensitivity=members_nodal_forces_sensitivity,
                 )
-                for j in range(structure.members_count):
-                    members_nodal_forces[i, j] = elastoplastic_members_nodal_forces[j, 0]
+                members_nodal_forces[i, :, :] = elastoplastic_members_nodal_forces
 
                 elastoplastic_members_disps = get_elastoplastic_response(
                     load_level=load_level,
                     phi_x=phi_pms,
-                    elastic_response=elastic_members_disps_history[time_step, 0],
+                    elastic_response=elastic_members_disps_history[time_step, :, :],
                     sensitivity=members_disps_sensitivity,
                 )
-                for j in range(structure.members_count):
-                    members_disps[i, j] = elastoplastic_members_disps[j, 0]
-
-            responses[time_step, 0] = {
+                members_disps[i, :, :] = elastoplastic_members_disps
+            responses[time_step] = {
                 "nodal_disp": nodal_disp,
                 "members_nodal_forces": members_nodal_forces,
                 "members_disps": members_disps,
@@ -280,22 +276,22 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         elastic_members_disps_history = initial_analysis.elastic_members_disps_history
         elastic_members_nodal_strains_history = initial_analysis.elastic_members_nodal_strains_history
         elastic_members_nodal_stresses_history = initial_analysis.elastic_members_nodal_stresses_history
-        responses = np.matrix(np.zeros((initial_analysis.time_steps, 1), dtype=object))
+        responses = np.zeros((initial_analysis.time_steps), dtype=object)
 
         # for elastic analysis, there is only one increment so for responses size we use 1.
         increments_count = 1
 
         for time_step in range(1, initial_analysis.time_steps):
-            nodal_disp = np.zeros([increments_count, 1], dtype=object)
-            members_disps = np.zeros([increments_count, structure.members_count], dtype=object)
-            members_nodal_forces = np.zeros([increments_count, structure.members_count], dtype=object)
+            nodal_disp = np.zeros((increments_count, structure.dofs_count))
+            members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
+            members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
             members_nodal_strains = np.zeros([increments_count, structure.members_count], dtype=object)
             members_nodal_stresses = np.zeros([increments_count, structure.members_count], dtype=object)
             nodal_strains = np.zeros([increments_count, 1], dtype=object)
             nodal_stresses = np.zeros([increments_count, 1], dtype=object)
-            load_levels = np.zeros([increments_count, 1], dtype=object)
+            load_levels = np.zeros(increments_count)
 
-            load_levels[0, 0] = np.matrix([[load_limit]])
+            load_levels[0] = load_limit
             # elastoplastic_nodal_disp = get_elastoplastic_response(
             #     load_level=load_level,
             #     phi_x=phi_x,
@@ -304,22 +300,21 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             # )
             # nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
             for i in range(increments_count):
-                nodal_disp[i, 0] = elastic_nodal_disp_history[time_step, 0][0, 0] * load_limit
+                nodal_disp[i, :] = elastic_nodal_disp_history[time_step, :] * load_limit
                 # elastoplastic_members_nodal_forces = get_elastoplastic_response(
                 #     load_level=load_level,
                 #     phi_x=phi_x,
                 #     elastic_response=elastic_members_nodal_forces_history[time_step, 0],
                 #     sensitivity=members_nodal_forces_sensitivity,
                 # )
-                elastic_members_nodal_forces = elastic_members_nodal_forces_history[time_step, 0] * load_limit
-                elastic_members_disps = elastic_members_disps_history[time_step, 0] * load_limit
-                elastic_members_nodal_strains = elastic_members_nodal_strains_history[time_step, 0] * load_limit
-                elastic_members_nodal_stresses = elastic_members_nodal_stresses_history[time_step, 0] * load_limit
-                for j in range(structure.members_count):
-                    members_nodal_forces[i, j] = elastic_members_nodal_forces[j, 0]
-                    members_disps[i, j] = elastic_members_disps[j, 0]
-                    members_nodal_strains[i, j] = elastic_members_nodal_strains[j, 0]
-                    members_nodal_stresses[i, j] = elastic_members_nodal_stresses[j, 0]
+                elastic_members_nodal_forces = elastic_members_nodal_forces_history[time_step, :, :] * load_limit
+                elastic_members_disps = elastic_members_disps_history[time_step, :, :] * load_limit
+                elastic_members_nodal_strains = elastic_members_nodal_strains_history[time_step, :] * load_limit
+                elastic_members_nodal_stresses = elastic_members_nodal_stresses_history[time_step, :] * load_limit
+
+                members_nodal_forces[i, :, :] = elastic_members_nodal_forces
+                members_disps[i, :, :] = elastic_members_disps
+
                 if has_any_response(members_nodal_strains):
                     nodal_strains[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains)
                     nodal_stresses[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_stresses)
@@ -331,7 +326,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 #     sensitivity=members_disps_sensitivity,
                 # )
 
-                responses[time_step, 0] = {
+                responses[time_step] = {
                     "load_levels": load_levels,
                     "nodal_disp": nodal_disp,
                     "members_disps": members_disps,
@@ -340,12 +335,13 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     "members_nodal_stresses": members_nodal_stresses,
                 }
                 if has_any_response(members_nodal_strains):
-                    responses[time_step, 0].update(
+                    responses[time_step].update(
                         {
                             "nodal_strains": nodal_strains,
                             "nodal_stresses": nodal_stresses,
                         }
                     )
+
     return responses
 
 
@@ -371,7 +367,7 @@ def write_static_responses_to_file(example_name, responses, desired_responses):
 
 def write_dynamic_responses_to_file(example_name, structure_type, responses, desired_responses, time_steps):
     for time_step in range(1, time_steps):
-        for response in responses[time_step, 0]:
+        for response in responses[time_step]:
             if response in desired_responses:
                 example_name_with_time_step = os.path.join(
                     example_name,
@@ -379,17 +375,28 @@ def write_dynamic_responses_to_file(example_name, structure_type, responses, des
                     "increments",
                     str(time_step),
                 )
-                # write_response_to_file(
-                #     example_name=example_name_with_time_step,
-                #     response=responses[time_step, 0][response],
-                #     response_name=response,
-                # )
+                write_response_to_file(
+                    example_name=example_name_with_time_step,
+                    response=responses[time_step][response],
+                    response_name=response,
+                )
 
 
 def write_response_to_file(example_name, response, response_name):
     for increment in range(response.shape[0]):
         response_dir = os.path.join(outputs_dir, example_name, str(increment), response_name)
         os.makedirs(response_dir, exist_ok=True)
-        for i in range(response.shape[1]):
-            dir = os.path.join(response_dir, f"{str(i)}.csv")
-            np.savetxt(fname=dir, X=np.array(response[increment, i]), delimiter=",", fmt=f'%.{settings.output_digits}e')
+        response_elements_count = len(np.shape(response[increment]))
+        # print(f"{np.shape(response[increment])=}")
+        # print(f"{len(np.shape(response[increment]))=}")
+        # input()
+        if response_elements_count == 0:
+            dir = os.path.join(response_dir, "0.csv")
+            np.savetxt(fname=dir, X=np.array([response[increment]]), delimiter=",", fmt=f'%.{settings.output_digits}e')
+        elif response_elements_count == 1:
+            dir = os.path.join(response_dir, "0.csv")
+            np.savetxt(fname=dir, X=np.array(response[increment, :]), delimiter=",", fmt=f'%.{settings.output_digits}e')
+        else:
+            for i in range(np.shape(response[increment])[0]):
+                dir = os.path.join(response_dir, f"{str(i)}.csv")
+                np.savetxt(fname=dir, X=np.array(response[increment, i, :]), delimiter=",", fmt=f'%.{settings.output_digits}e')

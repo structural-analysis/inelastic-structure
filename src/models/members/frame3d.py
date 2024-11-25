@@ -8,11 +8,11 @@ from ..yield_models import MemberYieldSpecs
 
 @dataclass
 class Response:
-    nodal_force: np.matrix
-    yield_components_force: np.matrix
-    nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
-    nodal_moments: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_force: np.array
+    yield_components_force: np.array
+    nodal_strains: np.array = np.array(np.zeros([1, 1]))
+    nodal_stresses: np.array = np.array(np.zeros([1, 1]))
+    nodal_moments: np.array = np.array(np.zeros([1, 1]))
 
 
 class Mass:
@@ -40,8 +40,7 @@ class Frame3DMember:
         self.t = self._transform_matrix()
         # udef: unit distorsions equivalent forces
         self.udefs = self.get_nodal_forces_from_unit_distortions()
-        self.yield_components_force_empty = np.matrix(np.zeros((6, 1)))
-        # print(f"{self.udefs=}")
+        self.yield_components_dofs = [0, 4, 5, 6, 10, 11]
 
     def _length(self):
         a = self.nodes[0]
@@ -72,7 +71,7 @@ class Frame3DMember:
         ends_fixity = self.ends_fixity
 
         if (ends_fixity == "fix_fix"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
                 [0, 12 * e * i22 / l ** 3, 0, 0, 0, 6 * e * i22 / l ** 2, 0, -12 * e * i22 / l ** 3, 0, 0, 0, 6 * e * i22 / l ** 2],
                 [0, 0, 12 * e * i33 / l ** 3, 0, -6 * e * i33 / l ** 2, 0, 0, 0, -12 * e * i33 / l ** 3, 0, -6 * e * i33 / l ** 2, 0],
@@ -88,7 +87,7 @@ class Frame3DMember:
             ])
 
         elif (ends_fixity == "hinge_fix"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
                 [0, 3 * e * i22 / l ** 3, 0, 0, 0, 0, 0, -3 * e * i22 / l ** 3, 0, 0, 0, 3 * e * i22 / l ** 2],
                 [0, 0, 3 * e * i33 / l ** 3, 0, 0, 0, 0, 0, -3 * e * i33 / l ** 3, 0, -3 * e * i33 / l ** 2, 0],
@@ -104,7 +103,7 @@ class Frame3DMember:
             ])
 
         elif (ends_fixity == "fix_hinge"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
                 [0, 3 * e * i22 / l ** 3, 0, 0, 0, 3 * e * i22 / l ** 2, 0, -3 * e * i22 / l ** 3, 0, 0, 0, 0],
                 [0, 0, 3 * e * i33 / l ** 3, 0, -3 * e * i33 / l ** 2, 0, 0, 0, -3 * e * i33 / l ** 3, 0, 0, 0],
@@ -120,7 +119,7 @@ class Frame3DMember:
             ])
 
         elif (ends_fixity == "hinge_hinge"):
-            k = np.matrix([
+            k = np.array([
                 [e * a / l, 0, 0, 0, 0, 0, -e * a / l, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -140,7 +139,7 @@ class Frame3DMember:
     def _mass(self):
         l = self.l
         mass = self.mass.magnitude
-        m = np.matrix(
+        m = np.array(
             [
                 [mass * l / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, mass * l / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -170,18 +169,18 @@ class Frame3DMember:
         rxz = (b.z - a.z) / l
         if rxx == 0 and rxz == 0:
             # Kassimali A., Matrix Analysis Of Structures, 2nd ed, 2011 page 479
-            r = np.matrix([
+            r = np.array([
                 [0, rxy, 0],
                 [-rxy * np.cos(si), 0, np.sin(si)],
                 [rxy * np.sin(si), 0, np.cos(si)],
             ])
         else:
-            r = np.matrix([
+            r = np.array([
                 [rxx, rxy, rxz],
                 [(-rxx * rxy * np.cos(si) - rxz * np.sin(si)) / np.sqrt(rxx ** 2 + rxz **2), np.sqrt(rxx ** 2 + rxz ** 2) * np.cos(si), (-rxy * rxz * np.cos(si) + rxx * np.sin(si)) / np.sqrt(rxx ** 2 + rxz ** 2)],
                 [(rxx * rxy * np.sin(si) - rxz * np.cos(si)) / np.sqrt(rxx ** 2 + rxz **2), -1 * np.sqrt(rxx ** 2 + rxz ** 2) * np.sin(si), (rxy * rxz * np.sin(si) + rxx * np.cos(si)) / np.sqrt(rxx ** 2 + rxz ** 2)]
             ])
-        t = np.matrix(np.zeros((12, 12)))
+        t = np.array(np.zeros((12, 12)))
         t[0:3, 0:3] = r
         t[3:6, 3:6] = r
         t[6:9, 6:9] = r
@@ -189,20 +188,14 @@ class Frame3DMember:
         return t
 
     def get_response(self, nodal_disp, fixed_force=None, fixed_stress=None):
-        # nodal_disp: numpy matrix
+        # nodal_disp: numpy array
 
         if fixed_force is None:
-            nodal_force = self.k * nodal_disp
+            nodal_force = np.dot(self.k, nodal_disp)
         else:
-            nodal_force = self.k * nodal_disp + fixed_force
+            nodal_force = np.dot(self.k, nodal_disp) + fixed_force
 
-        yield_components_force = self.yield_components_force_empty
-        yield_components_force[0, 0] = nodal_force[0, 0]
-        yield_components_force[1, 0] = nodal_force[4, 0]
-        yield_components_force[2, 0] = nodal_force[5, 0]
-        yield_components_force[3, 0] = nodal_force[6, 0]
-        yield_components_force[4, 0] = nodal_force[10, 0]
-        yield_components_force[5, 0] = nodal_force[11, 0]
+        yield_components_force = nodal_force[self.yield_components_dofs]
 
         response = Response(
             nodal_force=nodal_force,
@@ -211,7 +204,7 @@ class Frame3DMember:
         return response
 
     def get_nodal_forces_from_unit_distortions(self):
-        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
+        nodal_forces = np.array(np.zeros((self.dofs_count, self.yield_specs.components_count)))
         nodal_forces[:, 0] = self.k[:, 0]
         nodal_forces[:, 1] = self.k[:, 4]
         nodal_forces[:, 2] = self.k[:, 5]
