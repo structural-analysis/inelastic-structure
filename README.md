@@ -26,3 +26,10 @@ in prof.py choose the example:
 python -m src.prof
 ## to visualize profiling results run the script:
 snakeviz .\profile_data.prof
+
+## to profile line by line
+we use line-profiler package
+to use:
+add a @profile decorator above the function (no need to import anything)
+run the code using:
+kernprof -l -v run.py
