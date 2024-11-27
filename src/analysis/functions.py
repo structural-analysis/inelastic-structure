@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.linalg import cho_solve
 from dataclasses import dataclass
-from functools import lru_cache
+from line_profiler import profile
+from numba import njit
 
 
 @dataclass
@@ -42,10 +43,10 @@ def get_nodal_disp(structure, loads, total_load):
     nodal_disp[0, 0] = disp
     return nodal_disp
 
-
+# @profile
 def get_members_disps(structure, disp):
-    member_dofs_counts = np.array([member.dofs_count for member in structure.members])
-    member_nodes_counts = np.array([len(member.nodes) for member in structure.members])
+    member_dofs_counts = np.array([member.dofs_count for member in structure.members], dtype=np.int32)
+    member_nodes_counts = np.array([len(member.nodes) for member in structure.members], dtype=np.int32)
     member_node_dofs_counts = member_dofs_counts // member_nodes_counts
 
     all_node_nums = np.concatenate([np.array([node.num for node in member.nodes]) for member in structure.members])
@@ -54,8 +55,11 @@ def get_members_disps(structure, disp):
     dof_offsets = np.tile(np.arange(member_node_dofs_counts[0]), sum(member_nodes_counts))
 
     v = disp[member_node_dofs_counts[0] * node_offsets + dof_offsets].reshape(-1, 1)
-    v_split = np.array(np.split(v, np.cumsum(member_dofs_counts)[:-1]))
 
+    # v_split = np.split(v, np.cumsum(member_dofs_counts)[:-1])
+    cumsum_indices = np.cumsum(member_dofs_counts)[:-1]
+    # v_split = np.split(v, cumsum_indices)
+    v_split = np.array_split(v, cumsum_indices)
     # t_matrices = np.array([t for t in t_matrices])  # shape (n, m, p)
     # v_split = np.array([v.flatten() for v in v_split])  # shape (n, p)
 
@@ -294,16 +298,73 @@ def get_modal_disp(structure, time, time_step, previous_modal_loads, modal_loads
 
     return modal_disps, a2s, b2s
 
+# # Before Optimization
+# def get_is_duhamel(damping, t1, t2, wns, wds):
+#     i12 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t2) + wds * np.sin(wds * t2))
+#     i11 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t1) + wds * np.sin(wds * t1))
+#     i1 = i12 - i11
+#     i22 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t2) - wds * np.cos(wds * t2))
+#     i21 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t1) - wds * np.cos(wds * t1))
+#     i2 = i22 - i21
+#     i3 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i22 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i12 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i21 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i11)
+#     i4 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i12 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i22 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i11 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i21)
+#     return i1, i2, i3, i4
 
+
+@profile
 def get_is_duhamel(damping, t1, t2, wns, wds):
-    i12 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t2) + wds * np.sin(wds * t2))
-    i11 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t1) + wds * np.sin(wds * t1))
+    D = damping * wns
+    D2 = D * D
+    wds2 = wds * wds
+    denom = D2 + wds2
+    inv_denom = 1.0 / denom
+
+    alpha = D * inv_denom
+    beta = wds * inv_denom
+
+    # Precompute exponentials
+    D_t1 = D * t1
+    D_t2 = D * t2
+    E1 = np.exp(D_t1)
+    E2 = np.exp(D_t2)
+
+    # Precompute trigonometric functions
+    wds_t1 = wds * t1
+    wds_t2 = wds * t2
+    C1 = np.cos(wds_t1)
+    S1 = np.sin(wds_t1)
+    C2 = np.cos(wds_t2)
+    S2 = np.sin(wds_t2)
+
+    # Precompute products
+    D_C1 = D * C1
+    D_C2 = D * C2
+    D_S1 = D * S1
+    D_S2 = D * S2
+    wds_C1 = wds * C1
+    wds_C2 = wds * C2
+    wds_S1 = wds * S1
+    wds_S2 = wds * S2
+
+    # Compute i1 and i2 terms
+    common_factor_E1 = E1 * inv_denom
+    common_factor_E2 = E2 * inv_denom
+
+    i11 = common_factor_E1 * (D_C1 + wds_S1)
+    i12 = common_factor_E2 * (D_C2 + wds_S2)
     i1 = i12 - i11
-    i22 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t2) - wds * np.cos(wds * t2))
-    i21 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t1) - wds * np.cos(wds * t1))
+
+    i21 = common_factor_E1 * (D_S1 - wds_C1)
+    i22 = common_factor_E2 * (D_S2 - wds_C2)
     i2 = i22 - i21
-    i3 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i22 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i12 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i21 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i11)
-    i4 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i12 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i22 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i11 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i21)
+
+    # Compute i3 and i4 terms
+    t1_minus_alpha = t1 - alpha
+    t2_minus_alpha = t2 - alpha
+
+    i3 = (t2_minus_alpha * i22 + beta * i12) - (t1_minus_alpha * i21 + beta * i11)
+    i4 = (t2_minus_alpha * i12 - beta * i22) - (t1_minus_alpha * i11 - beta * i21)
+
     return i1, i2, i3, i4
 
 
@@ -351,7 +412,6 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
     a1s_empty = np.zeros(selected_modes_count)
     b1s_empty = np.zeros(selected_modes_count)
     initial_modal_load_empty = np.zeros(selected_modes_count)
-
 
     for member_num, member in enumerate(members):
         for load in member.udefs.T:

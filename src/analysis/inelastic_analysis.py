@@ -19,7 +19,6 @@ class InelasticAnalysis:
             self.plastic_vars_history = np.zeros((initial_analysis.time_steps, 1), dtype=object)
             self.final_inc_phi_pms_history = np.zeros((initial_analysis.time_steps, initial_analysis.initial_data.intact_components_count))
 
-
     def update_dynamic_time_step(self, analysis_data):
         mahini_method = MahiniMethod(
             initial_data=self.initial_data,

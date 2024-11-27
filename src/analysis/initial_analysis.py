@@ -126,13 +126,12 @@ class InitialAnalysis:
             self.elastic_members_nodal_stresses_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_components_count))
             self.elastic_members_nodal_moments_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_components_count))
 
-
             if self.structure.is_inelastic:
                 self.nodal_disp_sensitivity_history = np.zeros((self.time_steps, structure.dofs_count, structure.yield_specs.intact_components_count))
                 self.members_nodal_forces_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
                 self.members_disps_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
                 self.modal_loads_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
-                
+
                 self.a2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
                 self.b2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
                 self.p0_history = np.zeros((self.time_steps, structure.yield_specs.intact_components_count))
