@@ -59,11 +59,14 @@ def calculate_responses(initial_analysis, inelastic_analysis=None):
 def calculate_static_responses(initial_analysis, inelastic_analysis=None):
     structure = initial_analysis.structure
     if structure.is_inelastic:
+        pms_history = inelastic_analysis.plastic_vars["pms_history"]
         phi_x_history = inelastic_analysis.plastic_vars["phi_pms_history"]
         load_level_history = inelastic_analysis.plastic_vars["load_level_history"]
         increments_count = len(load_level_history)
 
         load_levels = np.zeros([increments_count, 1], dtype=object)
+
+        plastic_points = np.zeros(increments_count, dtype=object)
 
         nodal_disp_sensitivity = initial_analysis.nodal_disp_sensitivity
         nodal_disp = np.zeros([increments_count, 1], dtype=object)
@@ -130,8 +133,11 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
 
             for j in range(structure.members_count):
                 members_disps[i, j] = elastoplastic_members_disps[j, 0]
+            
+            plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
 
         responses = {
+            "plastic_points": plastic_points,
             "load_levels": load_levels,
             "nodal_disp": nodal_disp,
             "members_disps": members_disps,
@@ -214,9 +220,9 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         elastic_nodal_disp_history = initial_analysis.elastic_nodal_disp_history
 
         responses = np.zeros(initial_analysis.time_steps, dtype=object)
-        plastic_points = np.zeros(initial_analysis.time_steps, increments_count, dtype=object)
         for time_step in range(1, initial_analysis.time_steps):
             plastic_vars = plastic_vars_history[time_step, 0]
+            pms_history = plastic_vars["pms_history"]
             phi_pms_history = plastic_vars["phi_pms_history"]
             load_level_history = plastic_vars["load_level_history"]
             final_inc_phi_pms_prev = final_inc_phi_pms_history[time_step - 1, :]
@@ -228,6 +234,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             members_nodal_forces_sensitivity = load_chunk(time_step=time_step, response="members_nodal_forces")
             members_disps_sensitivity = load_chunk(time_step=time_step, response="members_disps")
 
+            plastic_points = np.zeros(increments_count, dtype=object)
             nodal_disp = np.zeros((increments_count, structure.dofs_count))
             members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
             members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
@@ -265,10 +272,10 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 )
                 members_disps[i, :, :] = elastoplastic_members_disps
 
-                # plastic_points[time_step, i] = get_activated_plastic_points(phi_pms=phi_pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
-                # print(f"{activated_plastic_points=}")
-                # input()
+                plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
+
             responses[time_step] = {
+                "plastic_points": plastic_points,
                 "nodal_disp": nodal_disp,
                 "members_nodal_forces": members_nodal_forces,
                 "members_disps": members_disps,
@@ -392,15 +399,16 @@ def write_response_to_file(example_name, response, response_name):
         response_dir = os.path.join(outputs_dir, example_name, str(increment), response_name)
         os.makedirs(response_dir, exist_ok=True)
         response_elements_count = len(np.shape(response[increment]))
-        # print(f"{np.shape(response[increment])=}")
-        # print(f"{len(np.shape(response[increment]))=}")
-        # input()
         if response_elements_count == 0:
             dir = os.path.join(response_dir, "0.csv")
             np.savetxt(fname=dir, X=np.array([response[increment]]), delimiter=",", fmt=f'%.{settings.output_digits}e')
         elif response_elements_count == 1:
-            dir = os.path.join(response_dir, "0.csv")
-            np.savetxt(fname=dir, X=np.array(response[increment, :]), delimiter=",", fmt=f'%.{settings.output_digits}e')
+            if response_name == "plastic_points":
+                dir = os.path.join(response_dir, "0.csv")
+                np.savetxt(fname=dir, X=np.array(response[increment]), delimiter=",", fmt=f'%.{settings.output_digits}e')
+            else:
+                dir = os.path.join(response_dir, "0.csv")
+                np.savetxt(fname=dir, X=np.array(response[increment, :]), delimiter=",", fmt=f'%.{settings.output_digits}e')
         else:
             for i in range(np.shape(response[increment])[0]):
                 dir = os.path.join(response_dir, f"{str(i)}.csv")

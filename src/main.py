@@ -47,8 +47,9 @@ def run(example_name):
 
     structure_type = "inelastic" if initial_analysis.structure.is_inelastic else "elastic"
     desired_responses = DesiredResponse[structure.type].value
-    # if structure_type == "inelastic":
-    #     desired_responses.append("plastic_points")
+    if structure_type == "inelastic":
+        desired_responses.append("plastic_points")
+
     if initial_analysis.analysis_type == "static":
         write_static_responses_to_file(
             example_name=example_name,

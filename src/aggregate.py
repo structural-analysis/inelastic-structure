@@ -17,17 +17,18 @@ def aggregate_dynamic_responses(structure_type_path, desired_responses):
         final_increment = max([int(increment) for increment in increments])
 
         for response in desired_responses:
-            response_path = os.path.join(time_step_path, str(final_increment), response)
-            elements = get_inner_folders(response_path)
-            for element in elements:
-                element_path = os.path.join(response_path, element)
-                element_name = element.replace(".csv", "")
-                result = np.loadtxt(fname=element_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=0, dtype=float)
-                dofs_count = result.shape[0]
-                for dof in range(dofs_count):
-                    if time_step == "1":
-                        responses[response][element_name][str(dof)] = np.zeros((time_steps, 1))
-                    responses[response][element_name][str(dof)][int(time_step), 0] = result[dof]
+            if response != "plastic_points":
+                response_path = os.path.join(time_step_path, str(final_increment), response)
+                elements = get_inner_folders(response_path)
+                for element in elements:
+                    element_path = os.path.join(response_path, element)
+                    element_name = element.replace(".csv", "")
+                    result = np.loadtxt(fname=element_path, usecols=range(1), delimiter=",", ndmin=2, skiprows=0, dtype=float)
+                    dofs_count = result.shape[0]
+                    for dof in range(dofs_count):
+                        if time_step == "1":
+                            responses[response][element_name][str(dof)] = np.zeros((time_steps, 1))
+                        responses[response][element_name][str(dof)][int(time_step), 0] = result[dof]
     return responses
 
 

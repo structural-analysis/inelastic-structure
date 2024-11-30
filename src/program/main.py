@@ -287,6 +287,7 @@ class MahiniMethod:
         load_level_cumulative = 0
         phi_pms_history = []
         load_level_history = []
+        pms_history = []
         fpm = FPM(
             var=self.landa_var,
             cost=0,
@@ -315,16 +316,19 @@ class MahiniMethod:
             load_level = x[self.landa_var][0, 0]
             phi_pms_cumulative += phi_pms
             load_level_cumulative += load_level
+            pms_history.append(pms)
             phi_pms_history.append(phi_pms_cumulative.copy())
             load_level_history.append(load_level_cumulative)
         if settings.sifting_type is SiftingType.mahini:
-            intact_phi_pms = self.get_unsifted_pms(
+            intact_pms = self.get_unsifted_pms(
                 x=x,
                 structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
             )
+            intact_phi_pms = self.get_phi_pms(intact_pms=intact_pms)
             load_level = x[self.landa_var]
             phi_pms_cumulative += intact_phi_pms
             load_level_cumulative += load_level
+            pms_history.append(intact_pms)
             phi_pms_history.append(phi_pms_cumulative.copy())
             load_level_history.append(load_level_cumulative)
 
@@ -520,14 +524,17 @@ class MahiniMethod:
                 load_level = x[self.landa_var][0, 0]
                 phi_pms_cumulative += phi_pms
                 load_level_cumulative += load_level
+                pms_history.append(pms)
                 phi_pms_history.append(phi_pms_cumulative.copy())
                 load_level_history.append(load_level_cumulative)
 
             if settings.sifting_type is SiftingType.mahini:
-                intact_phi_pms = self.get_unsifted_pms(
+                intact_pms = self.get_unsifted_pms(
                     x=x,
                     structure_sifted_yield_pieces=self.structure_sifted_yield_pieces_current,
                 )
+                intact_phi_pms = self.get_phi_pms(intact_pms=intact_pms)
+
                 phi_pms_cumulative += intact_phi_pms
                 load_level = x[self.landa_var]
                 load_level_cumulative += load_level
@@ -614,21 +621,25 @@ class MahiniMethod:
                         phi_pms_cumulative -= intact_phi_pms
                         load_level_cumulative -= load_level
                     else:
+                        pms_history.append(intact_pms)
                         phi_pms_history.append(phi_pms_cumulative.copy())
                         load_level_history.append(load_level_cumulative)
                 else:
+                    pms_history.append(intact_pms)
                     phi_pms_history.append(phi_pms_cumulative.copy())
                     load_level_history.append(load_level_cumulative)
 
         if self.final_inc_phi_pms_prev is not None:
             final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
             result = {
+                "pms_history": pms_history,
                 "phi_pms_history": phi_pms_history,
                 "load_level_history": load_level_history,
                 "final_inc_phi_pms": final_inc_phi_pms,
             }
         else:
             result = {
+                "pms_history": pms_history,
                 "phi_pms_history": phi_pms_history,
                 "load_level_history": load_level_history,
             }
@@ -961,6 +972,9 @@ class MahiniMethod:
         intact_pms = np.zeros(self.intact_phi.shape[1])
         for piece in structure_sifted_yield_pieces:
             intact_pms[piece.num_in_structure] = x[piece.sifted_num_in_structure]
+        return intact_pms
+
+    def get_phi_pms(self, intact_pms):
         intact_phi_pms = np.dot(self.intact_phi, intact_pms)
         return intact_phi_pms
 
