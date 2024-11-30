@@ -240,7 +240,7 @@ class StructureYieldSpecs:
         return intact_w
 
     def create_intact_cs(self):
-        intact_cs = np.zeros((2 * self.intact_points_count, 1))
+        intact_cs = np.zeros(2 * self.intact_points_count)
         for i, yield_point in enumerate(self.intact_points):
             intact_cs[2 * i:2 * i + 2] = yield_point.cs
         return intact_cs

@@ -318,8 +318,8 @@ class WallMember:
 
     def get_gauss_point_strain_and_stress(self, gauss_point, nodal_disp):
         gauss_point_b = self.get_shape_derivatives(gauss_point)
-        e = gauss_point_b * nodal_disp
-        s = self.section.ce * e
+        e = gauss_point_b @ nodal_disp
+        s = self.section.ce @ e
         gauss_point_strain = Strain(x=e[0], y=e[1], xy=e[2])
         gauss_point_stress = Stress(x=s[0], y=s[1], xy=s[2])
         return gauss_point_strain, gauss_point_stress

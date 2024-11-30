@@ -126,7 +126,7 @@ class MahiniMethod:
         b = np.ones((self.constraints_count))
         b[yield_pieces_count + self.softening_vars_count] = self.load_limit
         if self.include_softening:
-            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:, 0]
+            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:]
 
         if self.disp_limits.any():
             disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
@@ -147,7 +147,7 @@ class MahiniMethod:
         phi_pv_phi = phi_pv @ self.phi
 
         landa_base_num = self.plastic_vars_count + self.softening_vars_count
-        dv_phi = np.dot(self.dv, self.phi)
+        dv_phi = self.dv @ self.phi
 
         raw_a = np.zeros((self.constraints_count, self.primary_vars_count))
         raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
@@ -290,7 +290,7 @@ class MahiniMethod:
         load_level_history = []
 
         if self.include_softening:
-            h_sms_cumulative = np.matrix(np.zeros((self.intact_pieces_count, 1)))
+            h_sms_cumulative = np.zeros(self.intact_pieces_count)
             h_sms_history = []
 
         fpm = FPM(
@@ -346,7 +346,9 @@ class MahiniMethod:
 
             if self.include_softening:
                 sms = x[self.plastic_vars_count:self.landa_var]
-                h_sms = self.intact_h * sms
+                print(f"{sms.shape=}")
+                print(f"{self.intact_h.shape=}")
+                h_sms = self.intact_h @ sms
                 h_sms_cumulative += h_sms
                 h_sms_history.append(h_sms_cumulative.copy())
 
@@ -577,7 +579,7 @@ class MahiniMethod:
 
                 if self.include_softening:
                     sms = x[self.plastic_vars_count:self.landa_var]
-                    h_sms = self.intact_h * sms
+                    h_sms = self.intact_h @ sms
                     h_sms_cumulative += h_sms
 
                 if check_violation:
@@ -806,7 +808,7 @@ class MahiniMethod:
         pi_transpose = np.dot(cb, b_matrix_inv)
         cbar = np.zeros(self.total_vars_count)
         for i in range(self.total_vars_count):
-            cbar[i] = self.costs[i] - np.dot(pi_transpose, self.table[:, i])
+            cbar[i] = self.costs[i] - pi_transpose @ self.table[:, i]
         return cbar
 
     def calculate_dbar(self, db, b_matrix_inv):

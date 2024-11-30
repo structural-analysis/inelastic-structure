@@ -345,7 +345,7 @@ class Sifting:
             q[2 * i:2 * i + 2, pieces_counter:pieces_counter + yield_point.pieces_count] = yield_point.q
             h[pieces_counter:pieces_counter + yield_point.pieces_count, 2 * i:2 * i + 2] = yield_point.h
             w[2 * i:2 * i + 2, 2 * i:2 * i + 2] = yield_point.w
-            cs[2 * i:2 * i + 2, 0] = yield_point.cs
+            cs[2 * i:2 * i + 2] = yield_point.cs
 
             current_row_start = current_row_end
             current_column_start = current_column_end
