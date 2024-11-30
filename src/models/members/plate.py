@@ -25,7 +25,7 @@ class Moment:
 
 class PlateMember:
     # calculations is based on four gauss points
-    def __init__(self, num: int, section: PlateSection, element_type: str, nodes: tuple):
+    def __init__(self, num: int, section: PlateSection, include_softening: bool, element_type: str, nodes: tuple):
         self.num = num
         self.section = section
         self.element_type = element_type  # Q4, Q4R, Q8, Q8R
@@ -35,7 +35,11 @@ class PlateMember:
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.nodal_components_count = self.nodes_count * self.section.yield_specs.components_count
         self.gauss_points_count = len(self.gauss_points)
-        self.yield_specs = MemberYieldSpecs(section=self.section, points_count=self.gauss_points_count)
+        self.yield_specs = MemberYieldSpecs(
+            section=self.section,
+            points_count=self.gauss_points_count,
+            include_softening=include_softening,
+        )
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None

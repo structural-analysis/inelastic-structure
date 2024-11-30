@@ -1,6 +1,13 @@
 from dataclasses import dataclass, field
 import numpy as np
-from typing import List
+from typing import List, Optional, Tuple
+
+
+@dataclass
+class SofteningVar:
+    ref_yield_point_num: int
+    num_in_yield_point: int
+    num_in_structure: int
 
 
 @dataclass
@@ -34,6 +41,7 @@ class YieldPoint:
     h: np.matrix
     w: np.matrix
     cs: np.matrix
+    softening_vars: Optional[Tuple[SofteningVar, SofteningVar]] = None
 
 
 @dataclass
@@ -67,6 +75,7 @@ class SiftedYieldPoint:
     h: np.matrix
     w: np.matrix
     cs: np.matrix
+    softening_vars: Optional[Tuple[SofteningVar, SofteningVar]] = None
 
 
 @dataclass
@@ -81,6 +90,7 @@ class ViolatedYieldPiece:
 class ViolatedYieldPoint:
     num_in_structure: int
     violated_pieces: List[ViolatedYieldPiece] = field(default_factory=list)
+    softening_vars: Optional[Tuple[SofteningVar, SofteningVar]] = None
 
 
 @dataclass
@@ -91,14 +101,31 @@ class IntactYieldPointsResults:
 
 
 class MemberYieldSpecs:
-    def __init__(self, section: object, points_count: int):
+    def __init__(self, section: object, points_count: int, include_softening: bool):
         self.section = section
+        self.include_softening = include_softening
         self.points_count = points_count
         self.components_count = self.points_count * self.section.yield_specs.components_count
         self.yield_points = self.get_yield_points()
 
     def get_yield_points(self):
         yield_points = []
+        if self.include_softening:
+            softening_vars = (
+                SofteningVar(
+                    ref_yield_point_num=-1,
+                    num_in_yield_point=0,
+                    num_in_structure=-1,
+                ),
+                SofteningVar(
+                    ref_yield_point_num=-1,
+                    num_in_yield_point=1,
+                    num_in_structure=-1,
+                )
+            )
+        else:
+            softening_vars = None
+
         for point_num in range(self.points_count):
             yield_pieces = []
             for piece_num in range(self.section.yield_specs.pieces_count):
@@ -110,6 +137,7 @@ class MemberYieldSpecs:
                         score=-1
                     )
                 )
+
             yield_points.append(
                 YieldPoint(
                     min_sifted_pieces_count=self.section.yield_specs.sifted_pieces_count,
@@ -124,15 +152,17 @@ class MemberYieldSpecs:
                     h=self.section.softening.h,
                     w=self.section.softening.w,
                     cs=self.section.softening.cs,
+                    softening_vars=softening_vars,
                 )
             )
         return yield_points
 
 
 class StructureYieldSpecs:
-    def __init__(self, members):
+    def __init__(self, members, include_softening: bool):
         self.members = members
-        self.intact_yield_points_results: tuple = self.get_intact_yield_points_results()
+        self.include_softening = include_softening
+        self.intact_yield_points_results = self.get_intact_yield_points_results()
         self.intact_points: list = self.intact_yield_points_results.intact_points
         self.intact_pieces: list = self.intact_yield_points_results.intact_pieces
         self.intact_components_count = self.intact_yield_points_results.intact_components_count
@@ -143,7 +173,6 @@ class StructureYieldSpecs:
         self.intact_h = self.create_intact_h()
         self.intact_w = self.create_intact_w()
         self.intact_cs = self.create_intact_cs()
-        self.yield_points_indices = self.get_yield_points_indices()
 
     def get_intact_yield_points_results(self):
         intact_points = []
@@ -151,6 +180,8 @@ class StructureYieldSpecs:
         intact_components_count = 0
         point_num = 0
         piece_num = 0
+        softening_var_num = 0
+        process_softening = self.include_softening
         for member_num, member in enumerate(self.members):
             for point in member.yield_specs.yield_points:
                 point.ref_member_num = member_num
@@ -161,6 +192,11 @@ class StructureYieldSpecs:
                     piece.num_in_structure = piece_num
                     intact_pieces.append(piece)
                     piece_num += 1
+                if process_softening:
+                    for softening_var in point.softening_vars:
+                        softening_var.ref_yield_point_num = point_num
+                        softening_var.num_in_structure = softening_var_num
+                        softening_var_num += 1
                 intact_components_count += point.components_count
                 point_num += 1
         return IntactYieldPointsResults(
@@ -208,17 +244,3 @@ class StructureYieldSpecs:
         for i, yield_point in enumerate(self.intact_points):
             intact_cs[2 * i:2 * i + 2] = yield_point.cs
         return intact_cs
-
-    # TODO: can't we get yield point piece numbers from yield_points data?
-    def get_yield_points_indices(self):
-        yield_points_indices = []
-        index_counter = 0
-        for yield_point in self.intact_points:
-            yield_points_indices.append(
-                {
-                    "begin": index_counter,
-                    "end": index_counter + yield_point.pieces_count - 1,
-                }
-            )
-            index_counter += yield_point.pieces_count
-        return yield_points_indices

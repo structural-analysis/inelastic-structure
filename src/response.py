@@ -40,11 +40,11 @@ class DesiredResponse(list, Enum):
     ]
     PLATE2D = [
         "load_levels",
-        "nodal_disp",
-        "nodal_strains",
-        "nodal_stresses",
         "members_disps",
         "members_nodal_forces",
+        "nodal_disp",
+        "nodal_moments",
+        "members_nodal_moments",
     ]
 
 
@@ -70,6 +70,10 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
 
         members_nodal_forces_sensitivity = initial_analysis.members_nodal_forces_sensitivity
         members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
+
+        members_nodal_moments_sensitivity = initial_analysis.members_nodal_moments_sensitivity
+        members_nodal_moments = np.zeros([increments_count, structure.members_count], dtype=object)
+        nodal_moments = np.zeros([increments_count, 1], dtype=object)
 
         members_disps_sensitivity = initial_analysis.members_disps_sensitivity
         members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
@@ -150,6 +154,13 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 }
             )
 
+        if has_any_response(members_nodal_moments):
+            responses.update(
+                {
+                    "nodal_moments": nodal_moments,
+                }
+            )
+
     elif not structure.is_inelastic:  # if structure is elastic
         # for elastic analysis, there is only one increment so for responses size we use 1.
         increments_count = 1
@@ -165,6 +176,9 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         nodal_disp[0, :] = structure.limits["load_limit"][0] * initial_analysis.elastic_nodal_disp
         members_disps[0, :, :] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_disps
         members_nodal_forces[0, :, :] = structure.limits["load_limit"][0] * initial_analysis.elastic_members_nodal_forces
+
+        if has_any_response(members_nodal_moments):
+            nodal_moments[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_moments)
 
         responses = {
             "load_levels": load_levels,
@@ -187,6 +201,14 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     "nodal_stresses": nodal_stresses,
                 }
             )
+
+        if has_any_response(members_nodal_moments):
+            responses.update(
+                {
+                    "nodal_moments": nodal_moments,
+                }
+            )
+
     return responses
 
 

@@ -2,6 +2,7 @@ import numpy as np
 from scipy.linalg import cho_solve
 from dataclasses import dataclass
 from line_profiler import profile
+from functools import lru_cache
 
 
 @dataclass
@@ -21,7 +22,7 @@ class StaticSensitivity:
     members_disps: np.array
     members_nodal_strains: np.array
     members_nodal_stresses: np.array
-
+    members_nodal_moments: np.array
 
 @dataclass
 class DynamicSensitivity:
@@ -170,6 +171,7 @@ def get_sensitivity(structure, loads):
     members_disps_sensitivity = np.zeros((structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
     members_nodal_strains_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
     members_nodal_stresses_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
+    members_nodal_moments_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
     pv_column = 0
 
     for member_num, member in enumerate(members):
@@ -209,18 +211,23 @@ def get_sensitivity(structure, loads):
                 affected_member_response = structure.members[affected_member_num].get_response(affected_member_disp, fixed_external, fixed_internal)
                 affected_member_nodal_force = affected_member_response.nodal_force
                 affected_member_yield_components_force = affected_member_response.yield_components_force
+
+                # FIXME: GENERALIZE PLEASE
+                # for wall and plate members:
                 if member.__class__.__name__ in ["WallMember", "PlateMember"]:
-                    # FIXME: GENERALIZE PLEASE
                     if member_num == affected_member_num:
                         udet = structure.members[affected_member_num].udets.T[comp_num]
                         affected_member_yield_components_force -= udet.T
                     affected_member_nodal_strains = affected_member_response.nodal_strains
                     affected_member_nodal_stresses = affected_member_response.nodal_stresses
+                    affected_member_nodal_moments = affected_member_response.nodal_moments
                     members_nodal_strains_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_strains, (0, structure.max_member_nodal_components_count - affected_member_nodal_strains.size))
                     members_nodal_stresses_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_stresses, (0, structure.max_member_nodal_components_count - affected_member_nodal_stresses.size))
+                    members_nodal_moments_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_moments, (0, structure.max_member_nodal_components_count - affected_member_nodal_moments.size))
 
                 members_nodal_forces_sensitivity[affected_member_num, :, pv_column] = affected_member_nodal_force
                 members_disps_sensitivity[affected_member_num, :, pv_column] = affected_member_disp
+
                 pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
                 current_affected_member_ycns = current_affected_member_ycns + structure.members[affected_member_num].yield_specs.components_count
             pv_column += 1
@@ -232,6 +239,7 @@ def get_sensitivity(structure, loads):
         members_disps=members_disps_sensitivity,
         members_nodal_strains=members_nodal_strains_sensitivity,
         members_nodal_stresses=members_nodal_stresses_sensitivity,
+        members_nodal_moments=members_nodal_moments_sensitivity,
     )
     return sensitivity
 

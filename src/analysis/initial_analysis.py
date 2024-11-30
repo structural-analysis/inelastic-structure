@@ -41,7 +41,7 @@ class InitialData:
     intact_points_count: int
     intact_components_count: int
     intact_pieces_count: int
-    yield_points_indices: list
+    # yield_points_indices: list
     intact_phi: np.array
     intact_q: np.array
     intact_h: np.array
@@ -67,7 +67,6 @@ class InitialAnalysis:
         self.initial_data.intact_points_count = self.structure.yield_specs.intact_points_count
         self.initial_data.intact_components_count = self.structure.yield_specs.intact_components_count
         self.initial_data.intact_pieces_count = self.structure.yield_specs.intact_pieces_count
-        self.initial_data.yield_points_indices = self.structure.yield_specs.yield_points_indices
         self.initial_data.intact_phi = self.structure.yield_specs.intact_phi
         self.initial_data.intact_q = self.structure.yield_specs.intact_q
         self.initial_data.intact_h = self.structure.yield_specs.intact_h
@@ -91,6 +90,7 @@ class InitialAnalysis:
                 self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
                 self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
                 self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
+                self.members_nodal_moments_sensitivity = sensitivity.members_nodal_moments
 
                 self.analysis_data.p0 = internal_responses.p0
                 self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)

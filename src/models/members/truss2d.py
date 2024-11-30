@@ -29,7 +29,7 @@ class Mass:
 
 
 class Truss2DMember:
-    def __init__(self, num: int, nodes: tuple[Node, Node], section: Truss2DSection, mass: Mass = None):
+    def __init__(self, num: int, nodes: tuple[Node, Node], section: Truss2DSection, include_softening: bool, mass: Mass = None):
         self.num = num
         self.section = section
         self.yield_points_count = 1
@@ -38,7 +38,11 @@ class Truss2DMember:
         self.node_dofs_count = 2
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.nodal_components_count = self.nodes_count * self.section.yield_specs.components_count
-        self.yield_specs = MemberYieldSpecs(self.section, points_count=self.yield_points_count)
+        self.yield_specs = MemberYieldSpecs(
+            section=self.section,
+            points_count=self.yield_points_count,
+            include_softening=include_softening,
+        )
         self.l = self._length()
         self.mass = mass if mass else None
         self.m = self._mass() if mass else None
