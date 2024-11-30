@@ -261,7 +261,7 @@ def create_frame3d_masses(example_name):
     return frame_masses
 
 
-def create_truss2d_members(example_name, node_dofs_count, nodes, general_properties):
+def create_truss2d_members(example_name, node_dofs_count, nodes, general_properties, include_softening):
     truss2d_members_path = os.path.join(examples_dir, example_name, truss2d_members_file)
     truss2d_sections = create_truss2d_sections(example_name, general_properties)
     truss2d_masses = create_truss2d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -283,6 +283,7 @@ def create_truss2d_members(example_name, node_dofs_count, nodes, general_propert
                 Truss2DMember(
                     num=member_num,
                     section=truss2d_section,
+                    include_softening=include_softening,
                     nodes=(
                         nodes[int(split_nodes[0])],
                         nodes[int(split_nodes[1])],
@@ -293,7 +294,7 @@ def create_truss2d_members(example_name, node_dofs_count, nodes, general_propert
     return truss2d_members
 
 
-def create_frame2d_members(example_name, node_dofs_count, nodes, general_properties):
+def create_frame2d_members(example_name, node_dofs_count, nodes, general_properties, include_softening):
     frame_members_path = os.path.join(examples_dir, example_name, frame2d_members_file)
     frame_sections = create_frame2d_sections(example_name, general_properties)
     frame_masses = create_frame2d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -315,6 +316,7 @@ def create_frame2d_members(example_name, node_dofs_count, nodes, general_propert
                 Frame2DMember(
                     num=member_num,
                     section=frame_section,
+                    include_softening=include_softening,
                     nodes=(
                         nodes[int(split_nodes[0])],
                         nodes[int(split_nodes[1])],
@@ -326,7 +328,7 @@ def create_frame2d_members(example_name, node_dofs_count, nodes, general_propert
     return frame_members
 
 
-def create_frame3d_members(example_name, node_dofs_count, nodes, general_properties):
+def create_frame3d_members(example_name, node_dofs_count, nodes, general_properties, include_softening):
     frame_members_path = os.path.join(examples_dir, example_name, frame3d_members_file)
     frame_sections = create_frame3d_sections(example_name, general_properties)
     frame_masses = create_frame3d_masses(example_name) if general_properties.get("dynamic_analysis") else {}
@@ -348,6 +350,7 @@ def create_frame3d_members(example_name, node_dofs_count, nodes, general_propert
                 Frame3DMember(
                     num=member_num,
                     section=frame_section,
+                    include_softening=include_softening,
                     nodes=(
                         nodes[int(split_nodes[0])],
                         nodes[int(split_nodes[1])],
@@ -359,7 +362,7 @@ def create_frame3d_members(example_name, node_dofs_count, nodes, general_propert
     return frame_members
 
 
-def create_plate_members(example_name, nodes, node_dofs_count):
+def create_plate_members(example_name, nodes, node_dofs_count, include_softening):
     plate_members_path = os.path.join(examples_dir, example_name, plate_members_file)
     plate_sections = create_plate_sections(example_name)
     plate_members = []
@@ -382,6 +385,7 @@ def create_plate_members(example_name, nodes, node_dofs_count):
                 PlateMember(
                     num=member_num,
                     section=plate_section,
+                    include_softening=include_softening,
                     element_type=element_type,
                     nodes=tuple(final_nodes)
                 )
@@ -389,7 +393,7 @@ def create_plate_members(example_name, nodes, node_dofs_count):
     return plate_members
 
 
-def create_wall_members(example_name, nodes, node_dofs_count):
+def create_wall_members(example_name, nodes, node_dofs_count, include_softening):
     wall_members_path = os.path.join(examples_dir, example_name, wall_members_file)
     wall_sections = create_wall_sections(example_name)
     wall_members = []
@@ -412,6 +416,7 @@ def create_wall_members(example_name, nodes, node_dofs_count):
                 WallMember(
                     num=member_num,
                     section=wall_section,
+                    include_softening=include_softening,
                     element_type=element_type,
                     nodes=tuple(final_nodes)
                 )
@@ -500,6 +505,12 @@ def get_structure_input(example_name):
 
     general_properties = get_general_properties(example_name)
     structure_type = general_properties["structure_type"].upper()
+
+    include_softening = False
+    if general_properties["inelastic"]["enabled"]:
+        if general_properties["inelastic"]["include_softening"]:
+            include_softening = True
+
     node_dofs_count = StructureNodeDOF[structure_type]
     initial_nodes = create_initial_nodes(example_name, structure_dim=general_properties["structure_dim"])
     nodal_boundaries = create_nodal_boundaries(example_name, initial_nodes=initial_nodes)
@@ -510,6 +521,7 @@ def get_structure_input(example_name):
         nodes=initial_nodes,
         general_properties=general_properties,
         node_dofs_count=node_dofs_count,
+        include_softening=include_softening,
     )
 
     frame2d_members = create_frame2d_members(
@@ -517,6 +529,7 @@ def get_structure_input(example_name):
         nodes=initial_nodes,
         general_properties=general_properties,
         node_dofs_count=node_dofs_count,
+        include_softening=include_softening,
     )
 
     frame3d_members = create_frame3d_members(
@@ -524,18 +537,21 @@ def get_structure_input(example_name):
         general_properties=general_properties,
         nodes=initial_nodes,
         node_dofs_count=node_dofs_count,
+        include_softening=include_softening,
     )
 
     plate_members = create_plate_members(
         example_name=example_name,
         nodes=initial_nodes,
         node_dofs_count=node_dofs_count,
+        include_softening=include_softening,
     )
 
     wall_members = create_wall_members(
         example_name=example_name,
         nodes=initial_nodes,
         node_dofs_count=node_dofs_count,
+        include_softening=include_softening,
     )
 
     limits = {

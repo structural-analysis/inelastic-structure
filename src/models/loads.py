@@ -96,6 +96,5 @@ class Loads:
         condensed_load = reduced_pt - np.dot(np.transpose(structure.reduced_k0t), np.dot(structure.reduced_k00_inv, reduced_p0))
         return condensed_load, reduced_p0
 
-
     def get_modal_load(self, load, modes):
         return np.dot(np.transpose(modes), load)

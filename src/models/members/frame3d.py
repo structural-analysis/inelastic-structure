@@ -10,9 +10,9 @@ from ..yield_models import MemberYieldSpecs
 class Response:
     nodal_force: np.array
     yield_components_force: np.array
-    nodal_strains: np.array = np.array(np.zeros([1, 1]))
-    nodal_stresses: np.array = np.array(np.zeros([1, 1]))
-    nodal_moments: np.array = np.array(np.zeros([1, 1]))
+    nodal_strains: np.array = np.empty(0)
+    nodal_stresses: np.array = np.empty(0)
+    nodal_moments: np.array = np.empty(0)
 
 
 class Mass:
@@ -21,17 +21,22 @@ class Mass:
 
 
 class Frame3DMember:
-    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, roll_angle: float = 0, mass: Mass = None):
+    def __init__(self, num: int, nodes: tuple[Node, Node], ends_fixity, section: Frame3DSection, include_softening: bool, roll_angle: float = 0, mass: Mass = None):
         self.num = num
+        self.section = section
         self.yield_points_count = 2
         self.nodes = nodes
         self.nodes_count = len(self.nodes)
         self.node_dofs_count = 6
         self.dofs_count = self.node_dofs_count * self.nodes_count
+        self.nodal_components_count = self.nodes_count * self.section.yield_specs.components_count
         # ends_fixity: one of following: fix_fix, hinge_fix, fix_hinge, hinge_hinge
         self.ends_fixity = ends_fixity
-        self.section = section
-        self.yield_specs = MemberYieldSpecs(self.section, points_count=self.yield_points_count)
+        self.yield_specs = MemberYieldSpecs(
+            section=self.section,
+            points_count=self.yield_points_count,
+            include_softening=include_softening,
+        )
         self.roll_angle = np.deg2rad(roll_angle)
         self.l = self._length()
         self.mass = mass if mass else None

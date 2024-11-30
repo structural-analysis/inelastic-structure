@@ -1,11 +1,10 @@
 all = [
-        # "3story-static-inelastic-softening",    # still not fixed after sifting
         # "plate-semiconfined-inelastic",  # possible-bifurcation # wierd behavior on multiple runs # infinite loop in sifting
         # "3d-simple-beam-static-inelastic",  # possible bifurcation
 
         # STATIC EXAMPLES:
-        "truss-kassimali-115-static-elastic",
-        "truss-kassimali-115-static-inelastic",
+        # "truss-kassimali-115-static-elastic",
+        # "truss-kassimali-115-static-inelastic",
         "simple-beam-static-elastic",
         "simple-beam-static-inelastic",
         "torre-static-elastic",
@@ -14,6 +13,7 @@ all = [
         "tripod-unload",
         "3story-static-elastic",
         "3story-static-inelastic-perfect",
+        "3story-static-inelastic-softening",
         "3d-2side-static-elastic",
         "3d-simple-beam-static-elastic",
         "3d-2side-static-inelastic",
@@ -38,10 +38,11 @@ all = [
         "plate-4element-inelastic-q8r",
         "plate-9element-confined-inelastic",
         "plate-confined-inelastic",
+        "plate-curved-coarse",
 
         # DYNAMIC EXAMPLES:
-        "truss-kassimali-115-dynamic-elastic",
-        "truss-kassimali-115-dynamic-inelastic",
+        # "truss-kassimali-115-dynamic-elastic",
+        # "truss-kassimali-115-dynamic-inelastic",
         "3d-simple-beam-dynamic-inelastic",
         "simple-beam-dynamic-elastic",
         "torre-dynamic-elastic",
@@ -78,6 +79,7 @@ statics = statics + [
     "plate-4element-inelastic-q8r",
     "plate-9element-confined-inelastic",
     "plate-confined-inelastic",
+    "plate-curved-coarse",
     "tripod-corner",
     "tripod-unload",
 ]
@@ -92,6 +94,7 @@ two_d_frames = [
     "tripod-unload",
     "3story-static-elastic",
     "3story-static-inelastic-perfect",
+    "3story-static-inelastic-softening",
     "simple-beam-dynamic-elastic",
     "torre-dynamic-elastic",
     "1story-dynamic-elastic",
@@ -110,7 +113,8 @@ elastics = [analysis for analysis in all if "-elastic" in analysis]
 inelastics = [analysis for analysis in all if "-inelastic" in analysis]
 inelastics = inelastics + [
     "tripod-corner",
-    "tripod-unload", 
+    "tripod-unload",
+    "plate-curved-coarse",
 ]
 
 

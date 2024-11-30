@@ -41,7 +41,7 @@ class Softening:
         self.h = self._get_h(yield_specs)
         self.q = self._get_q(yield_specs)
         self.w = np.matrix([[-1, -1], [1, 0]])
-        self.cs = np.matrix([[self.ep1], [self.ep2 - self.ep1]])
+        self.cs = np.matrix([self.ep1, self.ep2 - self.ep1])
 
     def _get_slope(self):
         # for normalization divided by self.mp:
@@ -53,7 +53,7 @@ class Softening:
         return h
 
     def _get_q(self, yield_specs):
-        q = np.matrix(np.zeros([2, yield_specs.pieces_count]))
+        q = np.zeros([2, yield_specs.pieces_count])
         q[0, :] = np.linalg.norm(yield_specs.phi, axis=0)
         return q
 

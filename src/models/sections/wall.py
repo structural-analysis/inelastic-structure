@@ -56,20 +56,20 @@ class Softening:
         self.slope = self._get_slope()
         self.h = self._get_h(yield_specs)
         self.q = self._get_q(yield_specs)
-        self.w = np.matrix([[-1, -1], [1, 0]])
-        self.cs = np.matrix([[self.ep1], [self.ep2 - self.ep1]])
+        self.w = np.array([[-1, -1], [1, 0]])
+        self.cs = np.array([self.ep1, self.ep2 - self.ep1])
 
     def _get_slope(self):
         # for normalization divided by self.mp:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
     def _get_h(self, yield_specs):
-        h = np.matrix(np.zeros([yield_specs.pieces_count, 2]))
+        h = np.zeros([yield_specs.pieces_count, 2])
         h[:, 0] = self.slope
         return h
 
     def _get_q(self, yield_specs):
-        q = np.matrix(np.zeros([2, yield_specs.pieces_count]))
+        q = np.zeros([2, yield_specs.pieces_count])
         q[0, :] = np.linalg.norm(yield_specs.phi, axis=0)
         return q
 
@@ -81,7 +81,7 @@ class WallSection:
         self.nonlinear = Nonlinear(self.material, input["nonlinear"])
         self.yield_specs = YieldSpecs(self.nonlinear)
         self.softening = Softening(self.yield_specs, input["softening"])
-        self.c = np.matrix([[1, self.material.nu, 0],
+        self.c = np.array([[1, self.material.nu, 0],
                             [self.material.nu, 1, 0],
                             [0, 0, (1 - self.material.nu) / 2]])
         self.ce = (self.material.e / (1 - self.material.nu ** 2)) * self.c

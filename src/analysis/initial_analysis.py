@@ -42,7 +42,7 @@ class InitialData:
     intact_points_count: int
     intact_components_count: int
     intact_pieces_count: int
-    yield_points_indices: list
+    # yield_points_indices: list
     intact_phi: np.array
     intact_q: np.array
     intact_h: np.array
@@ -68,7 +68,6 @@ class InitialAnalysis:
         self.initial_data.intact_points_count = self.structure.yield_specs.intact_points_count
         self.initial_data.intact_components_count = self.structure.yield_specs.intact_components_count
         self.initial_data.intact_pieces_count = self.structure.yield_specs.intact_pieces_count
-        self.initial_data.yield_points_indices = self.structure.yield_specs.yield_points_indices
         self.initial_data.intact_phi = self.structure.yield_specs.intact_phi
         self.initial_data.intact_q = self.structure.yield_specs.intact_q
         self.initial_data.intact_h = self.structure.yield_specs.intact_h
@@ -78,7 +77,7 @@ class InitialAnalysis:
         if self.analysis_type is AnalysisType.STATIC:
             self.total_load = self.loads.get_total_load(self.structure, self.loads)
             self.elastic_nodal_disp = get_nodal_disp(self.structure, self.loads, self.total_load)
-            self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp[0, 0])
+            self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp)
             internal_responses = get_internal_responses(self.structure, self.elastic_members_disps)
             self.elastic_members_nodal_forces = internal_responses.members_nodal_forces
             self.elastic_members_nodal_strains = internal_responses.members_nodal_strains
@@ -92,9 +91,10 @@ class InitialAnalysis:
                 self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
                 self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
                 self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
+                self.members_nodal_moments_sensitivity = sensitivity.members_nodal_moments
 
                 self.analysis_data.p0 = internal_responses.p0
-                self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp[0, 0])
+                self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
                 self.analysis_data.pv = sensitivity.pv
                 self.analysis_data.dv = get_nodal_disp_limits_sensitivity_rows(
                     structure=self.structure,
@@ -123,9 +123,9 @@ class InitialAnalysis:
             self.elastic_nodal_disp_history = np.zeros((self.time_steps, structure.dofs_count))
             self.elastic_members_disps_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count))
             self.elastic_members_nodal_forces_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count))
-            self.elastic_members_nodal_strains_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_components_count))
-            self.elastic_members_nodal_stresses_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_components_count))
-            self.elastic_members_nodal_moments_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_components_count))
+            self.elastic_members_nodal_strains_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_nodal_components_count))
+            self.elastic_members_nodal_stresses_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_nodal_components_count))
+            self.elastic_members_nodal_moments_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_nodal_components_count))
 
             if self.structure.is_inelastic:
                 # self.nodal_disp_sensitivity_history = np.zeros((self.time_steps, structure.dofs_count, structure.yield_specs.intact_components_count))
@@ -167,9 +167,9 @@ class InitialAnalysis:
         internal_responses = get_internal_responses(self.structure, self.elastic_members_disps)
 
         self.elastic_members_nodal_forces_history[time_step, :, :] = internal_responses.members_nodal_forces
-        self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
-        self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
-        self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
+        # self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
+        # self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
+        # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
 
         if self.structure.is_inelastic:
             self.p0_prev = self.p0_history[time_step - 1]
