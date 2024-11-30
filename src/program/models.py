@@ -507,19 +507,22 @@ class Sifting:
             basic_variables_prev=basic_variables_prev,
             landa_var=landa_var,
         )
-        j = modified_structure_sifted_yield_pieces_indices
+        j = np.array(modified_structure_sifted_yield_pieces_indices)
         m = active_pms
         m.remove(landa_var)
-        v = active_pms_rows
+        m = np.array(m)
+        v = np.array(active_pms_rows)
         u = active_pms_rows[:]
         u.remove(landa_row)
         u.sort()
         u.append(landa_row)
+        u = np.array(u)
 
-        a_sensitivity_part = phi.T[j, :] * pv * phi[:, m]
-        a_elastic_part = phi.T[j, :] * p0
-        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part), axis=1)
-        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated * b_matrix_inv_prev[np.ix_(u, v)]
+        a_sensitivity_part = phi.T[j, :] @ pv @ phi[:, m]
+        a_elastic_part = phi.T[j, :] @ p0
+
+        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part.reshape(-1, 1)), axis=1)
+        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated @ b_matrix_inv_prev[np.ix_(u, v)]
         return b_matrix_inv_prev
 
     def get_active_pms_stats(self, basic_variables_prev, landa_var):

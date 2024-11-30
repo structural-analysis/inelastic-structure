@@ -33,3 +33,6 @@ to use:
 add a @profile decorator above the function (no need to import anything)
 run the code using:
 kernprof -l -v run.py
+
+## to run tests
+python -m test

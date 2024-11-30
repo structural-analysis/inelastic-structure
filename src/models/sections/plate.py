@@ -55,20 +55,20 @@ class Softening:
         self.slope = self._get_slope()
         self.h = self._get_h(yield_specs)
         self.q = self._get_q(yield_specs)
-        self.w = np.matrix([[-1, -1], [1, 0]])
-        self.cs = np.matrix([[self.ep1], [self.ep2 - self.ep1]])
+        self.w = np.array([[-1, -1], [1, 0]])
+        self.cs = np.array([[self.ep1], [self.ep2 - self.ep1]])
 
     def _get_slope(self):
         # for normalization divided by self.mp:
         return (self.alpha - 1) / (self.ep2 - self.ep1)
 
     def _get_h(self, yield_specs):
-        h = np.matrix(np.zeros([yield_specs.pieces_count, 2]))
+        h = np.zeros([yield_specs.pieces_count, 2])
         h[:, 0] = self.slope
         return h
 
     def _get_q(self, yield_specs):
-        q = np.matrix(np.zeros([2, yield_specs.pieces_count]))
+        q = np.zeros([2, yield_specs.pieces_count])
         q[0, :] = np.linalg.norm(yield_specs.phi, axis=0)
         return q
 
@@ -87,15 +87,15 @@ class PlateSection:
         t = self.geometry.thickness
         v = self.material.nu
         e = self.material.e
-        d = np.matrix(np.zeros((5, 5)))
-        cb = np.matrix([
+        d = np.zeros((5, 5))
+        cb = np.array([
             [1, v, 0],
             [v, 1, 0],
             [0, 0, (1 - v) / 2]
         ])
         ceb = ((e * t ** 3) / (12 * (1 - v ** 2))) * cb
-        cs = np.matrix(np.eye(2))
-        ces = ((e * t * w)/(2 * (1 + v))) * cs
+        cs = np.eye(2)
+        ces = ((e * t * w) / (2 * (1 + v))) * cs
         d[0:3, 0:3] = ceb
         d[3:5, 3:5] = ces
         return d

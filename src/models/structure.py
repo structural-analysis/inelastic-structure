@@ -54,7 +54,10 @@ class Structure:
         )
         self.kc = cho_factor(self.reduced_k)
         self.max_member_dofs_count = self.get_max_member_dofs_count()
-        self.max_member_components_count = self.get_max_member_components_count()
+        self.max_member_nodal_components_count = self.get_max_member_nodal_components_count()
+        # assumed that max components count is 3 (must increase in more complicated sections)
+        self.max_section_components_count = 3
+        self.nodal_components_count = self.nodes_count * self.max_section_components_count
 
         if self.analysis_type == "dynamic":
             self.m = self.get_mass()
@@ -263,7 +266,6 @@ class Structure:
         mass_boundaries_mask[self.boundaries_dof] = False
         return mass_dof_mask, zero_mass_dof_mask, mass_boundaries_mask, zero_mass_boundaries_mask
 
-
     def apply_static_condensation(self):
         reduced_ktt = self.apply_boundary_conditions(
             row_boundaries_dof=self.zero_mass_boundaries_mask,
@@ -326,15 +328,12 @@ class Structure:
 
     def undo_disp_condensation(self, ut, u0):
         disp = np.zeros(self.dofs_count)
-        # print(f"{u0.shape=}")
-        # print(f"{type(u0)=}")
-        # print(f"{u0=}")
         disp[self.mass_boundaries_mask] = u0
         disp[self.zero_mass_boundaries_mask] = ut
         return disp
 
     def undo_disp_boundaries(self, reduced_disp):
-        disp = np.zeros((self.dofs_count, 1))
+        disp = np.zeros(self.dofs_count)
         disp[self.boundaries_dof_mask] = reduced_disp
         return disp
 
@@ -380,5 +379,5 @@ class Structure:
     def get_max_member_dofs_count(self):
         return np.max([member.dofs_count for member in self.members])
 
-    def get_max_member_components_count(self):
-        return np.max([member.yield_specs.components_count for member in self.members])
+    def get_max_member_nodal_components_count(self):
+        return np.max([member.nodal_components_count for member in self.members])

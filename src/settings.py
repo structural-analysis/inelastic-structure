@@ -10,7 +10,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "1story-dynamic-inelastic-ll0.3"
+    example_name: str = "plate-9element-confined-inelastic"
     # example_name: str = "3d-4story-3span-dynamic-inelastic"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12

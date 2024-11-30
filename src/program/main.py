@@ -79,7 +79,7 @@ class MahiniMethod:
         self.landa_bar_var = 2 * self.landa_var + 1
         self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
         self.final_inc_phi_pms_prev = final_inc_phi_pms_prev
-    
+
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
 
@@ -94,7 +94,7 @@ class MahiniMethod:
         if self.final_inc_phi_pms_prev is not None:
             self.update_b_for_dynamic_analysis()
             self.negative_b_count = np.count_nonzero(self.b < 0)
-            print(f"{self.b=}")
+
             is_two_phase = True if self.negative_b_count > 0 else False
             if is_two_phase:
                 two_phase_table = self.create_two_phase_table()
@@ -400,7 +400,6 @@ class MahiniMethod:
                     self.landa_var,
                     self.structure_sifted_yield_pieces_current,
                 )
-                print(f"input {plastic_vars_in_basic_variables_prev=}")
 
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
@@ -560,9 +559,7 @@ class MahiniMethod:
                         fpm = fpm_prev
                         will_in_col = fpm.var
                         will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
-                        # print(f"{will_in_col=}")
-                        # print(f"{will_in_col_piece_num_in_structure=}")
-                        # print(f"before update {plastic_vars_in_basic_variables_prev=}")
+
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             increment=increment,
                             plastic_vars_in_basic_variables_prev=plastic_vars_in_basic_variables_prev,
@@ -828,7 +825,6 @@ class MahiniMethod:
         e[:, will_out_row] = eta
         sparse_e = csr_matrix(e)
         sparse_b_inv = csr_matrix(b_matrix_inv)
-        print(f"{b_matrix_inv.shape=}")
         updated_b_matrix_inv = sparse_e.dot(sparse_b_inv)
         return updated_b_matrix_inv.toarray()
 

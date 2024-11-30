@@ -9,11 +9,11 @@ from ..yield_models import MemberYieldSpecs
 
 @dataclass
 class Response:
-    nodal_force: np.matrix
-    yield_components_force: np.matrix
-    nodal_moments: np.matrix
-    nodal_strains: np.matrix = np.matrix(np.zeros([1, 1]))
-    nodal_stresses: np.matrix = np.matrix(np.zeros([1, 1]))
+    nodal_force: np.array
+    yield_components_force: np.array
+    nodal_moments: np.array
+    nodal_strains: np.array = np.empty(0)
+    nodal_stresses: np.array = np.empty(0)
 
 
 @dataclass
@@ -33,6 +33,7 @@ class PlateMember:
         self.nodes_count = len(self.nodes)
         self.node_dofs_count = 3
         self.dofs_count = self.node_dofs_count * self.nodes_count
+        self.nodal_components_count = self.nodes_count * self.section.yield_specs.components_count
         self.gauss_points_count = len(self.gauss_points)
         self.yield_specs = MemberYieldSpecs(section=self.section, points_count=self.gauss_points_count)
         self.k = self.get_stiffness()
@@ -95,7 +96,7 @@ class PlateMember:
         r = natural_point.r
         s = natural_point.s
         if self.element_type in ("Q4", "Q4R"):
-            n = np.matrix([
+            n = np.array([
                 0.25 * (1 - r) * (1 - s),
                 0.25 * (1 + r) * (1 - s),
                 0.25 * (1 + r) * (1 + s),
@@ -112,7 +113,7 @@ class PlateMember:
             n4 = 0.25 * (1 + r) * (1 + s) - 0.5 * (n3 + n5)
             n6 = 0.25 * (1 - r) * (1 + s) - 0.5 * (n5 + n7)
 
-            n = np.matrix([n0, n1, n2, n3, n4, n5, n6, n7])
+            n = np.array([n0, n1, n2, n3, n4, n5, n6, n7])
         return n
 
     def get_extrapolated_shape_functions(self, natural_point):
@@ -120,7 +121,7 @@ class PlateMember:
         r = natural_point.r
         s = natural_point.s
         if self.element_type in ("Q4", "Q8R"):
-            n = np.matrix([
+            n = np.array([
                 0.25 * (1 - r) * (1 - s),
                 0.25 * (1 + r) * (1 - s),
                 0.25 * (1 + r) * (1 + s),
@@ -147,20 +148,20 @@ class PlateMember:
         s = natural_point.s
         nodes = self.nodes
         if self.element_type in ("Q4", "Q4R"):
-            j = 0.25 * np.matrix([
+            j = 0.25 * np.array([
                 [-(1 - s), (1 - s), (1 + s), -(1 + s)],
                 [-(1 - r), -(1 + r), (1 + r), (1 - r)],
-            ]) * np.matrix([
+            ]) @ np.array([
                 [nodes[0].x, nodes[0].y],
                 [nodes[1].x, nodes[1].y],
                 [nodes[2].x, nodes[2].y],
                 [nodes[3].x, nodes[3].y],
             ])
         elif self.element_type in ("Q8", "Q8R"):
-            j = 0.25 * np.matrix([
+            j = 0.25 * np.array([
                 [-2 * r * s + 2 * r - s ** 2 + s, 4 * r * (s - 1), -2 * r * s + 2 * r + s ** 2 - s, 2 - 2 * s ** 2, 2 * r * s + 2 * r + s ** 2 + s, -4 * r * (s + 1), 2 * r * s + 2 * r - s ** 2 - s, 2 * s ** 2 - 2],
                 [-r ** 2 - 2 * r * s + r + 2 * s, 2 * r ** 2 - 2, -r ** 2 + 2 * r * s - r + 2 * s, -4 * s * (r + 1), r ** 2 + 2 * r * s + r + 2 * s, 2 - 2 * r ** 2, r ** 2 - 2 * r * s - r + 2 * s, 4 * s * (r - 1)],
-            ]) * np.matrix([
+            ]) @ np.array([
                 [nodes[0].x, nodes[0].y],
                 [nodes[1].x, nodes[1].y],
                 [nodes[2].x, nodes[2].y],
@@ -177,13 +178,13 @@ class PlateMember:
         r = natural_point.r
         s = natural_point.s
         j = self.get_jacobian(natural_point)
-        b = np.matrix(np.zeros((5, 3 * self.nodes_count)))
+        b = np.zeros((5, 3 * self.nodes_count))
 
         if self.element_type in ("Q4", "Q4R"):
-            n = 0.25 * np.matrix([
+            n = 0.25 * np.array([
                 [(1 - r) * (1 - s), (1 + r) * (1 - s), (1 + r) * (1 + s), (1 - r) * (1 + s)],
             ])
-            dn = 0.25 * np.linalg.inv(j) * np.matrix([
+            dn = 0.25 * np.linalg.inv(j) @ np.array([
                 [-(1 - s), +(1 - s), +(1 + s), -(1 + s)],
                 [-(1 - r), -(1 + r), +(1 + r), +(1 - r)],
             ])
@@ -197,9 +198,9 @@ class PlateMember:
             n3 = 0.25 * (1 + r) * (1 - s) - 0.5 * (n2 + n4)
             n5 = 0.25 * (1 + r) * (1 + s) - 0.5 * (n4 + n6)
             n7 = 0.25 * (1 - r) * (1 + s) - 0.5 * (n6 + n8)
-            n = np.matrix([[n1, n2, n3, n4, n5, n6, n7, n8]])
+            n = np.array([[n1, n2, n3, n4, n5, n6, n7, n8]])
 
-            dn = 0.25 * np.linalg.inv(j) * np.matrix([
+            dn = 0.25 * np.linalg.inv(j) @ np.array([
                 [-2 * r * s + 2 * r - s ** 2 + s, 4 * r * (s - 1), -2 * r * s + 2 * r + s ** 2 - s, 2 - 2 * s ** 2, 2 * r * s + 2 * r + s ** 2 + s, -4 * r * (s + 1), 2 * r * s + 2 * r - s ** 2 - s, 2 * s ** 2 - 2],
                 [-r ** 2 - 2 * r * s + r + 2 * s, 2 * r ** 2 - 2, -r ** 2 + 2 * r * s - r + 2 * s, -4 * s * (r + 1), r ** 2 + 2 * r * s + r + 2 * s, 2 - 2 * r ** 2, r ** 2 - 2 * r * s - r + 2 * s, 4 * s * (r - 1)],
             ])
@@ -217,26 +218,26 @@ class PlateMember:
         return b
 
     def get_stiffness(self):
-        k = np.matrix(np.zeros((self.dofs_count, self.dofs_count)))
+        k = np.zeros((self.dofs_count, self.dofs_count))
         for gauss_point in self.gauss_points:
             b = self.get_shape_derivatives(gauss_point)
             j = self.get_jacobian(gauss_point)
             j_det = np.linalg.det(j)
-            gauss_point_k = gauss_point.weight * b.T * self.section.d * b * j_det
+            gauss_point_k = gauss_point.weight * b.T @ self.section.d @ b * j_det
             k += gauss_point_k
         return k
 
     def get_transform(self):
-        return np.matrix(np.eye(self.dofs_count))
+        return np.eye(self.dofs_count)
 
     def get_nodal_moments(self, nodal_disp, fixed_internal):
-        nodal_moments = np.matrix(np.zeros((3 * self.nodes_count, 1)))
+        nodal_moments = np.zeros(3 * self.nodes_count)
         i = 0
         for natural_node in self.natural_nodes:
             natural_point_moment = self.get_natural_point_moment(natural_node, nodal_disp, fixed_internal)
-            nodal_moments[i, 0] = natural_point_moment.x
-            nodal_moments[i + 1, 0] = natural_point_moment.y
-            nodal_moments[i + 2, 0] = natural_point_moment.xy
+            nodal_moments[i] = natural_point_moment.x
+            nodal_moments[i + 1] = natural_point_moment.y
+            nodal_moments[i + 2] = natural_point_moment.xy
             i += 3
         return nodal_moments
 
@@ -247,13 +248,13 @@ class PlateMember:
 
         if fixed_internal.any():
             for i in range(self.gauss_points_count):
-                gauss_points_moments[i, :] += fixed_internal[3 * i:3 * (i + 1), 0].T
+                gauss_points_moments[i, :] += fixed_internal[3 * i:3 * (i + 1)]
 
         natural_point_moment = np.dot(gauss_points_moments.T, extrapolated_shape_functions.T)
-        return Moment(x=natural_point_moment[0, 0], y=natural_point_moment[1, 0], xy=natural_point_moment[2, 0])
+        return Moment(x=natural_point_moment[0], y=natural_point_moment[1], xy=natural_point_moment[2])
 
     def get_gauss_points_moments(self, nodal_disp):
-        gauss_points_moments = np.matrix(np.zeros((self.gauss_points_count, 3)))
+        gauss_points_moments = np.zeros((self.gauss_points_count, 3))
         for i, gauss_point in enumerate(self.gauss_points):
             gauss_points_moments[i, 0] = self.get_gauss_point_moment(gauss_point, nodal_disp).x
             gauss_points_moments[i, 1] = self.get_gauss_point_moment(gauss_point, nodal_disp).y
@@ -262,22 +263,22 @@ class PlateMember:
 
     def get_gauss_point_moment(self, gauss_point, nodal_disp):
         gauss_point_b = self.get_shape_derivatives(gauss_point)
-        m = self.section.d * gauss_point_b * nodal_disp
-        return Moment(x=m[0, 0], y=m[1, 0], xy=m[2, 0])
+        m = self.section.d @ gauss_point_b @ nodal_disp
+        return Moment(x=m[0], y=m[1], xy=m[2])
 
     def get_yield_components_force(self, nodal_disp):
-        yield_components_force = np.matrix(np.zeros((3 * self.gauss_points_count, 1)))
+        yield_components_force = np.zeros(3 * self.gauss_points_count)
         i = 0
         for gauss_point in self.gauss_points:
-            yield_components_force[i, 0] = self.get_gauss_point_moment(gauss_point, nodal_disp).x
-            yield_components_force[i + 1, 0] = self.get_gauss_point_moment(gauss_point, nodal_disp).y
-            yield_components_force[i + 2, 0] = self.get_gauss_point_moment(gauss_point, nodal_disp).xy
+            yield_components_force[i] = self.get_gauss_point_moment(gauss_point, nodal_disp).x
+            yield_components_force[i + 1] = self.get_gauss_point_moment(gauss_point, nodal_disp).y
+            yield_components_force[i + 2] = self.get_gauss_point_moment(gauss_point, nodal_disp).xy
             i += 3
         return yield_components_force
 
     def get_unit_distortion(self, gauss_point_component_num):
-        distortion = np.matrix(np.zeros((5, 1)))
-        distortion[gauss_point_component_num, 0] = 1
+        distortion = np.zeros(5)
+        distortion[gauss_point_component_num] = 1
         return distortion
 
     # for element with linear variation of stress
@@ -287,13 +288,13 @@ class PlateMember:
         distortion = self.get_unit_distortion(gauss_point_component_num)
         j = self.get_jacobian(gauss_point)
         j_det = np.linalg.det(j)
-        nodal_force = gauss_point_b.T * self.section.d * distortion * j_det
-        gauss_point_moment = self.section.d * distortion
+        nodal_force = gauss_point_b.T @ self.section.d @ distortion * j_det
+        gauss_point_moment = self.section.d @ distortion
         return nodal_force, gauss_point_moment[0:self.section.yield_specs.components_count]
 
     def get_nodal_forces_from_unit_distortions(self):
-        nodal_forces = np.matrix(np.zeros((self.dofs_count, self.yield_specs.components_count)))
-        gauss_points_moments = np.matrix(np.zeros((self.yield_specs.components_count, self.yield_specs.components_count)))
+        nodal_forces = np.zeros((self.dofs_count, self.yield_specs.components_count))
+        gauss_points_moments = np.zeros((self.yield_specs.components_count, self.yield_specs.components_count))
         component_base_num = 0
         for gauss_point in self.gauss_points:
             for j in range(3):
@@ -307,15 +308,14 @@ class PlateMember:
         # fixed external: fixed external forces like force, moment, ... nodes of a member
 
         if fixed_external is None:
-            fixed_external = np.matrix(np.zeros((self.dofs_count, 1)))
-
+            fixed_external = np.zeros(self.dofs_count)
         if fixed_internal is None:
-            fixed_internal = np.matrix(np.zeros((self.yield_specs.components_count, 1)))
+            fixed_internal = np.zeros(self.yield_specs.components_count)
 
         if fixed_external.any():
-            nodal_force = self.k * nodal_disp + fixed_external
+            nodal_force = self.k @ nodal_disp + fixed_external
         else:
-            nodal_force = self.k * nodal_disp
+            nodal_force = self.k @ nodal_disp
 
         response = Response(
             nodal_force=nodal_force,
@@ -325,7 +325,7 @@ class PlateMember:
         return response
 
     def get_distributed_equivalent_load_vector(self, q):
-        rs = np.matrix(np.zeros((self.nodes_count, 1)))
+        rs = np.zeros(self.nodes_count)
         for gauss_point in self.gauss_points:
             n = self.get_nodal_shape_functions(gauss_point)
             j = self.get_jacobian(gauss_point)
