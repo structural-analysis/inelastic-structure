@@ -9,7 +9,7 @@ if __name__ == "__main__":
     profiler.enable()
 
     # Call the function or code you want to profile
-    run("3d-4story-3span-dynamic-inelastic")
+    run("3d-2side-dynamic-inelastic")
 
     profiler.disable()
     profiler.dump_stats("profile_data.prof")

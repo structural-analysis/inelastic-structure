@@ -1,6 +1,7 @@
 import copy
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, lil_matrix
+# from line_profiler import profile
 
 from .models import FPM, SlackCandidate, Sifting, SiftedResults
 from .functions import zero_out_small_values, print_specific_properties
@@ -58,6 +59,7 @@ class MahiniMethod:
             self.sifted_results_current: SiftedResults = self.sifting.create(scores=initial_scores)
             self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces.copy()
             self.phi = self.sifted_results_current.structure_sifted_phi
+
             # self.q
             # self.h
             # self.w
@@ -117,7 +119,6 @@ class MahiniMethod:
                 self.activated_costs = self.cb.copy()
                 self.costs = c.copy()
 
-
     # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
     def _get_b_column(self):
         yield_pieces_count = self.plastic_vars_count
@@ -140,9 +141,11 @@ class MahiniMethod:
         c[0:self.plastic_vars_count] = 1.0
         return -1 * c
 
+    # @profile
     def _create_table(self):
-        phi_p0 = np.dot(self.phi.T, self.p0)
-        phi_pv_phi = np.dot(self.phi.T, np.dot(self.pv, self.phi))
+        phi_p0 = self.phi.T @ self.p0
+        phi_pv = self.phi.T @ self.pv
+        phi_pv_phi = phi_pv @ self.phi
 
         landa_base_num = self.plastic_vars_count + self.softening_vars_count
         dv_phi = np.dot(self.dv, self.phi)
@@ -168,110 +171,101 @@ class MahiniMethod:
         columns_count = self.primary_vars_count + self.slack_vars_count
         table = np.zeros((self.constraints_count, columns_count))
         table[0:self.constraints_count, 0:self.primary_vars_count] = raw_a
-
-        # Assigning diagonal arrays of slack variables.
-        # TODO: use np.eye instead
-        # j = self.primary_vars_count
-        # for i in range(self.constraints_count):
-        #     table[i, j] = 1.0
-        #     j += 1
         table[:self.constraints_count, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
         return table
 
+    # def _create_table(self):
+    #     # Efficient matrix multiplications using the @ operator
+    #     phi_p0 = self.phi.T @ self.p0  # Shape: (n_p, 1)
+    #     phi_pv_phi = self.phi.T @ self.pv @ self.phi  # Shape: (n_p, n_p)
+    #     dv_phi = self.dv @ self.phi  # Shape: (n_d, n_p)
 
-# def _create_table(self):
-#     # Efficient matrix multiplications using the @ operator
-#     phi_p0 = self.phi.T @ self.p0  # Shape: (n_p, 1)
-#     phi_pv_phi = self.phi.T @ self.pv @ self.phi  # Shape: (n_p, n_p)
-#     dv_phi = self.dv @ self.phi  # Shape: (n_d, n_p)
+    #     # Variables for dimensions
+    #     n_p = self.plastic_vars_count
+    #     n_s = self.softening_vars_count
+    #     n_d = self.disp_limits_count
+    #     n_c = self.constraints_count
+    #     n_v = self.primary_vars_count
+    #     landa_base_num = n_p + n_s
 
-#     # Variables for dimensions
-#     n_p = self.plastic_vars_count
-#     n_s = self.softening_vars_count
-#     n_d = self.disp_limits_count
-#     n_c = self.constraints_count
-#     n_v = self.primary_vars_count
-#     landa_base_num = n_p + n_s
+    #     # List to collect rows for raw_a
+    #     raw_a_rows = []
 
-#     # List to collect rows for raw_a
-#     raw_a_rows = []
+    #     # --- First n_p rows ---
+    #     # Left block: phi_pv_phi (n_p x n_p)
+    #     row0_left = phi_pv_phi
 
-#     # --- First n_p rows ---
-#     # Left block: phi_pv_phi (n_p x n_p)
-#     row0_left = phi_pv_phi
+    #     # Middle block: -self.h (n_p x n_s) or empty if n_s == 0
+    #     row0_middle = -self.h if self.include_softening else np.empty((n_p, 0))
 
-#     # Middle block: -self.h (n_p x n_s) or empty if n_s == 0
-#     row0_middle = -self.h if self.include_softening else np.empty((n_p, 0))
+    #     # Right block: zeros with phi_p0 in the landa column
+    #     right_cols = n_v - n_p - n_s
+    #     row0_right = np.zeros((n_p, right_cols))
+    #     phi_p0 = phi_p0.reshape(-1, 1)  # Ensure phi_p0 is a column vector
+    #     landa_col_index = landa_base_num - n_p - n_s
+    #     row0_right[:, landa_col_index] = phi_p0.flatten()
 
-#     # Right block: zeros with phi_p0 in the landa column
-#     right_cols = n_v - n_p - n_s
-#     row0_right = np.zeros((n_p, right_cols))
-#     phi_p0 = phi_p0.reshape(-1, 1)  # Ensure phi_p0 is a column vector
-#     landa_col_index = landa_base_num - n_p - n_s
-#     row0_right[:, landa_col_index] = phi_p0.flatten()
+    #     # Concatenate blocks horizontally
+    #     row0 = np.hstack((row0_left, row0_middle, row0_right))
+    #     raw_a_rows.append(row0)
 
-#     # Concatenate blocks horizontally
-#     row0 = np.hstack((row0_left, row0_middle, row0_right))
-#     raw_a_rows.append(row0)
+    #     # --- Next n_s rows (if softening is included) ---
+    #     if self.include_softening:
+    #         # Left block: self.q (n_s x n_p)
+    #         row1_left = self.q
 
-#     # --- Next n_s rows (if softening is included) ---
-#     if self.include_softening:
-#         # Left block: self.q (n_s x n_p)
-#         row1_left = self.q
+    #         # Middle block: self.w (n_s x n_s)
+    #         row1_middle = self.w
 
-#         # Middle block: self.w (n_s x n_s)
-#         row1_middle = self.w
+    #         # Right block: zeros (n_s x right_cols)
+    #         row1_right = np.zeros((n_s, right_cols))
 
-#         # Right block: zeros (n_s x right_cols)
-#         row1_right = np.zeros((n_s, right_cols))
+    #         # Concatenate blocks horizontally
+    #         row1 = np.hstack((row1_left, row1_middle, row1_right))
+    #         raw_a_rows.append(row1)
 
-#         # Concatenate blocks horizontally
-#         row1 = np.hstack((row1_left, row1_middle, row1_right))
-#         raw_a_rows.append(row1)
+    #     # --- Row for landa_base_num ---
+    #     row_landa = np.zeros((1, n_v))
+    #     row_landa[0, landa_base_num] = 1.0
+    #     raw_a_rows.append(row_landa)
 
-#     # --- Row for landa_base_num ---
-#     row_landa = np.zeros((1, n_v))
-#     row_landa[0, landa_base_num] = 1.0
-#     raw_a_rows.append(row_landa)
+    #     # --- Displacement limits (if any) ---
+    #     if self.disp_limits.any():
+    #         # Ensure dv_phi has correct shape
+    #         dv_phi = dv_phi.reshape(n_d, -1)
 
-#     # --- Displacement limits (if any) ---
-#     if self.disp_limits.any():
-#         # Ensure dv_phi has correct shape
-#         dv_phi = dv_phi.reshape(n_d, -1)
+    #         # Left block: dv_phi (n_d x n_p)
+    #         pos_disp_left = dv_phi
 
-#         # Left block: dv_phi (n_d x n_p)
-#         pos_disp_left = dv_phi
+    #         # Middle block: zeros (n_d x n_s)
+    #         pos_disp_middle = np.zeros((n_d, n_s))
 
-#         # Middle block: zeros (n_d x n_s)
-#         pos_disp_middle = np.zeros((n_d, n_s))
+    #         # Right block: zeros with self.d0 in the landa column
+    #         pos_disp_right = np.zeros((n_d, right_cols))
+    #         pos_disp_right[:, landa_col_index] = self.d0.flatten()
 
-#         # Right block: zeros with self.d0 in the landa column
-#         pos_disp_right = np.zeros((n_d, right_cols))
-#         pos_disp_right[:, landa_col_index] = self.d0.flatten()
+    #         # Positive displacement limits row
+    #         pos_disp_row = np.hstack((pos_disp_left, pos_disp_middle, pos_disp_right))
+    #         raw_a_rows.append(pos_disp_row)
 
-#         # Positive displacement limits row
-#         pos_disp_row = np.hstack((pos_disp_left, pos_disp_middle, pos_disp_right))
-#         raw_a_rows.append(pos_disp_row)
+    #         # Negative displacement limits row
+    #         neg_disp_row = -pos_disp_row
+    #         raw_a_rows.append(neg_disp_row)
 
-#         # Negative displacement limits row
-#         neg_disp_row = -pos_disp_row
-#         raw_a_rows.append(neg_disp_row)
+    #     # --- Combine all rows ---
+    #     raw_a = np.vstack(raw_a_rows)
 
-#     # --- Combine all rows ---
-#     raw_a = np.vstack(raw_a_rows)
+    #     # --- Create the full table ---
+    #     columns_count = self.primary_vars_count + self.slack_vars_count
+    #     table = np.zeros((self.constraints_count, columns_count))
 
-#     # --- Create the full table ---
-#     columns_count = self.primary_vars_count + self.slack_vars_count
-#     table = np.zeros((self.constraints_count, columns_count))
+    #     # Assign the constructed raw_a to the table
+    #     table[:, :self.primary_vars_count] = raw_a
 
-#     # Assign the constructed raw_a to the table
-#     table[:, :self.primary_vars_count] = raw_a
+    #     # Assign slack variables using an identity matrix
+    #     table[:, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
 
-#     # Assign slack variables using an identity matrix
-#     table[:, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
-
-#     return table
-
+    #     return table
 
     def update_b_for_dynamic_analysis(self):
         # print(f"{self.phi.T=}")
@@ -279,12 +273,9 @@ class MahiniMethod:
         # print(f"{self.final_inc_phi_pms_prev=}")
         # print(f"{self.b[0:self.plastic_vars_count]=}")
         # input()
-        self.b[0:self.plastic_vars_count] = (
-            self.b[0:self.plastic_vars_count] -
-            np.array(
-                np.dot(self.phi.T, np.dot(self.pv_prev, self.final_inc_phi_pms_prev))
-            )
-        )
+        phi_pv_prev = self.phi.T @ self.pv_prev
+        phi_pv_prev_final_inc_phi_pms_prev = phi_pv_prev @ self.final_inc_phi_pms_prev
+        self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - phi_pv_prev_final_inc_phi_pms_prev
 
     def solve(self):
         basic_variables = self.basic_variables
@@ -837,6 +828,7 @@ class MahiniMethod:
         e[:, will_out_row] = eta
         sparse_e = csr_matrix(e)
         sparse_b_inv = csr_matrix(b_matrix_inv)
+        print(f"{b_matrix_inv.shape=}")
         updated_b_matrix_inv = sparse_e.dot(sparse_b_inv)
         return updated_b_matrix_inv.toarray()
 
@@ -966,7 +958,7 @@ class MahiniMethod:
         return scores
 
     def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
-        intact_pms =np.zeros(self.intact_phi.shape[1])
+        intact_pms = np.zeros(self.intact_phi.shape[1])
         for piece in structure_sifted_yield_pieces:
             intact_pms[piece.num_in_structure] = x[piece.sifted_num_in_structure]
         intact_phi_pms = np.dot(self.intact_phi, intact_pms)

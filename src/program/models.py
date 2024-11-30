@@ -1,6 +1,7 @@
-import copy
 import numpy as np
 from dataclasses import dataclass, field
+from scipy.sparse import csr_matrix
+
 from .functions import print_specific_properties
 
 from ..models.yield_models import (
@@ -353,7 +354,9 @@ class Sifting:
             structure_sifted_phi[current_row_start:current_row_end, current_column_start:current_column_end] = yield_point.phi
             current_row_start = current_row_end
             current_column_start = current_column_end
-        return structure_sifted_phi
+
+        sparse_structure_sifted_phi = csr_matrix(structure_sifted_phi)
+        return sparse_structure_sifted_phi
 
     # def get_sifted_q(self):
     #     sifted_q = np.matrix(np.zeros((2 * self.sifted_points_count, self.sifted_pieces_count)))

@@ -1,7 +1,6 @@
 import shutil
 from datetime import datetime
 
-from src.settings import settings
 from src.analysis.initial_analysis import AnalysisType
 from src.analysis.inelastic_analysis import InitialAnalysis, InelasticAnalysis
 from src.aggregate import aggregate_responses
@@ -73,7 +72,3 @@ def get_analysis_type(general_info):
     else:
         type = AnalysisType.STATIC
     return type
-
-
-if __name__ == "__main__":
-    run(example_name=settings.example_name)

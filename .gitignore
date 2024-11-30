@@ -3,7 +3,7 @@
 __pycache__/
 *.xlsx#
 .flake8
-
+*.lprof
 
 # compare/**
 phiP0.csv
