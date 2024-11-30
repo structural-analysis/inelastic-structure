@@ -34,9 +34,7 @@ class Loads:
         self.distributed_load: DistributedLoad = input.get("distributed_load")
 
     def assemble_joint_load(self, structure, loads, time_step=None):
-        # f_total = np.zeros((9, 1))
         f_total = np.zeros((structure.dofs_count, 1))
-        # node_dofs_count = 3
         node_dofs_count = structure.node_dofs_count
         for load in loads:
             load_magnitude = load.magnitude[time_step, 0] if time_step is not None else load.magnitude

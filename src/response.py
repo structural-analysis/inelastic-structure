@@ -2,7 +2,7 @@ import os
 import numpy as np
 from enum import Enum
 
-from .functions import get_elastoplastic_response
+from .functions import get_elastoplastic_response, load_chunk, delete_chunk, get_activated_plastic_points
 from .settings import settings
 from .analysis.initial_analysis import AnalysisType
 
@@ -209,15 +209,12 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         plastic_vars_history = inelastic_analysis.plastic_vars_history
         final_inc_phi_pms_history = inelastic_analysis.final_inc_phi_pms_history
 
-        nodal_disp_sensitivity_history = initial_analysis.nodal_disp_sensitivity_history
-        members_nodal_forces_sensitivity_history = initial_analysis.members_nodal_forces_sensitivity_history
-        members_disps_sensitivity_history = initial_analysis.members_disps_sensitivity_history
-
         elastic_members_nodal_forces_history = initial_analysis.elastic_members_nodal_forces_history
         elastic_members_disps_history = initial_analysis.elastic_members_disps_history
         elastic_nodal_disp_history = initial_analysis.elastic_nodal_disp_history
 
         responses = np.zeros(initial_analysis.time_steps, dtype=object)
+        plastic_points = np.zeros(initial_analysis.time_steps, increments_count, dtype=object)
         for time_step in range(1, initial_analysis.time_steps):
             plastic_vars = plastic_vars_history[time_step, 0]
             phi_pms_history = plastic_vars["phi_pms_history"]
@@ -227,14 +224,18 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             increments_count = len(load_level_history)
             load_levels = np.zeros(increments_count)
 
-            nodal_disp_sensitivity = nodal_disp_sensitivity_history[time_step, :, :]
+            nodal_disp_sensitivity = load_chunk(time_step=time_step, response="nodal_disp")
+            members_nodal_forces_sensitivity = load_chunk(time_step=time_step, response="members_nodal_forces")
+            members_disps_sensitivity = load_chunk(time_step=time_step, response="members_disps")
+
             nodal_disp = np.zeros((increments_count, structure.dofs_count))
-
-            members_nodal_forces_sensitivity = members_nodal_forces_sensitivity_history[time_step, :, :, :]
             members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
-
-            members_disps_sensitivity = members_disps_sensitivity_history[time_step, :, :, :]
             members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
+
+            delete_chunk(time_step=time_step, response="nodal_disp")
+            delete_chunk(time_step=time_step, response="members_nodal_forces")
+            delete_chunk(time_step=time_step, response="members_disps")
+
             for i in range(increments_count):
                 phi_pms = phi_pms_history[i] + final_inc_phi_pms_prev
                 load_level = load_level_history[i]
@@ -263,6 +264,10 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     sensitivity=members_disps_sensitivity,
                 )
                 members_disps[i, :, :] = elastoplastic_members_disps
+
+                # plastic_points[time_step, i] = get_activated_plastic_points(phi_pms=phi_pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
+                # print(f"{activated_plastic_points=}")
+                # input()
             responses[time_step] = {
                 "nodal_disp": nodal_disp,
                 "members_nodal_forces": members_nodal_forces,

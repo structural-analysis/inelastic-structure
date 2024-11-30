@@ -14,6 +14,7 @@ from .functions import (
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
+from ..functions import create_chunk
 
 
 class AnalysisType(str, enum.Enum):
@@ -128,9 +129,9 @@ class InitialAnalysis:
 
 
             if self.structure.is_inelastic:
-                self.nodal_disp_sensitivity_history = np.zeros((self.time_steps, structure.dofs_count, structure.yield_specs.intact_components_count))
-                self.members_nodal_forces_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
-                self.members_disps_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
+                # self.nodal_disp_sensitivity_history = np.zeros((self.time_steps, structure.dofs_count, structure.yield_specs.intact_components_count))
+                # self.members_nodal_forces_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
+                # self.members_disps_sensitivity_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_dofs_count, structure.yield_specs.intact_components_count))
                 self.modal_loads_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
                 
                 self.a2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
@@ -185,9 +186,16 @@ class InitialAnalysis:
             )
             self.pv_prev = self.pv_history[time_step - 1, :, :]
             self.pv_history[time_step, :, :] = sensitivity.pv
-            self.nodal_disp_sensitivity_history[time_step, :, :] = sensitivity.nodal_disp
-            self.members_nodal_forces_sensitivity_history[time_step, :, :, :] = sensitivity.members_nodal_forces
-            self.members_disps_sensitivity_history[time_step, :, :, :] = sensitivity.members_disps
+            # self.nodal_disp_sensitivity_history[time_step, :, :] = sensitivity.nodal_disp
+            create_chunk(time_step=time_step, response="nodal_disp", sensitivity=sensitivity.nodal_disp)
+            # self.members_nodal_forces_sensitivity_history[time_step, :, :, :] = sensitivity.members_nodal_forces
+            create_chunk(time_step=time_step, response="members_nodal_forces", sensitivity=sensitivity.members_nodal_forces)
+            # self.members_disps_sensitivity_history[time_step, :, :, :] = sensitivity.members_disps
+            create_chunk(time_step=time_step, response="members_disps", sensitivity=sensitivity.members_disps)
+            # print(f"{sensitivity.nodal_disp.shape}")
+            # print(f"{sensitivity.members_nodal_forces.shape}")
+            # print(f"{sensitivity.members_disps.shape}")
+            # input()
             self.modal_loads_sensitivity_history[time_step, :, :] = sensitivity.modal_loads
             self.a2_sensitivity_history[time_step, :, :] = sensitivity.a2s
             self.b2_sensitivity_history[time_step, :, :] = sensitivity.b2s
