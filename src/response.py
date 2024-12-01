@@ -151,6 +151,8 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 members_nodal_moments[i, :, :] = elastoplastic_members_nodal_moments
                 nodal_moments[i, :] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_moments)
 
+            plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
+
         responses = {
             "plastic_points": plastic_points,
             "load_levels": load_levels,
@@ -313,8 +315,11 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
 
             responses[time_step] = {
                 "plastic_points": plastic_points,
+                "nodal_disp": nodal_disp,
                 "members_nodal_forces": members_nodal_forces,
                 "members_disps": members_disps,
+                "load_levels": load_levels,
+            }
 
     elif not structure.is_inelastic:  # if structure is elastic
         load_limit = structure.limits["load_limit"][0]
@@ -431,10 +436,6 @@ def write_response_to_file(example_name, response, response_name):
         response_dir = os.path.join(outputs_dir, example_name, str(increment), response_name)
         os.makedirs(response_dir, exist_ok=True)
         response_elements_count = len(np.shape(response[increment]))
-<<<<<<< HEAD
-=======
-
->>>>>>> 528f6fd853ba9b1ba390cfd01c50b4b35576ff72
         if response_elements_count == 0:
             dir = os.path.join(response_dir, "0.csv")
             np.savetxt(fname=dir, X=np.array([response[increment]]), delimiter=",", fmt=f'%.{settings.output_digits}e')

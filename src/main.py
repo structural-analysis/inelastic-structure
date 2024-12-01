@@ -18,11 +18,6 @@ def run(example_name):
     loads_input = get_loads_input(example_name)
     general_info = get_general_properties(example_name)
     structure = Structure(structure_input)
-    # for point in structure.yield_specs.intact_yield_points_results.intact_points:
-    #     for softening_var in point.softening_vars:
-    #         print(f"{softening_var.ref_yield_point_num=}")
-    #         print(f"{softening_var.num_in_yield_point=}")
-    #         print(f"{softening_var.num_in_structure=}")
 
     loads = Loads(loads_input)
     analysis_type = get_analysis_type(general_info)
@@ -43,7 +38,6 @@ def run(example_name):
             if structure.is_inelastic:
                 inelastic_analysis.update_dynamic_time_step(analysis_data=initial_analysis.analysis_data)
                 inelastic_analysis.update_inelasticity_dependent_variables(time_step=time_step, initial_analysis=initial_analysis)
-            # input()
             print("-------------")
     end_time = datetime.now()
     analysis_time = end_time - start_time
@@ -55,7 +49,9 @@ def run(example_name):
     desired_responses = DesiredResponse[structure.type].value
     if structure_type == "inelastic":
         desired_responses.append("plastic_points")
-
+    else:
+        if "plastic_points" in desired_responses:
+            desired_responses = [desired_response for desired_response in desired_responses if desired_response != "plastic_points"]
     if initial_analysis.analysis_type == "static":
         write_static_responses_to_file(
             example_name=example_name,

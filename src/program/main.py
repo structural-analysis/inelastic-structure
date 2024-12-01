@@ -1033,7 +1033,7 @@ class MahiniMethod:
             scores = self.intact_phi.T @ self.pv @ intact_phi_pms + self.intact_phi.T @ self.p0 * load_level - np.ones(self.intact_pieces_count)
         return scores
 
-    def get_unsifted_phi_pms(self, x, structure_sifted_yield_pieces):
+    def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
         intact_pms = np.zeros(self.intact_phi.shape[1])
         for piece in structure_sifted_yield_pieces:
             intact_pms[piece.num_in_structure] = x[piece.sifted_num_in_structure]
