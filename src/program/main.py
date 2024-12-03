@@ -35,7 +35,6 @@ class MahiniMethod:
         self.pv = analysis_data.pv
         self.d0 = analysis_data.d0
         self.dv = analysis_data.dv
-        self.pv_prev = analysis_data.pv_prev
 
         if settings.sifting_type is SiftingType.not_used:
             self.phi = self.intact_phi
@@ -272,9 +271,7 @@ class MahiniMethod:
         # print(f"{self.final_inc_phi_pms_prev=}")
         # print(f"{self.b[0:self.plastic_vars_count]=}")
         # input()
-        phi_pv_prev = self.phi.T @ self.pv_prev
-        phi_pv_prev_final_inc_phi_pms_prev = phi_pv_prev @ self.final_inc_phi_pms_prev
-        self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - phi_pv_prev_final_inc_phi_pms_prev
+        self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - self.phi.T @ self.pv @ self.final_inc_phi_pms_prev
 
     def solve(self):
         basic_variables = self.basic_variables

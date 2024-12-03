@@ -10,6 +10,7 @@ class InelasticAnalysis:
         self.initial_data = initial_analysis.initial_data
         self.analysis_data = initial_analysis.analysis_data
         self.analysis_type = initial_analysis.analysis_type
+
         if self.analysis_type is AnalysisType.STATIC:
             mahini_method = MahiniMethod(initial_data=self.initial_data, analysis_data=self.analysis_data)
             self.plastic_vars = mahini_method.solve()
@@ -52,7 +53,7 @@ class InelasticAnalysis:
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
             elastic_response=initial_analysis.modal_loads[time_step, :],
-            sensitivity=initial_analysis.modal_loads_sensitivity_history[time_step, :, :],
+            sensitivity=initial_analysis.modal_loads_sensitivity,
         )
 
         initial_analysis.a_duhamels[time_step, :] = elastoplastic_a2s

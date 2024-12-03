@@ -9,17 +9,17 @@ def get_elastoplastic_response(load_level, phi_x, elastic_response, sensitivity)
     return elastoplastic_response
 
 
-def create_chunk(time_step, sensitivity, response):
-    np.save(f"temp/{response}-{time_step}.npy", sensitivity)
+def create_chunk(sensitivity, response):
+    np.save(f"temp/{response}.npy", sensitivity)
 
 
-def load_chunk(time_step, response):
-    chunk = np.load(f"temp/{response}-{time_step}.npy")
+def load_chunk(response):
+    chunk = np.load(f"temp/{response}.npy")
     return chunk
 
 
-def delete_chunk(time_step, response):
-    os.remove(f"temp/{response}-{time_step}.npy")
+def delete_chunk(response):
+    os.remove(f"temp/{response}.npy")
 
 
 def get_activated_plastic_points(pms, intact_pieces):

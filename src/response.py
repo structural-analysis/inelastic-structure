@@ -259,6 +259,11 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         elastic_nodal_disp_history = initial_analysis.elastic_nodal_disp_history
 
         responses = np.zeros(initial_analysis.time_steps, dtype=object)
+
+        nodal_disp_sensitivity = load_chunk(response="nodal_disp")
+        members_nodal_forces_sensitivity = load_chunk(response="members_nodal_forces")
+        members_disps_sensitivity = load_chunk(response="members_disps")
+
         for time_step in range(1, initial_analysis.time_steps):
             plastic_vars = plastic_vars_history[time_step, 0]
             pms_history = plastic_vars["pms_history"]
@@ -269,18 +274,10 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             increments_count = len(load_level_history)
             load_levels = np.zeros(increments_count)
 
-            nodal_disp_sensitivity = load_chunk(time_step=time_step, response="nodal_disp")
-            members_nodal_forces_sensitivity = load_chunk(time_step=time_step, response="members_nodal_forces")
-            members_disps_sensitivity = load_chunk(time_step=time_step, response="members_disps")
-
             plastic_points = np.zeros(increments_count, dtype=object)
             nodal_disp = np.zeros((increments_count, structure.dofs_count))
             members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
             members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
-
-            delete_chunk(time_step=time_step, response="nodal_disp")
-            delete_chunk(time_step=time_step, response="members_nodal_forces")
-            delete_chunk(time_step=time_step, response="members_disps")
 
             for i in range(increments_count):
                 phi_pms = phi_pms_history[i] + final_inc_phi_pms_prev
@@ -320,6 +317,10 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 "members_disps": members_disps,
                 "load_levels": load_levels,
             }
+
+        delete_chunk(response="nodal_disp")
+        delete_chunk(response="members_nodal_forces")
+        delete_chunk(response="members_disps")
 
     elif not structure.is_inelastic:  # if structure is elastic
         load_limit = structure.limits["load_limit"][0]

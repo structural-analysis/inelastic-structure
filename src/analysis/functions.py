@@ -35,6 +35,12 @@ class DynamicSensitivity:
     b2s: np.array
 
 
+@dataclass
+class A2B2Sensitivity:
+    a2s: np.array
+    b2s: np.array
+
+
 def get_nodal_disp(structure, loads, total_load):
     reduced_total_load = loads.apply_boundary_conditions(structure.boundaries_dof_mask, total_load)
     reduced_disp = cho_solve(structure.kc, reduced_total_load)
@@ -257,13 +263,13 @@ def get_nodal_disp_limits_sensitivity_rows(structure, nodal_disp_sensitivity):
     return dv
 
 
-def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_modal_loads, total_load, a1s, b1s):
+def get_dynamic_nodal_disp(structure, loads, t1, t2, modes, previous_modal_loads, total_load, a1s, b1s):
     condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
     modal_loads = loads.get_modal_load(condense_load, structure.selected_modes)
     modal_disps, a2s, b2s = get_modal_disp(
         structure=structure,
-        time=time,
-        time_step=time_step,
+        t1=t1,
+        t2=t2,
         previous_modal_loads=previous_modal_loads,
         modal_loads=modal_loads,
         a1s=a1s,
@@ -276,9 +282,7 @@ def get_dynamic_nodal_disp(structure, loads, time, time_step, modes, previous_mo
     return a2s, b2s, modal_loads, nodal_disp
 
 
-def get_modal_disp(structure, time, time_step, previous_modal_loads, modal_loads, a1s, b1s):
-    t1 = time[time_step - 1, 0]
-    t2 = time[time_step, 0]
+def get_modal_disp(structure, t1, t2, previous_modal_loads, modal_loads, a1s, b1s):
     deltat = t2 - t1
 
     wns = np.array(structure.wns[:structure.selected_modes_count])
@@ -380,7 +384,7 @@ def get_disps_duhamel(damping, t2, wns, wds, mns, a2s, b2s):
     return (np.exp(-1 * damping * wns * t2) / (mns * wds)) * (a2s * np.sin(wds * t2) - b2s * np.cos(wds * t2))
 
 
-def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
+def get_dynamic_sensitivity(structure, loads, deltat):
     # modes_count = modes.shape[1]
     selected_modes_count = structure.selected_modes_count
     # fv: equivalent global force vector for a yield component's udef
@@ -428,12 +432,11 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
                 a1s = a1s_empty
                 b1s = b1s_empty
                 initial_modal_loads = initial_modal_load_empty
-
             affected_a2s, affected_b2s, affected_modal_load, affected_struc_disp = get_dynamic_nodal_disp(
                 structure=structure,
                 loads=loads,
-                time=time,
-                time_step=time_step,
+                t1=0,
+                t2=deltat,
                 modes=structure.selected_modes,
                 previous_modal_loads=initial_modal_loads,
                 total_load=fv,
@@ -460,11 +463,67 @@ def get_dynamic_sensitivity(structure, loads, time, time_step, modes):
             pv_column += 1
 
     sensitivity = DynamicSensitivity(
+        modal_loads=modal_load_sensitivity,
+        a2s=a2_sensitivity,
+        b2s=b2_sensitivity,
         pv=pv,
         nodal_disp=nodal_disp_sensitivity,
         members_nodal_forces=members_nodal_forces_sensitivity,
         members_disps=members_disps_sensitivity,
-        modal_loads=modal_load_sensitivity,
+    )
+    return sensitivity
+
+
+def get_a2_b2_sensitivity(structure, loads, t1, t2):
+    selected_modes_count = structure.selected_modes_count
+    # fv: equivalent global force vector for a yield component's udef
+    members = structure.members
+
+    pv_column = 0
+
+    a2_sensitivity = np.zeros((
+        selected_modes_count, structure.yield_specs.intact_components_count
+    ))
+    b2_sensitivity = np.zeros((
+        selected_modes_count, structure.yield_specs.intact_components_count
+    ))
+
+    a1s_empty = np.zeros(selected_modes_count)
+    b1s_empty = np.zeros(selected_modes_count)
+    initial_modal_load_empty = np.zeros(selected_modes_count)
+
+    for member in members:
+        for load in member.udefs.T:
+            fv = np.zeros((structure.dofs_count, 1))
+            global_load = np.dot(member.t.T, load.T)
+            local_node_base_dof = 0
+            for node in member.nodes:
+                global_node_base_dof = structure.node_dofs_count * node.num
+                for i in range(structure.node_dofs_count):
+                    fv[global_node_base_dof + i] = global_load[local_node_base_dof + i]
+                local_node_base_dof += structure.node_dofs_count
+
+                a1s = a1s_empty
+                b1s = b1s_empty
+                initial_modal_loads = initial_modal_load_empty
+            affected_a2s, affected_b2s, _, _ = get_dynamic_nodal_disp(
+                structure=structure,
+                loads=loads,
+                t1=t1,
+                t2=t2,
+                modes=structure.selected_modes,
+                previous_modal_loads=initial_modal_loads,
+                total_load=fv,
+                a1s=a1s,
+                b1s=b1s,
+            )
+
+            a2_sensitivity[:, pv_column] = affected_a2s
+            b2_sensitivity[:, pv_column] = affected_b2s
+
+            pv_column += 1
+
+    sensitivity = A2B2Sensitivity(
         a2s=a2_sensitivity,
         b2s=b2_sensitivity,
     )

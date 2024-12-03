@@ -11,6 +11,7 @@ from .functions import (
     get_nodal_disp_limits,
     get_dynamic_nodal_disp,
     get_dynamic_sensitivity,
+    get_a2_b2_sensitivity,
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
@@ -25,10 +26,9 @@ class AnalysisType(str, enum.Enum):
 @dataclass
 class AnalysisData:
     p0: np.array
-    pv: np.array
     d0: np.array
+    pv: np.array
     dv: np.array
-    pv_prev: np.array = np.zeros([1, 1])
 
 
 @dataclass
@@ -125,15 +125,24 @@ class InitialAnalysis:
             self.elastic_members_nodal_moments_history = np.zeros((self.time_steps, structure.members_count, structure.max_member_nodal_components_count))
 
             if self.structure.is_inelastic:
-                self.modal_loads_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
+                sensitivity = get_dynamic_sensitivity(
+                    structure=self.structure,
+                    loads=self.loads,
+                    deltat=self.time[1, 0] - self.time[0, 0],
+                )
                 self.a2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
                 self.b2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
-                self.p0_history = np.zeros((self.time_steps, structure.yield_specs.intact_components_count))
-                self.d0_history = np.zeros((self.time_steps, structure.limits["disp_limits"].shape[0]))
-                self.pv_history = np.zeros((self.time_steps, structure.yield_specs.intact_components_count, structure.yield_specs.intact_components_count))
-                self.load_level = 0
 
-                self.plastic_multipliers_prev = np.zeros(self.initial_data.intact_pieces_count)
+                create_chunk(response="nodal_disp", sensitivity=sensitivity.nodal_disp)
+                create_chunk(response="members_nodal_forces", sensitivity=sensitivity.members_nodal_forces)
+                create_chunk(response="members_disps", sensitivity=sensitivity.members_disps)
+
+                self.analysis_data.pv = sensitivity.pv
+                self.analysis_data.dv = get_nodal_disp_limits_sensitivity_rows(
+                    structure=self.structure,
+                    nodal_disp_sensitivity=sensitivity.nodal_disp
+                )
+                self.modal_loads_sensitivity = sensitivity.modal_loads
 
     def update_dynamic_time_step(self, time_step):
         self.total_load = self.loads.get_total_load(self.structure, self.loads, time_step)
@@ -141,8 +150,8 @@ class InitialAnalysis:
         elastic_a2s, elastic_b2s, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
             structure=self.structure,
             loads=self.loads,
-            time=self.time,
-            time_step=time_step,
+            t1=self.time[time_step - 1, 0],
+            t2=self.time[time_step, 0],
             modes=self.structure.selected_modes,
             previous_modal_loads=self.modal_loads[time_step - 1, :],
             total_load=self.total_load,
@@ -165,33 +174,17 @@ class InitialAnalysis:
         # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
 
         if self.structure.is_inelastic:
-            self.p0_prev = self.p0_history[time_step - 1]
-            self.p0_history[time_step, :] = internal_responses.p0
-            self.d0_history[time_step, :] = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
-
-            sensitivity = get_dynamic_sensitivity(
-                structure=self.structure,
-                loads=self.loads,
-                time=self.time,
-                time_step=time_step,
-                modes=self.structure.selected_modes_count,
+            a2_b2_sensitivity = get_a2_b2_sensitivity(
+                self.structure,
+                self.loads,
+                t1=self.time[time_step - 1, 0],
+                t2=self.time[time_step, 0],
             )
-            self.pv_prev = self.pv_history[time_step - 1, :, :]
-            self.pv_history[time_step, :, :] = sensitivity.pv
 
-            create_chunk(time_step=time_step, response="nodal_disp", sensitivity=sensitivity.nodal_disp)
-            create_chunk(time_step=time_step, response="members_nodal_forces", sensitivity=sensitivity.members_nodal_forces)
-            create_chunk(time_step=time_step, response="members_disps", sensitivity=sensitivity.members_disps)
-
-            self.modal_loads_sensitivity_history[time_step, :, :] = sensitivity.modal_loads
-            self.a2_sensitivity_history[time_step, :, :] = sensitivity.a2s
-            self.b2_sensitivity_history[time_step, :, :] = sensitivity.b2s
-
-            self.dv = get_nodal_disp_limits_sensitivity_rows(structure=self.structure, nodal_disp_sensitivity=sensitivity.nodal_disp)
-            self.load_level_prev = self.load_level
-
-            self.analysis_data.p0 = self.p0_history[time_step]
-            self.analysis_data.d0 = self.d0_history[time_step]
-            self.analysis_data.pv = self.pv_history[time_step]
-            self.analysis_data.dv = self.dv
-            self.analysis_data.pv_prev = self.pv_prev
+            self.a2_sensitivity_history[time_step, :, :] = a2_b2_sensitivity.a2s
+            self.b2_sensitivity_history[time_step, :, :] = a2_b2_sensitivity.b2s
+            # print(f"{a2_b2_sensitivity.a2s/a2_b2_sensitivity.a2s[1, 0]=}")
+            # print(f"{a2_b2_sensitivity.b2s/a2_b2_sensitivity.b2s[1, 0]=}")
+            # input()
+            self.analysis_data.p0 = internal_responses.p0
+            self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
