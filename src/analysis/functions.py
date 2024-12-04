@@ -266,7 +266,7 @@ def get_nodal_disp_limits_sensitivity_rows(structure, nodal_disp_sensitivity):
 def get_dynamic_nodal_disp(structure, loads, t1, t2, modes, previous_modal_loads, total_load, a1s, b1s):
     condense_load, reduced_p0 = loads.apply_static_condensation(structure, total_load)
     modal_loads = loads.get_modal_load(condense_load, structure.selected_modes)
-    modal_disps, a2s, b2s = get_modal_disp(
+    modal_disps, a2s, b2s, a_factor, b_factor = get_modal_disp(
         structure=structure,
         t1=t1,
         t2=t2,
@@ -279,7 +279,7 @@ def get_dynamic_nodal_disp(structure, loads, t1, t2, modes, previous_modal_loads
     u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
     nodal_disp = structure.undo_disp_condensation(ut, u0)
 
-    return a2s, b2s, modal_loads, nodal_disp
+    return a2s, b2s, a_factor, b_factor, modal_loads, nodal_disp
 
 
 def get_modal_disp(structure, t1, t2, previous_modal_loads, modal_loads, a1s, b1s):
@@ -293,14 +293,14 @@ def get_modal_disp(structure, t1, t2, previous_modal_loads, modal_loads, a1s, b1
     a1s = np.array(a1s).flatten()
     b1s = np.array(b1s).flatten()
 
-    i1s, i2s, i3s, i4s = get_is_duhamel(structure.damping, t1, t2, wns, wds)
+    i1s, i2s, i3s, i4s, a_factor, b_factor = get_is_duhamel(structure.damping, t1, t2, wns, wds)
 
     deltaps = p2s - p1s
     a2s = get_a_duhamel(t1, deltat, i1s, i4s, a1s, p1s, deltaps)
     b2s = get_b_duhamel(t1, deltat, i2s, i3s, b1s, p1s, deltaps)
     modal_disps = get_disps_duhamel(structure.damping, t2, wns, wds, mns, a2s, b2s)
 
-    return modal_disps, a2s, b2s
+    return modal_disps, a2s, b2s, a_factor, b_factor
 
 # # Before Optimization
 # def get_is_duhamel(damping, t1, t2, wns, wds):
@@ -369,7 +369,9 @@ def get_is_duhamel(damping, t1, t2, wns, wds):
     i3 = (t2_minus_alpha * i22 + beta * i12) - (t1_minus_alpha * i21 + beta * i11)
     i4 = (t2_minus_alpha * i12 - beta * i22) - (t1_minus_alpha * i11 - beta * i21)
 
-    return i1, i2, i3, i4
+    a_factor = - i1 * alpha - i2 * beta + (t2 - t1) * i12
+    b_factor = i1 * beta - alpha * i2 + (t2 - t1) * i22
+    return i1, i2, i3, i4, a_factor, b_factor
 
 
 def get_a_duhamel(t1, deltat, i1s, i4s, a1s, p1s, deltaps):
@@ -432,7 +434,8 @@ def get_dynamic_sensitivity(structure, loads, deltat):
                 a1s = a1s_empty
                 b1s = b1s_empty
                 initial_modal_loads = initial_modal_load_empty
-            affected_a2s, affected_b2s, affected_modal_load, affected_struc_disp = get_dynamic_nodal_disp(
+                
+            affected_a2s, affected_b2s, a_factor, b_factor, affected_modal_load, affected_struc_disp = get_dynamic_nodal_disp(
                 structure=structure,
                 loads=loads,
                 t1=0,
@@ -474,17 +477,28 @@ def get_dynamic_sensitivity(structure, loads, deltat):
     return sensitivity
 
 
-def get_a2_b2_sensitivity(structure, loads, t1, t2):
+def get_a2s_b2s_sensitivity(a_factor, b_factor, a2s_b2s_sensitivity_constant):
+    a2s_sensitivity = np.multiply(a_factor[:, np.newaxis], a2s_b2s_sensitivity_constant)
+    b2s_sensitivity = np.multiply(b_factor[:, np.newaxis], a2s_b2s_sensitivity_constant)
+    sensitivity = A2B2Sensitivity(
+        a2s=a2s_sensitivity,
+        b2s=b2s_sensitivity,
+    )
+    return sensitivity
+
+
+def get_a2s_b2s_sensitivity_constant(structure, loads, deltat, modal_loads_sensitivity):
+    """ checking some examples shows that normalized_a2_sensitivity and normalized_b2_sensitivity are equal,
+    so we only compute one of them and use for a2 and b2.
+    """
+
     selected_modes_count = structure.selected_modes_count
     # fv: equivalent global force vector for a yield component's udef
     members = structure.members
 
     pv_column = 0
 
-    a2_sensitivity = np.zeros((
-        selected_modes_count, structure.yield_specs.intact_components_count
-    ))
-    b2_sensitivity = np.zeros((
+    a2s_sensitivity = np.zeros((
         selected_modes_count, structure.yield_specs.intact_components_count
     ))
 
@@ -506,25 +520,32 @@ def get_a2_b2_sensitivity(structure, loads, t1, t2):
                 a1s = a1s_empty
                 b1s = b1s_empty
                 initial_modal_loads = initial_modal_load_empty
-            affected_a2s, affected_b2s, _, _ = get_dynamic_nodal_disp(
-                structure=structure,
-                loads=loads,
-                t1=t1,
-                t2=t2,
-                modes=structure.selected_modes,
-                previous_modal_loads=initial_modal_loads,
-                total_load=fv,
-                a1s=a1s,
-                b1s=b1s,
+            
+
+            condense_load, _ = loads.apply_static_condensation(structure, fv)
+            modal_loads = loads.get_modal_load(condense_load, structure.selected_modes)
+
+            wns = np.array(structure.wns[:structure.selected_modes_count])
+            wds = np.array(structure.wds[:structure.selected_modes_count])
+            p1s = np.array(initial_modal_loads).flatten()
+            p2s = np.array(modal_loads).flatten()
+            a1s = np.array(a1s).flatten()
+            b1s = np.array(b1s).flatten()
+
+            i1s, i2s, i3s, i4s, a_factor, b_factor = get_is_duhamel(
+                damping=structure.damping,
+                t1=0,
+                t2=deltat,
+                wns=wns,
+                wds=wds,
             )
 
-            a2_sensitivity[:, pv_column] = affected_a2s
-            b2_sensitivity[:, pv_column] = affected_b2s
+            deltaps = p2s - p1s
+            affected_a2s = get_a_duhamel(0, deltat, i1s, i4s, a1s, p1s, deltaps)
+            a2s_sensitivity[:, pv_column] = affected_a2s
 
             pv_column += 1
 
-    sensitivity = A2B2Sensitivity(
-        a2s=a2_sensitivity,
-        b2s=b2_sensitivity,
-    )
-    return sensitivity
+    normalized_a2s_b2s_sensitivity = a2s_sensitivity / a2s_sensitivity[:, 0][:, np.newaxis]
+    a2s_b2s_sensitivity_constant = 1 / deltat * np.multiply(normalized_a2s_b2s_sensitivity, modal_loads_sensitivity[:, 0][:, np.newaxis])
+    return a2s_b2s_sensitivity_constant

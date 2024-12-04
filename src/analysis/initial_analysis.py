@@ -11,7 +11,8 @@ from .functions import (
     get_nodal_disp_limits,
     get_dynamic_nodal_disp,
     get_dynamic_sensitivity,
-    get_a2_b2_sensitivity,
+    get_a2s_b2s_sensitivity,
+    get_a2s_b2s_sensitivity_constant,
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
@@ -143,11 +144,17 @@ class InitialAnalysis:
                     nodal_disp_sensitivity=sensitivity.nodal_disp
                 )
                 self.modal_loads_sensitivity = sensitivity.modal_loads
+                self.a2s_b2s_sensitivity_constant = get_a2s_b2s_sensitivity_constant(
+                    structure=structure,
+                    loads=loads,
+                    deltat=self.time[1, 0] - self.time[0, 0],
+                    modal_loads_sensitivity=self.modal_loads_sensitivity,
+                )
 
     def update_dynamic_time_step(self, time_step):
         self.total_load = self.loads.get_total_load(self.structure, self.loads, time_step)
 
-        elastic_a2s, elastic_b2s, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
+        elastic_a2s, elastic_b2s, a_factor, b_factor, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
             structure=self.structure,
             loads=self.loads,
             t1=self.time[time_step - 1, 0],
@@ -174,17 +181,13 @@ class InitialAnalysis:
         # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
 
         if self.structure.is_inelastic:
-            a2_b2_sensitivity = get_a2_b2_sensitivity(
-                self.structure,
-                self.loads,
-                t1=self.time[time_step - 1, 0],
-                t2=self.time[time_step, 0],
+            a2s_b2s_sensitivity = get_a2s_b2s_sensitivity(
+                a_factor=a_factor,
+                b_factor=b_factor,
+                a2s_b2s_sensitivity_constant=self.a2s_b2s_sensitivity_constant,
             )
+            self.a2_sensitivity_history[time_step, :, :] = a2s_b2s_sensitivity.a2s
+            self.b2_sensitivity_history[time_step, :, :] = a2s_b2s_sensitivity.b2s
 
-            self.a2_sensitivity_history[time_step, :, :] = a2_b2_sensitivity.a2s
-            self.b2_sensitivity_history[time_step, :, :] = a2_b2_sensitivity.b2s
-            # print(f"{a2_b2_sensitivity.a2s/a2_b2_sensitivity.a2s[1, 0]=}")
-            # print(f"{a2_b2_sensitivity.b2s/a2_b2_sensitivity.b2s[1, 0]=}")
-            # input()
             self.analysis_data.p0 = internal_responses.p0
             self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
