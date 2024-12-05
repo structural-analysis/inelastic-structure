@@ -260,10 +260,6 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
 
         responses = np.zeros(initial_analysis.time_steps, dtype=object)
 
-        nodal_disp_sensitivity = load_chunk(response="nodal_disp")
-        members_nodal_forces_sensitivity = load_chunk(response="members_nodal_forces")
-        members_disps_sensitivity = load_chunk(response="members_disps")
-
         for time_step in range(1, initial_analysis.time_steps):
             plastic_vars = plastic_vars_history[time_step, 0]
             pms_history = plastic_vars["pms_history"]
@@ -288,7 +284,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     load_level=load_level,
                     phi_x=phi_pms,
                     elastic_response=elastic_nodal_disp_history[time_step, :],
-                    sensitivity=nodal_disp_sensitivity,
+                    sensitivity=initial_analysis.nodal_disp_sensitivity,
                 )
                 nodal_disp[i, :] = elastoplastic_nodal_disp
 
@@ -296,7 +292,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     load_level=load_level,
                     phi_x=phi_pms,
                     elastic_response=elastic_members_nodal_forces_history[time_step, :, :],
-                    sensitivity=members_nodal_forces_sensitivity,
+                    sensitivity=initial_analysis.members_nodal_forces_sensitivity,
                 )
                 members_nodal_forces[i, :, :] = elastoplastic_members_nodal_forces
 
@@ -304,7 +300,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     load_level=load_level,
                     phi_x=phi_pms,
                     elastic_response=elastic_members_disps_history[time_step, :, :],
-                    sensitivity=members_disps_sensitivity,
+                    sensitivity=initial_analysis.members_disps_sensitivity,
                 )
                 members_disps[i, :, :] = elastoplastic_members_disps
 
@@ -318,9 +314,9 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 "load_levels": load_levels,
             }
 
-        delete_chunk(response="nodal_disp")
-        delete_chunk(response="members_nodal_forces")
-        delete_chunk(response="members_disps")
+        # delete_chunk(response="nodal_disp")
+        # delete_chunk(response="members_nodal_forces")
+        # delete_chunk(response="members_disps")
 
     elif not structure.is_inelastic:  # if structure is elastic
         load_limit = structure.limits["load_limit"][0]

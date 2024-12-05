@@ -38,27 +38,27 @@ class InelasticAnalysis:
         elastoplastic_a2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.a_duhamels[time_step, :],
-            sensitivity=initial_analysis.a2_sensitivity_history[time_step, :, :],
+            elastic_response=initial_analysis.elastic_a2s,
+            sensitivity=initial_analysis.a2_sensitivity,
         )
 
         elastoplastic_b2s = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.b_duhamels[time_step, :],
-            sensitivity=initial_analysis.b2_sensitivity_history[time_step, :, :],
+            elastic_response=initial_analysis.elastic_b2s,
+            sensitivity=initial_analysis.b2_sensitivity,
         )
 
         elastoplastic_modal_loads = get_elastoplastic_response(
             load_level=final_inc_load_level,
             phi_x=final_inc_phi_pms,
-            elastic_response=initial_analysis.modal_loads[time_step, :],
+            elastic_response=initial_analysis.elastic_modal_loads,
             sensitivity=initial_analysis.modal_loads_sensitivity,
         )
 
-        initial_analysis.a_duhamels[time_step, :] = elastoplastic_a2s
-        initial_analysis.b_duhamels[time_step, :] = elastoplastic_b2s
-        initial_analysis.modal_loads[time_step, :] = elastoplastic_modal_loads
+        initial_analysis.previous_a2s = elastoplastic_a2s
+        initial_analysis.previous_b2s = elastoplastic_b2s
+        initial_analysis.previous_modal_loads = elastoplastic_modal_loads
 
         # elastoplastic_nodal_disp = get_elastoplastic_response(
         #     load_level=final_inc_load_level,

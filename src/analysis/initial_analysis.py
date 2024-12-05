@@ -16,7 +16,7 @@ from .functions import (
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
-from ..functions import create_chunk
+# from ..functions import create_chunk
 
 
 class AnalysisType(str, enum.Enum):
@@ -113,9 +113,12 @@ class InitialAnalysis:
             self.k_modal = structure.k_modal
             modes_count = structure.selected_modes_count
 
-            self.modal_loads = np.zeros((self.time_steps, modes_count))
-            self.a_duhamels = np.zeros((self.time_steps, modes_count))
-            self.b_duhamels = np.zeros((self.time_steps, modes_count))
+            # self.modal_loads = np.zeros((self.time_steps, modes_count))
+            # self.a_duhamels = np.zeros((self.time_steps, modes_count))
+            # self.b_duhamels = np.zeros((self.time_steps, modes_count))
+            self.previous_modal_loads = np.zeros(modes_count)
+            self.previous_a2s = np.zeros(modes_count)
+            self.previous_b2s = np.zeros(modes_count)
 
             self.total_load = np.zeros((structure.dofs_count, 1))
             self.elastic_nodal_disp_history = np.zeros((self.time_steps, structure.dofs_count))
@@ -131,12 +134,10 @@ class InitialAnalysis:
                     loads=self.loads,
                     deltat=self.time[1, 0] - self.time[0, 0],
                 )
-                self.a2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
-                self.b2_sensitivity_history = np.zeros((self.time_steps, structure.selected_modes_count, structure.yield_specs.intact_components_count))
 
-                create_chunk(response="nodal_disp", sensitivity=sensitivity.nodal_disp)
-                create_chunk(response="members_nodal_forces", sensitivity=sensitivity.members_nodal_forces)
-                create_chunk(response="members_disps", sensitivity=sensitivity.members_disps)
+                self.nodal_disp_sensitivity = sensitivity.nodal_disp
+                self.members_disps_sensitivity = sensitivity.members_disps
+                self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
 
                 self.analysis_data.pv = sensitivity.pv
                 self.analysis_data.dv = get_nodal_disp_limits_sensitivity_rows(
@@ -154,21 +155,21 @@ class InitialAnalysis:
     def update_dynamic_time_step(self, time_step):
         self.total_load = self.loads.get_total_load(self.structure, self.loads, time_step)
 
-        elastic_a2s, elastic_b2s, a_factor, b_factor, elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
+        self.elastic_a2s, self.elastic_b2s, a_factor, b_factor, self.elastic_modal_loads, self.elastic_nodal_disp = get_dynamic_nodal_disp(
             structure=self.structure,
             loads=self.loads,
             t1=self.time[time_step - 1, 0],
             t2=self.time[time_step, 0],
             modes=self.structure.selected_modes,
-            previous_modal_loads=self.modal_loads[time_step - 1, :],
             total_load=self.total_load,
-            a1s=self.a_duhamels[time_step - 1, :],
-            b1s=self.b_duhamels[time_step - 1, :],
+            previous_modal_loads=self.previous_modal_loads,
+            previous_a2s=self.previous_a2s,
+            previous_b2s=self.previous_b2s,
         )
 
-        self.a_duhamels[time_step, :] = elastic_a2s
-        self.b_duhamels[time_step, :] = elastic_b2s
-        self.modal_loads[time_step, :] = elastic_modal_loads
+        # self.a_duhamels[time_step, :] = elastic_a2s
+        # self.b_duhamels[time_step, :] = elastic_b2s
+        # self.modal_loads[time_step, :] = elastic_modal_loads
 
         self.elastic_nodal_disp_history[time_step, :] = self.elastic_nodal_disp
         self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp)
@@ -179,6 +180,9 @@ class InitialAnalysis:
         # self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
         # self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
         # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
+        self.previous_modal_loads = self.elastic_modal_loads
+        self.previous_a2s = self.elastic_a2s
+        self.previous_b2s = self.elastic_b2s
 
         if self.structure.is_inelastic:
             a2s_b2s_sensitivity = get_a2s_b2s_sensitivity(
@@ -186,8 +190,9 @@ class InitialAnalysis:
                 b_factor=b_factor,
                 a2s_b2s_sensitivity_constant=self.a2s_b2s_sensitivity_constant,
             )
-            self.a2_sensitivity_history[time_step, :, :] = a2s_b2s_sensitivity.a2s
-            self.b2_sensitivity_history[time_step, :, :] = a2s_b2s_sensitivity.b2s
-
+            self.a2_sensitivity = a2s_b2s_sensitivity.a2s
+            self.b2_sensitivity = a2s_b2s_sensitivity.b2s
+            # print(f"{self.a2_sensitivity=}")
+            # input()
             self.analysis_data.p0 = internal_responses.p0
             self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
