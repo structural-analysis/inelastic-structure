@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 
 from ..settings import settings
 
-node_num = 4
-dof = 0
+each_node_dof_count = 2
+node_num = 20
+dof = 1
 outputs_dir = "output/examples/"
 
 def draw_load_disp_history(example, node_num, dof):
@@ -32,7 +33,7 @@ def get_load_disp_history(example, node_num, dof):
         inc_load_level_array_path = os.path.join(example_path, str(inc), "load_levels", "0.csv")
         inc_nodal_disp_array = np.loadtxt(fname=inc_nodal_disp_array_path, skiprows=0, delimiter=",", dtype=float, ndmin=1)
         inc_load_level_array = np.loadtxt(fname=inc_load_level_array_path, skiprows=0, delimiter=",", dtype=float, ndmin=1)
-        list_to_draw.append((inc_load_level_array[0], np.abs(inc_nodal_disp_array[3 * (node_num + 1) - (3 - dof)])))
+        list_to_draw.append((inc_load_level_array[0], np.abs(inc_nodal_disp_array[each_node_dof_count * (node_num + 1) - (each_node_dof_count - dof)])))
     return list_to_draw
 
 def save_load_disp_history_to_output(example, list_to_draw):

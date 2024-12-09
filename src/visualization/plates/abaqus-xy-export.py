@@ -2,7 +2,7 @@ from abaqus import session
 import csv
 
 # inputs:
-load_factor = 1400000
+load_factor = 1350000
 xy_data_name = 'xydata'
 
 # Get the XY data from the session
@@ -12,7 +12,7 @@ xy_data = session.xyDataObjects[xy_data_name]
 output_file = 'C:/Users/Hamed/projects/thesis/xydata.csv'
 
 # Create and write to the CSV file
-with open(output_file, 'wb') as csvfile:
+with open(output_file, 'w') as csvfile:
     writer = csv.writer(csvfile)
     # Write headers
     writer.writerow(['X', 'Y'])

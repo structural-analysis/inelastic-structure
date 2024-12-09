@@ -78,6 +78,14 @@ class MahiniMethod:
         self.limits_slacks = set(range(self.landa_bar_var, self.landa_bar_var + self.limits_count))
         self.final_inc_phi_pms_prev = final_inc_phi_pms_prev
 
+        print(f"{self.total_vars_count=}")
+        print(f"{self.primary_vars_count=}")
+        print(f"{self.slack_vars_count=}")
+        print(f"{self.plastic_vars_count=}")
+        print(f"{self.softening_vars_count=}")
+        print(f"{self.limits_count=}")
+
+
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
 
@@ -316,7 +324,7 @@ class MahiniMethod:
 
         if settings.sifting_type is SiftingType.not_used:
             pms = x[0:self.plastic_vars_count]
-            phi_pms = self.intact_phi * pms
+            phi_pms = self.intact_phi @ pms
             phi_pms_cumulative += phi_pms
             pms_history.append(pms)
             phi_pms_history.append(phi_pms_cumulative.copy())
@@ -327,7 +335,7 @@ class MahiniMethod:
 
             if self.include_softening:
                 sms = x[self.plastic_vars_count:self.landa_var]
-                h_sms = self.intact_h * sms
+                h_sms = self.intact_h @ sms
                 h_sms_cumulative += h_sms
                 h_sms_history.append(h_sms_cumulative.copy())
 
@@ -347,8 +355,6 @@ class MahiniMethod:
 
             if self.include_softening:
                 sms = x[self.plastic_vars_count:self.landa_var]
-                print(f"{sms.shape=}")
-                print(f"{self.intact_h.shape=}")
                 h_sms = self.intact_h @ sms
                 h_sms_cumulative += h_sms
                 h_sms_history.append(h_sms_cumulative.copy())
@@ -555,7 +561,7 @@ class MahiniMethod:
 
             if settings.sifting_type is SiftingType.not_used:
                 pms = x[0:self.plastic_vars_count]
-                phi_pms = self.intact_phi * pms
+                phi_pms = self.intact_phi @ pms
                 phi_pms_cumulative += phi_pms
                 pms_history.append(pms)
                 phi_pms_history.append(phi_pms_cumulative.copy())
@@ -566,7 +572,7 @@ class MahiniMethod:
 
                 if self.include_softening:
                     sms = x[self.plastic_vars_count:self.landa_var]
-                    h_sms = self.intact_h * sms
+                    h_sms = self.intact_h @ sms
                     h_sms_cumulative += h_sms
                     h_sms_history.append(h_sms_cumulative.copy())
 
@@ -610,13 +616,15 @@ class MahiniMethod:
 
                         print("++++ piece violation ++++")
                         print_specific_properties(violated_pieces, ["ref_yield_point_num", "num_in_yield_point", "num_in_structure"])
-                        # print(f"{violated_pieces=}")
                         # print(f"top violated current score={scores_current[violated_pieces[0].num_in_structure]}")
                         # print(f"top violated prev score={scores_prev[violated_pieces[0].num_in_structure]}")
 
                         fpm = fpm_prev
                         will_in_col = fpm.var
-                        will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
+                        if will_in_col <= self.plastic_vars_count:
+                            will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
+                        else:
+                            will_in_col_piece_num_in_structure = None
 
                         self.sifted_results_current: SiftedResults = self.sifting.update(
                             increment=increment,
@@ -632,6 +640,7 @@ class MahiniMethod:
                             pv=self.pv,
                             p0=self.p0,
                             will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
+                            plastic_vars_count=self.plastic_vars_count,
                         )
                         self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
                         self.phi = self.sifted_results_current.structure_sifted_output.phi
@@ -847,7 +856,7 @@ class MahiniMethod:
         # print(f"{sorted_zipped_ba=}")
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
-        # print(f"{will_out_row=}")
+
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
             # if will in variable is plastic
@@ -862,6 +871,7 @@ class MahiniMethod:
                 # when we reach load or disp limit:
 
                 will_in_col_yield_point = self.get_softening_var_yield_point(will_in_col)
+
                 for i, ba_row in enumerate(sorted_zipped_ba[0, :]):
                     will_out_row = int(ba_row)
                     if will_out_row != landa_row:
@@ -870,6 +880,10 @@ class MahiniMethod:
                             break
                         will_out_var = basic_variables[will_out_row]
                         will_out_yield_point = self.get_will_out_yield_point(will_out_var)
+                        print(f"{will_in_col_yield_point=}")
+                        print(f"{will_out_yield_point=}")
+                        input()
+
                         if will_in_col_yield_point != will_out_yield_point:
                             will_out_row = int(sorted_zipped_ba[0, i])
                             break

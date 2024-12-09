@@ -1,0 +1,13 @@
+wall:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+  geometry:
+    t: 0.02
+  nonlinear:
+    yield_surface: mises # simple or mises
+  softening:
+    alpha: 0.833
+    ep1: 0
+    ep2: 0.05

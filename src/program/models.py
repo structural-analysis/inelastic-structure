@@ -128,7 +128,8 @@ class Sifting:
             landa_var,
             pv,
             p0,
-            will_in_col_piece_num_in_structure):
+            will_in_col_piece_num_in_structure,
+            plastic_vars_count,):
 
         violated_points = self.get_violated_points(violated_pieces)
         sifted_yield_points_updated = sifted_results_old.sifted_yield_points
@@ -313,6 +314,7 @@ class Sifting:
                 phi=structure_sifted_output.phi,
                 pv=pv,
                 p0=p0,
+                plastic_vars_count=plastic_vars_count,
             ),
         )
 
@@ -412,13 +414,18 @@ class Sifting:
         return point_selected_pieces
 
     def get_point_final_pieces(self, selected_pieces, violated_pieces, will_in_col_piece_num_in_structure, plastic_vars_in_basic_variables):
-        unchanged_vars = [will_in_col_piece_num_in_structure] + plastic_vars_in_basic_variables
+        if will_in_col_piece_num_in_structure:
+            unchanged_vars = [will_in_col_piece_num_in_structure] + plastic_vars_in_basic_variables
+        else:
+            unchanged_vars = plastic_vars_in_basic_variables
+
         final_pieces = selected_pieces[:]
         assign_indices = [index for index, piece in enumerate(selected_pieces) if piece.num_in_structure not in unchanged_vars]
         assign_indices.sort(reverse=True)
         if violated_pieces:
             if not violated_pieces[0] in final_pieces:
                 final_pieces[assign_indices[0]] = violated_pieces[0]
+
         # for i, assign_index in enumerate(assign_indices):
         #     if i < len(violated_pieces):
         #         final_pieces[assign_index] = violated_pieces[i]
@@ -469,7 +476,8 @@ class Sifting:
             landa_row,
             phi,
             pv,
-            p0,):
+            p0,
+            plastic_vars_count,):
 
         # NOTE:
         # j: indices of previous phi matrix columns which contents are updated
@@ -480,7 +488,9 @@ class Sifting:
         active_pms, active_pms_rows = self.get_active_pms_stats(
             basic_variables_prev=basic_variables_prev,
             landa_var=landa_var,
+            plastic_vars_count=plastic_vars_count,
         )
+
         j = np.array(modified_structure_sifted_yield_pieces_indices)
         m = active_pms
         m.remove(landa_var)
@@ -492,6 +502,14 @@ class Sifting:
         u.append(landa_row)
         u = np.array(u)
 
+        print(f"{active_pms=}")
+        print(f"{active_pms_rows=}")
+        print(f"{j=}")
+        print(f"{m=}")
+        print(f"{v=}")
+        print(f"{u=}")
+        input()
+
         a_sensitivity_part = phi.T[j, :] @ pv @ phi[:, m]
         a_elastic_part = phi.T[j, :] @ p0
 
@@ -499,11 +517,13 @@ class Sifting:
         b_matrix_inv_prev[np.ix_(j, v)] = -a_updated @ b_matrix_inv_prev[np.ix_(u, v)]
         return b_matrix_inv_prev
 
-    def get_active_pms_stats(self, basic_variables_prev, landa_var):
+    def get_active_pms_stats(self, basic_variables_prev, landa_var, plastic_vars_count):
         active_pms = []
         active_pms_rows = []
         for index, basic_variable in enumerate(basic_variables_prev):
-            if basic_variable <= landa_var:
+            if basic_variable <= plastic_vars_count:
                 active_pms.append(basic_variable)
                 active_pms_rows.append(index)
+                active_pms.append(landa_var)
+                active_pms_rows.append(np.where(basic_variables_prev==landa_var)[0][0])
         return active_pms, active_pms_rows
