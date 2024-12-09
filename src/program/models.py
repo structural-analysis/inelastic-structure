@@ -502,13 +502,13 @@ class Sifting:
         u.append(landa_row)
         u = np.array(u)
 
-        print(f"{active_pms=}")
-        print(f"{active_pms_rows=}")
-        print(f"{j=}")
-        print(f"{m=}")
-        print(f"{v=}")
-        print(f"{u=}")
-        input()
+        # print(f"{active_pms=}")
+        # print(f"{active_pms_rows=}")
+        # print(f"{j=}")
+        # print(f"{m=}")
+        # print(f"{v=}")
+        # print(f"{u=}")
+        # input()
 
         a_sensitivity_part = phi.T[j, :] @ pv @ phi[:, m]
         a_elastic_part = phi.T[j, :] @ p0
@@ -521,9 +521,18 @@ class Sifting:
         active_pms = []
         active_pms_rows = []
         for index, basic_variable in enumerate(basic_variables_prev):
-            if basic_variable <= plastic_vars_count:
+            if basic_variable <= landa_var:
                 active_pms.append(basic_variable)
                 active_pms_rows.append(index)
-                active_pms.append(landa_var)
-                active_pms_rows.append(np.where(basic_variables_prev==landa_var)[0][0])
         return active_pms, active_pms_rows
+
+    # def get_active_pms_stats(self, basic_variables_prev, landa_var, plastic_vars_count):
+    #     active_pms = []
+    #     active_pms_rows = []
+    #     for index, basic_variable in enumerate(basic_variables_prev):
+    #         if basic_variable <= plastic_vars_count:
+    #             active_pms.append(basic_variable)
+    #             active_pms_rows.append(index)
+    #             active_pms.append(landa_var)
+    #             active_pms_rows.append(np.where(basic_variables_prev==landa_var)[0][0])
+    #     return active_pms, active_pms_rows

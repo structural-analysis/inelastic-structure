@@ -880,9 +880,9 @@ class MahiniMethod:
                             break
                         will_out_var = basic_variables[will_out_row]
                         will_out_yield_point = self.get_will_out_yield_point(will_out_var)
-                        print(f"{will_in_col_yield_point=}")
-                        print(f"{will_out_yield_point=}")
-                        input()
+                        # print(f"{will_in_col_yield_point=}")
+                        # print(f"{will_out_yield_point=}")
+                        # input()
 
                         if will_in_col_yield_point != will_out_yield_point:
                             will_out_row = int(sorted_zipped_ba[0, i])

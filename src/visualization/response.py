@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 from ..settings import settings
 
 each_node_dof_count = 2
-node_num = 20
-dof = 1
+node_num = 4
+dof = 0
 outputs_dir = "output/examples/"
+
 
 def draw_load_disp_history(example, node_num, dof):
     list_to_draw = get_load_disp_history(example, node_num, dof)
