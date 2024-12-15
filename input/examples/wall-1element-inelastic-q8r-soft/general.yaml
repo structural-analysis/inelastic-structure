@@ -2,4 +2,4 @@ structure_dim: 2d
 structure_type: WALL2D
 inelastic:
   enabled: true
-  include_softening: false
+  include_softening: true
