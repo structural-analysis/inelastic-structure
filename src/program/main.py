@@ -445,16 +445,19 @@ class MahiniMethod:
                     self.landa_var,
                     self.structure_sifted_yield_pieces_current,
                 )
-
             for slack_candidate in sorted_slack_candidates + [fpm]:
                 if not self.is_candidate_fpm(fpm, slack_candidate):
                     spm_var = self.get_primary_var(slack_candidate.var)
+                    # print(f"{slack_candidate.var=}")
+                    # print(f"{spm_var=}")
                     r = self.calculate_r(
                         spm_var=spm_var,
                         basic_variables=basic_variables,
                         abar=abar,
                         b_matrix_inv=b_matrix_inv,
                     )
+                    # print(f"{r=}")
+                    # input()
                     if r > 0:
                         continue
                     else:
@@ -621,7 +624,7 @@ class MahiniMethod:
 
                         fpm = fpm_prev
                         will_in_col = fpm.var
-                        if will_in_col <= self.plastic_vars_count:
+                        if will_in_col < self.plastic_vars_count:
                             will_in_col_piece_num_in_structure = structure_sifted_yield_pieces_old[will_in_col].num_in_structure
                         else:
                             will_in_col_piece_num_in_structure = None
@@ -754,10 +757,28 @@ class MahiniMethod:
         # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
         # TODO: check line 60 of unload and line 265 in mclp of mahini code
         # (probable usage: in case when unload is last step)
+
         pm_var_family = self.get_pm_var_family(pm_var)
+        # print(f"{pm_var_family=}")
         for primary_var in pm_var_family:
+            # print("unload @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            # print(f"{primary_var=}")
             if primary_var in basic_variables:
                 exiting_row = self.get_var_row(primary_var, basic_variables)
+                # print("primary var in basic variables")
+                # print(f"{primary_var=}")
+                # print("first:")
+                # print(f"in: {self.get_slack_var(exiting_row)=}")
+                # print(f"out: {exiting_row=}")
+                # print("---")
+                # print("second:")
+                # print(f"in: {self.get_slack_var(primary_var)=}")
+                # print(f"out: {primary_var=}")
+                # print("---")
+                # print("third:")
+                # print(f"in: {basic_variables[primary_var]=}")
+                # print(f"out: {exiting_row=}")
+                # print("---")
 
                 unloading_pivot_elements = [
                     {
@@ -789,16 +810,24 @@ class MahiniMethod:
 
                     if element["column"] == self.landa_var:
                         landa_row = element["row"]
+                # for var in basic_variables:
+                #     if var < self.primary_vars_count:
+                #         print(f"{var=}")
         return basic_variables, b_matrix_inv, cb, landa_row
 
     def get_pm_var_family(self, pm_var):
         if self.softening_vars_count:
-            yield_point = self.get_plastic_var_yield_point(pm_var)
-            pm_var_family = [
-                pm_var,
-                self.plastic_vars_count + yield_point * 2,
-                self.plastic_vars_count + yield_point * 2 + 1,
-            ]
+            if pm_var < self.plastic_vars_count:
+                yield_point = self.get_plastic_var_yield_point(pm_var)
+                pm_var_family = [
+                    self.plastic_vars_count + yield_point * 2,
+                    self.plastic_vars_count + yield_point * 2 + 1,
+                    pm_var,
+                ]
+            else:
+                pm_var_family = [
+                    pm_var,
+                ]
         else:
             pm_var_family = [
                 pm_var,

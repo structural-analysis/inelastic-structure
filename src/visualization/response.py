@@ -24,6 +24,7 @@ def draw_load_disp_history(example, node_num, dof):
     plt.grid(True)
     plt.show()
 
+
 def get_load_disp_history(example, node_num, dof):
     example_path = os.path.join(outputs_dir, example)
     increments = find_subdirs(example_path)
@@ -37,6 +38,7 @@ def get_load_disp_history(example, node_num, dof):
         list_to_draw.append((inc_load_level_array[0], np.abs(inc_nodal_disp_array[each_node_dof_count * (node_num + 1) - (each_node_dof_count - dof)])))
     return list_to_draw
 
+
 def save_load_disp_history_to_output(example, list_to_draw):
     example_path = os.path.join(outputs_dir, example)
     visualization_dir_path = os.path.join(example_path, "visualization")
@@ -46,6 +48,7 @@ def save_load_disp_history_to_output(example, list_to_draw):
     # os.chmod(path_to_save, new_permissions)
     os.makedirs(visualization_dir_path, exist_ok=True)
     np.savetxt(fname=path_to_save, X=np.array(list_to_draw), delimiter=", ", fmt=f'%.{settings.output_digits}e')
+
 
 def find_subdirs(path):
     subdirs = os.listdir(path)
