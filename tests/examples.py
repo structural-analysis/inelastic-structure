@@ -1,6 +1,7 @@
 all = [
     # "plate-semiconfined-inelastic",  # possible-bifurcation # wierd behavior on multiple runs # infinite loop in sifting
     # "3d-simple-beam-static-inelastic",  # possible bifurcation
+    # "wall-1element-inelastic-q8r-soft" # possible bifurcation in sifted-violation
 
     # STATIC EXAMPLES:
     # "truss-kassimali-115-static-elastic",
@@ -22,7 +23,9 @@ all = [
     "wall-9element-elastic",
     "wall-4element-elastic-q8r",
     "wall-1element-inelastic",
+    "wall-1element-inelastic-q8r",
     "wall-4element-inelastic-q8r",
+    "wall-4element-inelastic-q8r-soft",
     "plate-1element-elastic-q8r",
     "plate-1element-elastic-q8r-distributed",
     "plate-4element-elastic-q8r-distributed",
@@ -108,7 +111,7 @@ three_d_frames = [analysis for analysis in all if "3d-" in analysis]
 plates = [analysis for analysis in all if "plate-" in analysis]
 walls = [analysis for analysis in all if "wall-" in analysis]
 trusses = [analysis for analysis in all if "truss" in analysis]
-softenings = [analysis for analysis in all if "-softening" in analysis]
+softenings = [analysis for analysis in all if "-soft" in analysis]
 elastics = [analysis for analysis in all if "-elastic" in analysis]
 inelastics = [analysis for analysis in all if "-inelastic" in analysis]
 inelastics = inelastics + [

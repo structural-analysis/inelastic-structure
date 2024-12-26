@@ -53,6 +53,7 @@ class MahiniMethod:
                 intact_points=self.intact_points,
                 intact_pieces=self.intact_pieces,
                 intact_phi=self.intact_phi,
+                include_softening=self.include_softening,
             )
             self.sifted_results_current: SiftedResults = self.sifting.create(scores=initial_scores)
             self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces.copy()
@@ -84,7 +85,6 @@ class MahiniMethod:
         print(f"{self.plastic_vars_count=}")
         print(f"{self.softening_vars_count=}")
         print(f"{self.limits_count=}")
-
 
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
@@ -173,6 +173,12 @@ class MahiniMethod:
 
             raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
             raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
+
+        print(f"{self.q.shape=}")
+        print(f"{self.h.shape=}")
+        print(f"{self.w.shape=}")
+        print(f"{dv_phi.shape=}")
+        print(f"{self.d0.shape=}")
 
         columns_count = self.primary_vars_count + self.slack_vars_count
         table = np.zeros((self.constraints_count, columns_count))
@@ -644,7 +650,15 @@ class MahiniMethod:
                             p0=self.p0,
                             will_in_col_piece_num_in_structure=will_in_col_piece_num_in_structure,
                             plastic_vars_count=self.plastic_vars_count,
+                            softening_vars_count=self.softening_vars_count,
+                            dv=self.dv,
+                            constraints_count=self.constraints_count,
+                            primary_vars_count=self.primary_vars_count,
+                            disp_limits_count=self.disp_limits_count,
+                            d0=self.d0,
+                            disp_limits=self.disp_limits,
                         )
+
                         self.structure_sifted_yield_pieces_current = self.sifted_results_current.structure_sifted_yield_pieces
                         self.phi = self.sifted_results_current.structure_sifted_output.phi
                         self.q = self.sifted_results_current.structure_sifted_output.q
