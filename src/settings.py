@@ -10,8 +10,8 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "wall-4element-inelastic-q8r-soft"
-    sifting_type: SiftingType = SiftingType.mahini
+    example_name: str = "plate-1element-inelastic-q8r-soft"
+    sifting_type: SiftingType = SiftingType.not_used
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
