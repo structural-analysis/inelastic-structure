@@ -4,14 +4,11 @@ import matplotlib.pyplot as plt
 
 from ..settings import settings
 
-each_node_dof_count = 2
-node_num = 4
-dof = 0
 outputs_dir = "output/examples/"
 
 
-def draw_load_disp_history(example, node_num, dof):
-    list_to_draw = get_load_disp_history(example, node_num, dof)
+def draw_load_disp_history(example, node_num, dof, each_node_dof_count):
+    list_to_draw = get_load_disp_history(example, node_num, dof, each_node_dof_count)
     save_load_disp_history_to_output(example, list_to_draw)
     loads = [load for load, _ in list_to_draw]
     disps = [disp for _, disp in list_to_draw]
@@ -25,7 +22,7 @@ def draw_load_disp_history(example, node_num, dof):
     plt.show()
 
 
-def get_load_disp_history(example, node_num, dof):
+def get_load_disp_history(example, node_num, dof, each_node_dof_count):
     example_path = os.path.join(outputs_dir, example)
     increments = find_subdirs(example_path)
     list_to_draw = []
@@ -54,11 +51,3 @@ def find_subdirs(path):
     subdirs = os.listdir(path)
     subdirs_int = sorted([int(subdir) for subdir in subdirs if subdir.isdigit()])
     return subdirs_int
-
-
-if __name__ == "__main__":
-    draw_load_disp_history(
-        example=settings.example_name,
-        node_num=node_num,
-        dof=dof,
-    )
