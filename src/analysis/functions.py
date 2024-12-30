@@ -59,65 +59,13 @@ def get_members_disps(structure, disp):
     dof_offsets = np.tile(np.arange(member_node_dofs_counts[0]), sum(member_nodes_counts))
 
     v = disp[member_node_dofs_counts[0] * node_offsets + dof_offsets].reshape(-1, 1)
-
-    # v_split = np.split(v, np.cumsum(member_dofs_counts)[:-1])
     cumsum_indices = np.cumsum(member_dofs_counts)[:-1]
-    # v_split = np.split(v, cumsum_indices)
     v_split = np.array_split(v, cumsum_indices)
-    # t_matrices = np.array([t for t in t_matrices])  # shape (n, m, p)
-    # v_split = np.array([v.flatten() for v in v_split])  # shape (n, p)
 
     members_disps = np.zeros((structure.members_count, structure.max_member_dofs_count))
     computed_members_disps = np.squeeze(np.matmul(t_matrices, v_split), axis=2)
     members_disps[:computed_members_disps.shape[0], :computed_members_disps.shape[1]] = computed_members_disps
-
-    # computed_members_disps = np.array([t @ v for t, v in zip(t_matrices, v_split)])
-    # computed_members_disps = np.squeeze(computed_members_disps)
-    # flat_members_disps = members_disps.flatten()
-    # flat_members_disps_computed = np.concatenate(computed_members_disps)
-
-    # Now use np.put to fill the target array
-    # np.put(flat_members_disps, np.arange(len(flat_members_disps_computed)), flat_members_disps_computed)
     return members_disps
-
-
-# def get_internal_responses(structure, members_disps):
-#     # calculate p0
-#     members_nodal_forces = np.zeros((structure.members_count, 1))
-#     members_nodal_strains = np.zeros((structure.members_count, 1))
-#     members_nodal_stresses = np.zeros((structure.members_count, 1))
-#     members_nodal_moments = np.zeros((structure.members_count, 1))
-#     p0 = np.zeros((structure.yield_specs.intact_components_count, 1))
-
-#     base_p0_row = 0
-#     members_responses = [member.get_response(members_disps[i, :]) for i, member in enumerate(structure.members)]
-
-#     for i, member in enumerate(structure.members):
-#         member_response = member.get_response(members_disps[i, :].reshape(-1, 1))
-#         yield_components_force = member_response.yield_components_force
-#         p0[base_p0_row:(base_p0_row + member.yield_specs.components_count)] = yield_components_force
-#         base_p0_row = base_p0_row + member.yield_specs.components_count
-
-#         # TODO: we can clean and simplify appending member response to members_{responses}
-#         # each member should contain only its responses, not zero response of other elements.
-#         # but in members_{responses}, instead of appending with i (member num in structure.members),
-#         # we should attach with member.num, and if one member has not some response it will not appended.
-#         # we can use a dataclass like:
-#         # MemberResponse:
-#         # member: object
-#         # response: Response
-#         members_nodal_forces[i, 0] = member_response.nodal_force
-#         members_nodal_strains[i, 0] = member_response.nodal_strains
-#         members_nodal_stresses[i, 0] = member_response.nodal_stresses
-#         members_nodal_moments[i, 0] = member_response.nodal_moments
-
-#     return InternalResponses(
-#         p0=p0,
-#         members_nodal_forces=members_nodal_forces,
-#         members_nodal_strains=members_nodal_strains,
-#         members_nodal_stresses=members_nodal_stresses,
-#         members_nodal_moments=members_nodal_moments,
-#     )
 
 
 def get_internal_responses(structure, members_disps):
@@ -302,18 +250,6 @@ def get_modal_disp(structure, t1, t2, modal_loads, previous_modal_loads, previou
 
     return modal_disps, a2s, b2s, a_factor, b_factor
 
-# # Before Optimization
-# def get_is_duhamel(damping, t1, t2, wns, wds):
-#     i12 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t2) + wds * np.sin(wds * t2))
-#     i11 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.cos(wds * t1) + wds * np.sin(wds * t1))
-#     i1 = i12 - i11
-#     i22 = (np.exp(damping * wns * t2) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t2) - wds * np.cos(wds * t2))
-#     i21 = (np.exp(damping * wns * t1) / ((damping * wns) ** 2 + wds ** 2)) * (damping * wns * np.sin(wds * t1) - wds * np.cos(wds * t1))
-#     i2 = i22 - i21
-#     i3 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i22 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i12 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i21 + (wds / ((damping * wns) ** 2 + wds ** 2)) * i11)
-#     i4 = (t2 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i12 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i22 - ((t1 - (damping * wns / ((damping * wns) ** 2 + wds ** 2))) * i11 - (wds / ((damping * wns) ** 2 + wds ** 2)) * i21)
-#     return i1, i2, i3, i4
-
 
 @profile
 def get_is_duhamel(damping, t1, t2, wns, wds):
@@ -387,7 +323,6 @@ def get_disps_duhamel(damping, t2, wns, wds, mns, a2s, b2s):
 
 
 def get_dynamic_sensitivity(structure, loads, deltat):
-    # modes_count = modes.shape[1]
     selected_modes_count = structure.selected_modes_count
     # fv: equivalent global force vector for a yield component's udef
     members = structure.members
@@ -548,7 +483,5 @@ def get_a2s_b2s_sensitivity_constant(structure, loads, deltat, modal_loads_sensi
     first_elements = a2s_sensitivity[:, 0]
     mask = first_elements != 0
     a2s_sensitivity[mask] /= first_elements[mask, np.newaxis]
-
-    # normalized_a2s_b2s_sensitivity = a2s_sensitivity / a2s_sensitivity[:, 0][:, np.newaxis]
     a2s_b2s_sensitivity_constant = 1 / deltat * np.multiply(a2s_sensitivity, modal_loads_sensitivity[:, 0][:, np.newaxis])
     return a2s_b2s_sensitivity_constant
