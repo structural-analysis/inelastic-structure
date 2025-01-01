@@ -16,7 +16,6 @@ from .functions import (
 )
 from ..models.structure import Structure
 from ..models.loads import Loads
-# from ..functions import create_chunk
 
 
 class AnalysisType(str, enum.Enum):
@@ -43,7 +42,6 @@ class InitialData:
     intact_points_count: int
     intact_components_count: int
     intact_pieces_count: int
-    # yield_points_indices: list
     intact_phi: np.array
     intact_q: np.array
     intact_h: np.array
@@ -113,9 +111,6 @@ class InitialAnalysis:
             self.k_modal = structure.k_modal
             modes_count = structure.selected_modes_count
 
-            # self.modal_loads = np.zeros((self.time_steps, modes_count))
-            # self.a_duhamels = np.zeros((self.time_steps, modes_count))
-            # self.b_duhamels = np.zeros((self.time_steps, modes_count))
             self.previous_modal_loads = np.zeros(modes_count)
             self.previous_a2s = np.zeros(modes_count)
             self.previous_b2s = np.zeros(modes_count)
@@ -167,10 +162,6 @@ class InitialAnalysis:
             previous_b2s=self.previous_b2s,
         )
 
-        # self.a_duhamels[time_step, :] = elastic_a2s
-        # self.b_duhamels[time_step, :] = elastic_b2s
-        # self.modal_loads[time_step, :] = elastic_modal_loads
-
         self.elastic_nodal_disp_history[time_step, :] = self.elastic_nodal_disp
         self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp)
         self.elastic_members_disps_history[time_step, :, :] = self.elastic_members_disps
@@ -192,7 +183,5 @@ class InitialAnalysis:
             )
             self.a2_sensitivity = a2s_b2s_sensitivity.a2s
             self.b2_sensitivity = a2s_b2s_sensitivity.b2s
-            # print(f"{self.a2_sensitivity=}")
-            # input()
             self.analysis_data.p0 = internal_responses.p0
             self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
