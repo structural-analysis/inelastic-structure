@@ -1,7 +1,7 @@
 from src.visualization.response import draw_load_disp_history
 from src.settings import settings
 
-node_num = 32
+node_num = 12
 dof = 0
 each_node_dof_count = 3
 
