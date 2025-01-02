@@ -1,0 +1,10 @@
+plate:
+  geometry:
+    t: 0.01
+  material:
+    e: 200000000000.0
+    nu: 0.3
+    sy: 240000000.0
+  nonlinear:
+    yield_surface: mises
+  softening: null
