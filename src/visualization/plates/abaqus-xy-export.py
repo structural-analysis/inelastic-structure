@@ -2,7 +2,7 @@ from abaqus import session
 import csv
 
 # inputs:
-load_factor = 1350000
+load_factor = 1
 xy_data_name = 'xydata'
 
 # Get the XY data from the session

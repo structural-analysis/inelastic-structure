@@ -10,7 +10,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-ring-soft"
+    example_name: str = "plate-4el-inel-rect-centerdisp"
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
