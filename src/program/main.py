@@ -7,16 +7,27 @@ from .models import FPM, SlackCandidate, Sifting, SiftedResults
 from .functions import zero_out_small_values, print_specific_properties
 from ..analysis.initial_analysis import InitialData, AnalysisData
 from ..settings import settings, SiftingType
-
+from ..functions import get_elastoplastic_response
 # np.set_printoptions(threshold=np.inf, precision=4)
 
 
 class MahiniMethod:
-    def __init__(self, initial_data: InitialData, analysis_data: AnalysisData, final_inc_phi_pms_prev=None):
+    def __init__(
+        self,
+        initial_data: InitialData,
+        analysis_data: AnalysisData,
+        final_inc_phi_pms_prev=None,
+        nodal_disp_sensitivity=None,
+        elastic_nodal_disp=None,
+            ):
+
         self.load_limit = initial_data.load_limit
         self.disp_limits = initial_data.disp_limits
         self.disp_limits_count = initial_data.disp_limits_count
         self.include_softening = initial_data.include_softening
+
+        self.nodal_disp_sensitivity = nodal_disp_sensitivity
+        self.elastic_nodal_disp = elastic_nodal_disp
 
         self.intact_points = initial_data.intact_points
         self.intact_pieces = initial_data.intact_pieces
@@ -268,10 +279,17 @@ class MahiniMethod:
                 h_sms_history.append(h_sms_cumulative.copy())
 
         while self.limits_slacks.issubset(set(basic_variables)):
+            elastoplastic_nodal_disp = get_elastoplastic_response(
+                load_level=load_level_cumulative,
+                phi_x=phi_pms_cumulative,
+                elastic_response=self.elastic_nodal_disp,
+                sensitivity=self.nodal_disp_sensitivity,
+            )
 
             increment = len(load_level_history)
             print("-------------------------------")
             print(f"{increment=}")
+            print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
             print(f"{load_level_cumulative=}")
             print(f"will_in_col=x-{will_in_col}")
             print(f"{will_out_row=}")

@@ -10,9 +10,16 @@ class InelasticAnalysis:
         self.initial_data = initial_analysis.initial_data
         self.analysis_data = initial_analysis.analysis_data
         self.analysis_type = initial_analysis.analysis_type
+        self.nodal_disp_sensitivity = initial_analysis.nodal_disp_sensitivity
+        self.elastic_nodal_disp = initial_analysis.elastic_nodal_disp
 
         if self.analysis_type is AnalysisType.STATIC:
-            mahini_method = MahiniMethod(initial_data=self.initial_data, analysis_data=self.analysis_data)
+            mahini_method = MahiniMethod(
+                initial_data=self.initial_data,
+                analysis_data=self.analysis_data,
+                nodal_disp_sensitivity=self.nodal_disp_sensitivity,
+                elastic_nodal_disp=self.elastic_nodal_disp,
+                )
             self.plastic_vars = mahini_method.solve()
 
         elif self.analysis_type is AnalysisType.DYNAMIC:
