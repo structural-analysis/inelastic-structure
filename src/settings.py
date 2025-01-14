@@ -10,8 +10,8 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-ring-innerdisp-soft"
-    monitored_nodal_disp_component = 84
+    example_name: str = "plate-perforated-innerdisp-soft"
+    monitored_nodal_disp_component = 21
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
