@@ -1,6 +1,5 @@
 from enum import Enum
 from pydantic import BaseSettings
-
 from tests.examples import Examples
 
 
@@ -11,6 +10,7 @@ class SiftingType(str, Enum):
 
 class Settings(BaseSettings):
     example_name: str = "plate-perforated-innerdisp-soft"
+    monitor_incremental_disp: bool = False
     monitored_nodal_disp_component = 21
     sifting_type: SiftingType = SiftingType.mahini
     computational_zero = 1e-12

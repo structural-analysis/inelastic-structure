@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix, lil_matrix
 
 from .models import FPM, SlackCandidate, Sifting, SiftedResults
 from .functions import zero_out_small_values, print_specific_properties
-from ..analysis.initial_analysis import InitialData, AnalysisData
+from ..analysis.initial_analysis import InitialData, AnalysisData, AnalysisType
 from ..settings import settings, SiftingType
 from ..functions import get_elastoplastic_response
 # np.set_printoptions(threshold=np.inf, precision=4)
@@ -14,6 +14,7 @@ from ..functions import get_elastoplastic_response
 class MahiniMethod:
     def __init__(
         self,
+        analysis_type: AnalysisType,
         initial_data: InitialData,
         analysis_data: AnalysisData,
         final_inc_phi_pms_prev=None,
@@ -26,6 +27,7 @@ class MahiniMethod:
         self.disp_limits_count = initial_data.disp_limits_count
         self.include_softening = initial_data.include_softening
 
+        self.analysis_type = analysis_type
         self.nodal_disp_sensitivity = nodal_disp_sensitivity
         self.elastic_nodal_disp = elastic_nodal_disp
 
@@ -500,13 +502,14 @@ class MahiniMethod:
                     if self.include_softening:
                         h_sms_history.append(h_sms_cumulative.copy())
 
-            elastoplastic_nodal_disp = get_elastoplastic_response(
-                load_level=load_level_cumulative,
-                phi_x=phi_pms_cumulative,
-                elastic_response=self.elastic_nodal_disp,
-                sensitivity=self.nodal_disp_sensitivity,
-            )
-            print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
+            if self.analysis_type is AnalysisType.STATIC and settings.monitor_incremental_disp:
+                elastoplastic_nodal_disp = get_elastoplastic_response(
+                    load_level=load_level_cumulative,
+                    phi_x=phi_pms_cumulative,
+                    elastic_response=self.elastic_nodal_disp,
+                    sensitivity=self.nodal_disp_sensitivity,
+                )
+                print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
 
         if self.final_inc_phi_pms_prev is not None:
             final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]

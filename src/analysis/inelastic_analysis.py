@@ -10,11 +10,12 @@ class InelasticAnalysis:
         self.initial_data = initial_analysis.initial_data
         self.analysis_data = initial_analysis.analysis_data
         self.analysis_type = initial_analysis.analysis_type
-        self.nodal_disp_sensitivity = initial_analysis.nodal_disp_sensitivity
-        self.elastic_nodal_disp = initial_analysis.elastic_nodal_disp
 
         if self.analysis_type is AnalysisType.STATIC:
+            self.elastic_nodal_disp = initial_analysis.elastic_nodal_disp
+            self.nodal_disp_sensitivity = initial_analysis.nodal_disp_sensitivity
             mahini_method = MahiniMethod(
+                analysis_type=self.analysis_type,
                 initial_data=self.initial_data,
                 analysis_data=self.analysis_data,
                 nodal_disp_sensitivity=self.nodal_disp_sensitivity,
@@ -29,6 +30,7 @@ class InelasticAnalysis:
 
     def update_dynamic_time_step(self, analysis_data):
         mahini_method = MahiniMethod(
+            analysis_type=self.analysis_type,
             initial_data=self.initial_data,
             analysis_data=analysis_data,
             final_inc_phi_pms_prev=self.final_inc_phi_pms_prev,
