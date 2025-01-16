@@ -279,17 +279,10 @@ class MahiniMethod:
                 h_sms_history.append(h_sms_cumulative.copy())
 
         while self.limits_slacks.issubset(set(basic_variables)):
-            elastoplastic_nodal_disp = get_elastoplastic_response(
-                load_level=load_level_cumulative,
-                phi_x=phi_pms_cumulative,
-                elastic_response=self.elastic_nodal_disp,
-                sensitivity=self.nodal_disp_sensitivity,
-            )
 
             increment = len(load_level_history)
             print("-------------------------------")
             print(f"{increment=}")
-            print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
             print(f"{load_level_cumulative=}")
             print(f"will_in_col=x-{will_in_col}")
             print(f"{will_out_row=}")
@@ -506,6 +499,14 @@ class MahiniMethod:
                     load_level_history.append(load_level_cumulative)
                     if self.include_softening:
                         h_sms_history.append(h_sms_cumulative.copy())
+
+            elastoplastic_nodal_disp = get_elastoplastic_response(
+                load_level=load_level_cumulative,
+                phi_x=phi_pms_cumulative,
+                elastic_response=self.elastic_nodal_disp,
+                sensitivity=self.nodal_disp_sensitivity,
+            )
+            print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
 
         if self.final_inc_phi_pms_prev is not None:
             final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]
