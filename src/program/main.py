@@ -509,7 +509,8 @@ class MahiniMethod:
                     elastic_response=self.elastic_nodal_disp,
                     sensitivity=self.nodal_disp_sensitivity,
                 )
-                print(f"+ Monitored Disp: {elastoplastic_nodal_disp[settings.monitored_nodal_disp_component]}")
+                controlled_dof_count = settings.controlled_node_for_disp * settings.controlled_node_dofs_count
+                print(f"+ Monitored Disp: {elastoplastic_nodal_disp[controlled_dof_count]}")
 
         if self.final_inc_phi_pms_prev is not None:
             final_inc_phi_pms = self.final_inc_phi_pms_prev + phi_pms_history[-1]

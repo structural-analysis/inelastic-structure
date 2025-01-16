@@ -15,9 +15,9 @@ def draw_load_disp_history(example, node_num, dof, each_node_dof_count):
 
     # Plotting the data
     plt.plot(disps, loads, marker='o', linestyle='-')
-    plt.xlabel('Time')
-    plt.ylabel('Displacement')
-    plt.title('Displacement vs. Time')
+    plt.xlabel('Controlled Disp (m)')
+    plt.ylabel('Load Factor (N)')
+    plt.title('Load Factor vs. Disp')
     plt.grid(True)
     plt.show()
 
