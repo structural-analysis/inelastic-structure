@@ -3,7 +3,7 @@ import csv
 
 # inputs:
 load_factor = 1
-xy_data_name = 'sm3'
+xy_data_name = 'disp'
 
 # Get the XY data from the session
 xy_data = session.xyDataObjects[xy_data_name]
