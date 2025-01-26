@@ -42,6 +42,7 @@ all = [
     "plate-9element-confined-inelastic",
     "plate-confined-inelastic",
     "plate-curved-coarse",
+    "plate-perforated-innerdisp-soft",
 
     # DYNAMIC EXAMPLES:
     # "truss-kassimali-115-dynamic-elastic",
@@ -83,6 +84,7 @@ statics = statics + [
     "plate-9element-confined-inelastic",
     "plate-confined-inelastic",
     "plate-curved-coarse",
+    "plate-perforated-innerdisp-soft",
     "tripod-corner",
     "tripod-unload",
 ]
