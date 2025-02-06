@@ -2,17 +2,17 @@ from abaqus import session
 import csv
 
 # inputs:
-load_factor = 1400000
-xy_data_name = 'xydata'
+load_factor = 1
+xy_data_name = 'disp'
 
 # Get the XY data from the session
 xy_data = session.xyDataObjects[xy_data_name]
 
 # Define the output file path
-output_file = 'C:/Users/Hamed/projects/thesis/xydata.csv'
+output_file = f'C:/Users/Hamed/projects/thesis/{xy_data_name}.csv'
 
 # Create and write to the CSV file
-with open(output_file, 'wb') as csvfile:
+with open(output_file, 'w') as csvfile:
     writer = csv.writer(csvfile)
     # Write headers
     writer.writerow(['X', 'Y'])

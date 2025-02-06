@@ -53,10 +53,11 @@ class Sifting:
     # NOTE: SIFTING+: len(sifted_yield_points) != len(intact_yield_points)
     # so in advanced sifting we cannot loop through sifted yield points.
     # better to use unique id's for piece and points in sifted+
-    def __init__(self, intact_points, intact_pieces, intact_phi):
+    def __init__(self, intact_points, intact_pieces, intact_phi, include_softening):
         self.intact_points = intact_points
         self.intact_pieces = intact_pieces
         self.intact_phi = intact_phi
+        self.include_softening = include_softening
 
     def create(self, scores):
         piece_num_in_structure = 0
@@ -128,7 +129,15 @@ class Sifting:
             landa_var,
             pv,
             p0,
-            will_in_col_piece_num_in_structure):
+            will_in_col_piece_num_in_structure,
+            plastic_vars_count,
+            softening_vars_count,
+            dv,
+            constraints_count,
+            primary_vars_count,
+            disp_limits_count,
+            d0,
+            disp_limits,):
 
         violated_points = self.get_violated_points(violated_pieces)
         sifted_yield_points_updated = sifted_results_old.sifted_yield_points
@@ -313,6 +322,17 @@ class Sifting:
                 phi=structure_sifted_output.phi,
                 pv=pv,
                 p0=p0,
+                plastic_vars_count=plastic_vars_count,
+                softening_vars_count=softening_vars_count,
+                q=structure_sifted_output.q,
+                h=structure_sifted_output.h,
+                w=structure_sifted_output.w,
+                dv=dv,
+                constraints_count=constraints_count,
+                primary_vars_count=primary_vars_count,
+                disp_limits_count=disp_limits_count,
+                d0=d0,
+                disp_limits=disp_limits,
             ),
         )
 
@@ -412,13 +432,18 @@ class Sifting:
         return point_selected_pieces
 
     def get_point_final_pieces(self, selected_pieces, violated_pieces, will_in_col_piece_num_in_structure, plastic_vars_in_basic_variables):
-        unchanged_vars = [will_in_col_piece_num_in_structure] + plastic_vars_in_basic_variables
+        if will_in_col_piece_num_in_structure:
+            unchanged_vars = [will_in_col_piece_num_in_structure] + plastic_vars_in_basic_variables
+        else:
+            unchanged_vars = plastic_vars_in_basic_variables
+
         final_pieces = selected_pieces[:]
         assign_indices = [index for index, piece in enumerate(selected_pieces) if piece.num_in_structure not in unchanged_vars]
         assign_indices.sort(reverse=True)
         if violated_pieces:
             if not violated_pieces[0] in final_pieces:
                 final_pieces[assign_indices[0]] = violated_pieces[0]
+
         # for i, assign_index in enumerate(assign_indices):
         #     if i < len(violated_pieces):
         #         final_pieces[assign_index] = violated_pieces[i]
@@ -469,7 +494,18 @@ class Sifting:
             landa_row,
             phi,
             pv,
-            p0,):
+            p0,
+            plastic_vars_count,
+            softening_vars_count,
+            q,
+            h,
+            w,
+            dv,
+            constraints_count,
+            primary_vars_count,
+            disp_limits_count,
+            d0,
+            disp_limits,):
 
         # NOTE:
         # j: indices of previous phi matrix columns which contents are updated
@@ -480,7 +516,9 @@ class Sifting:
         active_pms, active_pms_rows = self.get_active_pms_stats(
             basic_variables_prev=basic_variables_prev,
             landa_var=landa_var,
+            plastic_vars_count=plastic_vars_count,
         )
+
         j = np.array(modified_structure_sifted_yield_pieces_indices)
         m = active_pms
         m.remove(landa_var)
@@ -492,14 +530,48 @@ class Sifting:
         u.append(landa_row)
         u = np.array(u)
 
-        a_sensitivity_part = phi.T[j, :] @ pv @ phi[:, m]
-        a_elastic_part = phi.T[j, :] @ p0
+        phi_p0 = phi.T @ p0
+        phi_pv = phi.T @ pv
+        phi_pv_phi = phi_pv @ phi
 
-        a_updated = np.concatenate((a_sensitivity_part, a_elastic_part.reshape(-1, 1)), axis=1)
-        b_matrix_inv_prev[np.ix_(j, v)] = -a_updated @ b_matrix_inv_prev[np.ix_(u, v)]
+        landa_base_num = plastic_vars_count + softening_vars_count
+        dv_phi = dv @ phi
+
+        a_updated = np.zeros((constraints_count, primary_vars_count))
+        a_updated[0:plastic_vars_count, 0:plastic_vars_count] = phi_pv_phi
+        a_updated[0:plastic_vars_count, landa_base_num] = phi_p0
+
+        if self.include_softening:
+            a_updated[plastic_vars_count:(plastic_vars_count + softening_vars_count), 0:plastic_vars_count] = q
+            a_updated[0:plastic_vars_count, plastic_vars_count:(plastic_vars_count + softening_vars_count)] = - h
+            a_updated[plastic_vars_count:(plastic_vars_count + softening_vars_count), plastic_vars_count:(plastic_vars_count + softening_vars_count)] = w
+        a_updated[landa_base_num, landa_base_num] = 1.0
+
+        if disp_limits.any():
+            disp_limit_base_num = plastic_vars_count + softening_vars_count + 1
+            a_updated[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), 0:plastic_vars_count] = dv_phi
+            a_updated[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), 0:plastic_vars_count] = - dv_phi
+
+            a_updated[disp_limit_base_num:(disp_limit_base_num + disp_limits_count), landa_base_num] = d0
+            a_updated[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count), landa_base_num] = - d0
+
+        phi_p0_part = phi.T[j, :] @ p0
+        last_col_part = phi_p0_part.reshape(-1, 1)
+
+        if m.any():
+            a_updated_part = a_updated[np.ix_(j, m)]
+            complete_part = np.concatenate((a_updated_part, last_col_part), axis=1)
+        else:
+            complete_part = last_col_part
+
+        # phi_pv_phi = phi.T[j, :] @ pv @ phi[:, m]
+        # phi_p0 = phi.T[j, :] @ p0
+        # a_updated = np.concatenate((phi_pv_phi, phi_p0.reshape(-1, 1)), axis=1)
+
+        b_matrix_inv_prev[np.ix_(j, v)] = -complete_part @ b_matrix_inv_prev[np.ix_(u, v)]
         return b_matrix_inv_prev
 
-    def get_active_pms_stats(self, basic_variables_prev, landa_var):
+    def get_active_pms_stats(self, basic_variables_prev, landa_var, plastic_vars_count):
         active_pms = []
         active_pms_rows = []
         for index, basic_variable in enumerate(basic_variables_prev):
@@ -507,3 +579,14 @@ class Sifting:
                 active_pms.append(basic_variable)
                 active_pms_rows.append(index)
         return active_pms, active_pms_rows
+
+    # def get_active_pms_stats(self, basic_variables_prev, landa_var, plastic_vars_count):
+    #     active_pms = []
+    #     active_pms_rows = []
+    #     for index, basic_variable in enumerate(basic_variables_prev):
+    #         if basic_variable <= plastic_vars_count:
+    #             active_pms.append(basic_variable)
+    #             active_pms_rows.append(index)
+    #             active_pms.append(landa_var)
+    #             active_pms_rows.append(np.where(basic_variables_prev==landa_var)[0][0])
+    #     return active_pms, active_pms_rows

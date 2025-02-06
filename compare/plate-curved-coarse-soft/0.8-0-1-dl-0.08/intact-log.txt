@@ -1,0 +1,837 @@
+self.total_vars_count=28420
+self.primary_vars_count=14209
+self.slack_vars_count=14211
+self.plastic_vars_count=14144
+self.softening_vars_count=64
+self.limits_count=3
+self.q.shape=(64, 14144)
+self.h.shape=(14144, 64)
+self.w.shape=(64, 64)
+dv_phi.shape=(1, 14144)
+self.d0.shape=(1,)
+-------------------------------
+increment=0
+will_in_col=14208
+will_out_row=763
+will_out_var=14972
+enter landa
+-------------------------------
+increment=1
+load_level_cumulative=817422.5856401455
+will_in_col=x-763
+will_out_row=14146
+will_out_var=28355
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=2
+load_level_cumulative=817422.5856401455
+will_in_col=x-14146
+will_out_row=11833
+will_out_var=26042
+enter fpm
+-------------------------------
+increment=3
+load_level_cumulative=817422.5856401615
+will_in_col=x-11833
+will_out_row=14196
+will_out_var=28405
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=4
+load_level_cumulative=817422.5856401615
+will_in_col=x-14196
+will_out_row=62
+will_out_var=14271
+enter fpm
+-------------------------------
+increment=5
+load_level_cumulative=952352.894707522
+will_in_col=x-62
+will_out_row=14144
+will_out_var=28353
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=6
+load_level_cumulative=952352.894707522
+will_in_col=x-14144
+will_out_row=12014
+will_out_var=26223
+enter fpm
+-------------------------------
+increment=7
+load_level_cumulative=952352.8947075407
+will_in_col=x-12014
+will_out_row=14198
+will_out_var=28407
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=8
+load_level_cumulative=952352.8947075407
+will_in_col=x-14198
+will_out_row=2270
+will_out_var=16479
+enter fpm
+-------------------------------
+increment=9
+load_level_cumulative=1027307.0867079333
+will_in_col=x-2270
+will_out_row=14154
+will_out_var=28363
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=10
+load_level_cumulative=1027307.0867079333
+will_in_col=x-14154
+will_out_row=13302
+will_out_var=27511
+enter fpm
+-------------------------------
+increment=11
+load_level_cumulative=1027307.0867079537
+will_in_col=x-13302
+will_out_row=14204
+will_out_var=28413
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=12
+load_level_cumulative=1027307.0867079537
+will_in_col=x-14204
+will_out_row=803
+will_out_var=15012
+enter fpm
+-------------------------------
+increment=13
+load_level_cumulative=1038078.798823964
+will_in_col=x-803
+will_out_row=11873
+will_out_var=26082
+unload spm
+-------------------------------
+increment=14
+load_level_cumulative=1038078.798823964
+will_in_col=x-803
+will_out_row=14146
+will_out_var=28355
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=15
+load_level_cumulative=1038078.798823964
+will_in_col=x-14146
+will_out_row=11873
+will_out_var=26082
+enter fpm
+-------------------------------
+increment=16
+load_level_cumulative=1038078.798823991
+will_in_col=x-11873
+will_out_row=14196
+will_out_var=11833
+unload spm
+-------------------------------
+increment=17
+load_level_cumulative=1038078.798823991
+will_in_col=x-11873
+will_out_row=14196
+will_out_var=28405
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=18
+load_level_cumulative=1038078.798823991
+will_in_col=x-14196
+will_out_row=63
+will_out_var=14272
+enter fpm
+-------------------------------
+increment=19
+load_level_cumulative=1043990.1557708655
+will_in_col=x-63
+will_out_row=12013
+will_out_var=26222
+enter fpm
+-------------------------------
+increment=20
+load_level_cumulative=1043990.1557708918
+will_in_col=x-12013
+will_out_row=842
+will_out_var=15051
+enter fpm
+-------------------------------
+increment=21
+load_level_cumulative=1058202.6061563948
+will_in_col=x-842
+will_out_row=11874
+will_out_var=26083
+enter fpm
+-------------------------------
+increment=22
+load_level_cumulative=1058202.606156407
+will_in_col=x-11874
+will_out_row=13303
+will_out_var=27512
+enter fpm
+-------------------------------
+increment=23
+load_level_cumulative=1061528.3203790665
+will_in_col=x-13303
+will_out_row=2269
+will_out_var=16478
+enter fpm
+-------------------------------
+increment=24
+load_level_cumulative=1061528.320379099
+will_in_col=x-2269
+will_out_row=1283
+will_out_var=15492
+enter fpm
+-------------------------------
+increment=25
+load_level_cumulative=1105554.3521800973
+will_in_col=x-1283
+will_out_row=14148
+will_out_var=28357
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=26
+load_level_cumulative=1105554.3521800973
+will_in_col=x-14148
+will_out_row=11433
+will_out_var=25642
+enter fpm
+-------------------------------
+increment=27
+load_level_cumulative=1105554.3521801196
+will_in_col=x-11433
+will_out_row=14194
+will_out_var=28403
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=28
+load_level_cumulative=1105554.3521801196
+will_in_col=x-14194
+will_out_row=2752
+will_out_var=16961
+enter fpm
+-------------------------------
+increment=29
+load_level_cumulative=1126284.4778262472
+will_in_col=x-2752
+will_out_row=14156
+will_out_var=28365
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=30
+load_level_cumulative=1126284.4778262472
+will_in_col=x-14156
+will_out_row=12900
+will_out_var=27109
+enter fpm
+-------------------------------
+increment=31
+load_level_cumulative=1126284.477826274
+will_in_col=x-12900
+will_out_row=14202
+will_out_var=28411
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=32
+load_level_cumulative=1126284.477826274
+will_in_col=x-14202
+will_out_row=2712
+will_out_var=16921
+enter fpm
+-------------------------------
+increment=33
+load_level_cumulative=1135976.5790429541
+will_in_col=x-2712
+will_out_row=12860
+will_out_var=27069
+unload spm
+-------------------------------
+increment=34
+load_level_cumulative=1135976.5790429541
+will_in_col=x-2712
+will_out_row=14156
+will_out_var=28365
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=35
+load_level_cumulative=1135976.5790429541
+will_in_col=x-14156
+will_out_row=12860
+will_out_var=27069
+enter fpm
+-------------------------------
+increment=36
+load_level_cumulative=1135976.5790429986
+will_in_col=x-12860
+will_out_row=14202
+will_out_var=12900
+unload spm
+-------------------------------
+increment=37
+load_level_cumulative=1135976.5790429986
+will_in_col=x-12860
+will_out_row=14202
+will_out_var=28411
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=38
+load_level_cumulative=1135976.5790429986
+will_in_col=x-14202
+will_out_row=1284
+will_out_var=15493
+enter fpm
+-------------------------------
+increment=39
+load_level_cumulative=1137398.6411125748
+will_in_col=x-1284
+will_out_row=11432
+will_out_var=25641
+enter fpm
+-------------------------------
+increment=40
+load_level_cumulative=1137398.6411127066
+will_in_col=x-11432
+will_out_row=1430
+will_out_var=15639
+enter fpm
+-------------------------------
+increment=41
+load_level_cumulative=1157988.7437664533
+will_in_col=x-1430
+will_out_row=14150
+will_out_var=28359
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=42
+load_level_cumulative=1157988.7437664533
+will_in_col=x-14150
+will_out_row=10726
+will_out_var=24935
+enter fpm
+-------------------------------
+increment=43
+load_level_cumulative=1157988.7437664836
+will_in_col=x-10726
+will_out_row=14192
+will_out_var=28401
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=44
+load_level_cumulative=1157988.7437664836
+will_in_col=x-14192
+will_out_row=1973
+will_out_var=16182
+enter fpm
+-------------------------------
+increment=45
+load_level_cumulative=1158722.2871851493
+will_in_col=x-1973
+will_out_row=14152
+will_out_var=28361
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=46
+load_level_cumulative=1158722.2871851493
+will_in_col=x-14152
+will_out_row=13919
+will_out_var=28128
+enter fpm
+-------------------------------
+increment=47
+load_level_cumulative=1158722.2871851637
+will_in_col=x-13919
+will_out_row=14206
+will_out_var=28415
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=48
+load_level_cumulative=1158722.2871851637
+will_in_col=x-14206
+will_out_row=1431
+will_out_var=15640
+enter fpm
+-------------------------------
+increment=49
+load_level_cumulative=1159464.3732743005
+will_in_col=x-1431
+will_out_row=10725
+will_out_var=24934
+unload spm
+-------------------------------
+increment=50
+load_level_cumulative=1159464.3732743005
+will_in_col=x-1431
+will_out_row=14150
+will_out_var=28359
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=51
+load_level_cumulative=1159464.3732743005
+will_in_col=x-14150
+will_out_row=10725
+will_out_var=24934
+enter fpm
+-------------------------------
+increment=52
+load_level_cumulative=1159464.3732743268
+will_in_col=x-10725
+will_out_row=14192
+will_out_var=10726
+unload spm
+-------------------------------
+increment=53
+load_level_cumulative=1159464.3732743268
+will_in_col=x-10725
+will_out_row=14192
+will_out_var=28401
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=54
+load_level_cumulative=1159464.3732743268
+will_in_col=x-14192
+will_out_row=1974
+will_out_var=16183
+enter fpm
+-------------------------------
+increment=55
+load_level_cumulative=1160899.030975603
+will_in_col=x-1974
+will_out_row=13918
+will_out_var=28127
+unload spm
+-------------------------------
+increment=56
+load_level_cumulative=1160899.030975603
+will_in_col=x-1974
+will_out_row=14152
+will_out_var=28361
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=57
+load_level_cumulative=1160899.030975603
+will_in_col=x-14152
+will_out_row=13918
+will_out_var=28127
+enter fpm
+-------------------------------
+increment=58
+load_level_cumulative=1160899.030975618
+will_in_col=x-13918
+will_out_row=14206
+will_out_var=13919
+unload spm
+-------------------------------
+increment=59
+load_level_cumulative=1160899.030975618
+will_in_col=x-13918
+will_out_row=14206
+will_out_var=28415
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=60
+load_level_cumulative=1160899.030975618
+will_in_col=x-14206
+will_out_row=3420
+will_out_var=17629
+enter fpm
+-------------------------------
+increment=61
+load_level_cumulative=1169160.0692728362
+will_in_col=x-3420
+will_out_row=14158
+will_out_var=28367
+unload spm
+-------------------------------
+increment=62
+load_level_cumulative=1169160.0692728362
+will_in_col=x-3420
+will_out_row=14204
+will_out_var=28413
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=63
+load_level_cumulative=1169160.0692728362
+will_in_col=x-14204
+will_out_row=14158
+will_out_var=28367
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=64
+load_level_cumulative=1169160.0692728362
+will_in_col=x-14158
+will_out_row=12712
+will_out_var=26921
+enter fpm
+-------------------------------
+increment=65
+load_level_cumulative=1169160.0692728607
+will_in_col=x-12712
+will_out_row=14200
+will_out_var=28409
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=66
+load_level_cumulative=1169160.0692728607
+will_in_col=x-14200
+will_out_row=13302
+will_out_var=27511
+enter fpm
+-------------------------------
+increment=67
+load_level_cumulative=1169160.0692728695
+will_in_col=x-13302
+will_out_row=2014
+will_out_var=16223
+enter fpm
+-------------------------------
+increment=68
+load_level_cumulative=1169237.9207495183
+will_in_col=x-2014
+will_out_row=13958
+will_out_var=28167
+unload spm
+-------------------------------
+increment=69
+load_level_cumulative=1169237.9207495183
+will_in_col=x-2014
+will_out_row=14152
+will_out_var=28361
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=70
+load_level_cumulative=1169237.9207495183
+will_in_col=x-14152
+will_out_row=13958
+will_out_var=28167
+enter fpm
+-------------------------------
+increment=71
+load_level_cumulative=1169237.9207495765
+will_in_col=x-13958
+will_out_row=14206
+will_out_var=13918
+unload spm
+-------------------------------
+increment=72
+load_level_cumulative=1169237.9207495765
+will_in_col=x-13958
+will_out_row=14206
+will_out_var=28415
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=73
+load_level_cumulative=1169237.9207495765
+will_in_col=x-14206
+will_out_row=11833
+will_out_var=26042
+enter fpm
+-------------------------------
+increment=74
+load_level_cumulative=1171166.9313588138
+will_in_col=x-11833
+will_out_row=763
+will_out_var=14972
+enter fpm
+-------------------------------
+increment=75
+load_level_cumulative=1171166.9313588615
+will_in_col=x-763
+will_out_row=2711
+will_out_var=16920
+enter fpm
+-------------------------------
+increment=76
+load_level_cumulative=1173844.8147311397
+will_in_col=x-2711
+will_out_row=12861
+will_out_var=27070
+unload spm
+-------------------------------
+increment=77
+load_level_cumulative=1173844.8147311397
+will_in_col=x-2711
+will_out_row=14156
+will_out_var=28365
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=78
+load_level_cumulative=1173844.8147311397
+will_in_col=x-14156
+will_out_row=12861
+will_out_var=27070
+enter fpm
+-------------------------------
+increment=79
+load_level_cumulative=1173844.8147311788
+will_in_col=x-12861
+will_out_row=14202
+will_out_var=12860
+unload spm
+-------------------------------
+increment=80
+load_level_cumulative=1173844.8147311788
+will_in_col=x-12861
+will_out_row=14202
+will_out_var=28411
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=81
+load_level_cumulative=1173844.8147311788
+will_in_col=x-14202
+will_out_row=3380
+will_out_var=17589
+enter fpm
+-------------------------------
+increment=82
+load_level_cumulative=1174307.523698995
+will_in_col=x-3380
+will_out_row=12672
+will_out_var=26881
+unload spm
+-------------------------------
+increment=83
+load_level_cumulative=1174307.523698995
+will_in_col=x-3380
+will_out_row=14158
+will_out_var=28367
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=84
+load_level_cumulative=1174307.523698995
+will_in_col=x-14158
+will_out_row=12672
+will_out_var=26881
+enter fpm
+-------------------------------
+increment=85
+load_level_cumulative=1174307.5236989951
+will_in_col=x-12672
+will_out_row=14200
+will_out_var=12712
+unload spm
+-------------------------------
+increment=86
+load_level_cumulative=1174307.5236989951
+will_in_col=x-12672
+will_out_row=14200
+will_out_var=28409
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=87
+load_level_cumulative=1174307.5236989951
+will_in_col=x-14200
+will_out_row=5806
+will_out_var=20015
+enter fpm
+-------------------------------
+increment=88
+load_level_cumulative=1174451.8346726636
+will_in_col=x-5806
+will_out_row=14170
+will_out_var=28379
+unload spm
+-------------------------------
+increment=89
+load_level_cumulative=1174451.8346726636
+will_in_col=x-5806
+will_out_row=14204
+will_out_var=28413
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=90
+load_level_cumulative=1174451.8346726636
+will_in_col=x-14204
+will_out_row=14170
+will_out_var=28379
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=91
+load_level_cumulative=1174451.8346726636
+will_in_col=x-14170
+will_out_row=9766
+will_out_var=23975
+enter fpm
+-------------------------------
+increment=92
+load_level_cumulative=1174451.8346726787
+will_in_col=x-9766
+will_out_row=14188
+will_out_var=28397
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=93
+load_level_cumulative=1174451.8346726787
+will_in_col=x-14188
+will_out_row=13302
+will_out_var=27511
+enter fpm
+-------------------------------
+increment=94
+load_level_cumulative=1174451.8346726852
+will_in_col=x-13302
+will_out_row=5551
+will_out_var=19760
+enter fpm
+-------------------------------
+increment=95
+load_level_cumulative=1174657.7293686972
+will_in_col=x-5551
+will_out_row=14168
+will_out_var=28377
+unload spm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=96
+load_level_cumulative=1174657.7293686972
+will_in_col=x-5551
+will_out_row=14196
+will_out_var=28405
+unload spm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=97
+load_level_cumulative=1174657.7293686972
+will_in_col=x-5551
+will_out_row=14196
+will_out_var=28405
+unload spm
+-------------------------------
+increment=98
+load_level_cumulative=1174657.7293686972
+will_in_col=x-5551
+will_out_row=14196
+will_out_var=28405
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=99
+load_level_cumulative=1174657.7293686972
+will_in_col=x-14196
+will_out_row=14194
+will_out_var=28403
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=100
+load_level_cumulative=1174657.7293686972
+will_in_col=x-14194
+will_out_row=14204
+will_out_var=28413
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=101
+load_level_cumulative=1174657.7293686972
+will_in_col=x-14204
+will_out_row=14168
+will_out_var=28377
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=102
+load_level_cumulative=1174657.7293686972
+will_in_col=x-14168
+will_out_row=11834
+will_out_var=26043
+enter fpm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=103
+load_level_cumulative=1174657.729368695
+will_in_col=x-11834
+will_out_row=10421
+will_out_var=24630
+enter fpm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=104
+load_level_cumulative=1174657.7293686892
+will_in_col=x-10421
+will_out_row=14190
+will_out_var=28399
+unload spm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=105
+load_level_cumulative=1174657.7293686892
+will_in_col=x-10421
+will_out_row=14190
+will_out_var=28399
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=106
+load_level_cumulative=1174657.7293686892
+will_in_col=x-14190
+will_out_row=14196
+will_out_var=28405
+enter fpm
+/////////////////// softening will in
+-------------------------------
+increment=107
+load_level_cumulative=1174657.7293686892
+will_in_col=x-14196
+will_out_row=13302
+will_out_var=27511
+enter fpm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=108
+load_level_cumulative=1174657.72936861
+will_in_col=x-13302
+will_out_row=11873
+will_out_var=26082
+enter fpm
+-------------------------------
+increment=109
+load_level_cumulative=1174657.7293686885
+will_in_col=x-11873
+will_out_row=11432
+will_out_var=25641
+enter fpm
+/////////////////// landa_row == sorted_zipped_ba[0, 0]
+-------------------------------
+increment=110
+load_level_cumulative=1174657.7293686445
+will_in_col=x-11432
+will_out_row=14210
+will_out_var=28419
+enter fpm
+/////////////////// softening will in
+analysis_time=datetime.timedelta(seconds=1990, microseconds=801365)
+analysis_time.microseconds=801365

@@ -7,12 +7,12 @@ from scipy.ndimage import gaussian_filter
 from matplotlib.path import Path
 
 # General settings
-example_name = "plate-curved-fine"
-selected = "von_mises_moment"  # nodal_disp, von_mises_moment
-increment = 194  # 82 kn/m2
+example_name = "plate-perforated-innerdisp-soft"
+selected = "nodal_disp"  # nodal_disp, von_mises_moment
+increment = 243  # 82 kn/m2
 contour_levels = 9
-min_limit = 50000  # Set your minimum limit here
-max_limit = 150000  # Set your maximum limit here
+min_limit = -0.35  # Set your minimum limit here
+max_limit = 0  # Set your maximum limit here
 colormap_choice = "Spectral"  # "Spectral" or "Grays" for white-to-black
 inputs_dir = "input/examples/"
 outputs_dir = "output/examples/"
