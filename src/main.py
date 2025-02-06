@@ -31,6 +31,7 @@ def run(example_name):
         initial_analysis = InitialAnalysis(structure=structure, loads=loads, analysis_type=analysis_type)
         inelastic_analysis = InelasticAnalysis(initial_analysis=initial_analysis)
         time_steps = initial_analysis.time_steps
+        print(f"{time_steps=}")
 
         for time_step in range(1, time_steps):
             print(f"{time_step=}")
