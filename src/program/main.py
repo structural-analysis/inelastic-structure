@@ -8,6 +8,7 @@ from .functions import zero_out_small_values, print_specific_properties
 from ..analysis.initial_analysis import InitialData, AnalysisData, AnalysisType
 from ..settings import settings, SiftingType
 from ..functions import get_elastoplastic_response
+
 # np.set_printoptions(threshold=np.inf, precision=4)
 
 
@@ -61,6 +62,11 @@ class MahiniMethod:
             self.pieces_count = self.intact_pieces_count
 
         elif settings.sifting_type is SiftingType.mahini:
+            intact_phi_t = self.intact_phi.T  # Cache the transpose
+            self.intact_phi_pv = intact_phi_t @ self.pv
+            self.intact_phi_p0 = intact_phi_t @ self.p0
+            self.intact_piece_count_ones = np.ones(self.intact_pieces_count)
+
             initial_scores = self.load_limit * np.dot(self.intact_phi.T, self.p0)
             self.sifting = Sifting(
                 intact_points=self.intact_points,
@@ -885,10 +891,11 @@ class MahiniMethod:
         return d
 
     def calc_violation_scores(self, intact_phi_pms, load_level, intact_h_sms=None):
+        term1 = self.intact_phi_pv @ intact_phi_pms
+        term2 = self.intact_phi_p0 * load_level
+        scores = term1 + term2 - self.intact_piece_count_ones
         if self.include_softening:
-            scores = self.intact_phi.T @ self.pv @ intact_phi_pms + self.intact_phi.T @ self.p0 * load_level - intact_h_sms - np.ones(self.intact_pieces_count)
-        else:
-            scores = self.intact_phi.T @ self.pv @ intact_phi_pms + self.intact_phi.T @ self.p0 * load_level - np.ones(self.intact_pieces_count)
+            scores -= intact_h_sms
         return scores
 
     def get_unsifted_pms(self, x, structure_sifted_yield_pieces):
