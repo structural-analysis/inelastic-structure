@@ -673,10 +673,9 @@ class MahiniMethod:
         # and last member of selected a column, this will cause no need for full table calcs.
         # it seems fpm cost is Cprow(m + 4) in mahini code, check again.
 
-        pi_transpose = np.dot(cb, b_matrix_inv)
-        cbar = np.zeros(self.total_vars_count)
-        for i in range(self.total_vars_count):
-            cbar[i] = self.costs[i] - pi_transpose @ self.table[:, i]
+        pi_transpose = cb @ b_matrix_inv
+        pi_table = pi_transpose @ self.table
+        cbar = self.costs - pi_table
         return cbar
 
     def calculate_dbar(self, db, b_matrix_inv):
