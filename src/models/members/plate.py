@@ -16,13 +16,6 @@ class Response:
     nodal_stresses: np.array = np.empty(0)
 
 
-@dataclass
-class Moment:
-    x: float
-    y: float
-    xy: float
-
-
 class PlateMember:
     # calculations is based on four gauss points
     def __init__(self, num: int, section: PlateSection, include_softening: bool, element_type: str, nodes: tuple):
@@ -234,51 +227,36 @@ class PlateMember:
     def get_transform(self):
         return np.eye(self.dofs_count)
 
-    def get_nodal_moments(self, nodal_disp, fixed_internal):
+    def get_nodal_moments(self, fixed_internal, gauss_points_moments):
         nodal_moments = np.zeros(3 * self.nodes_count)
-        i = 0
-        for natural_node in self.natural_nodes:
-            natural_point_moment = self.get_natural_point_moment(natural_node, nodal_disp, fixed_internal)
-            nodal_moments[i] = natural_point_moment.x
-            nodal_moments[i + 1] = natural_point_moment.y
-            nodal_moments[i + 2] = natural_point_moment.xy
-            i += 3
-        return nodal_moments
-
-    def get_natural_point_moment(self, natural_point, nodal_disp, fixed_internal):
-        extrapolated_natural_point = self.get_extrapolated_natural_point(natural_point)
-        extrapolated_shape_functions = self.get_extrapolated_shape_functions(extrapolated_natural_point)
-        gauss_points_moments = self.get_gauss_points_moments(nodal_disp)
-
         if fixed_internal.any():
             for i in range(self.gauss_points_count):
                 gauss_points_moments[i, :] += fixed_internal[3 * i:3 * (i + 1)]
 
-        natural_point_moment = np.dot(gauss_points_moments.T, extrapolated_shape_functions.T)
-        return Moment(x=natural_point_moment[0], y=natural_point_moment[1], xy=natural_point_moment[2])
+        i = 0
+        for natural_node in self.natural_nodes:
+            extrapolated_natural_point = self.get_extrapolated_natural_point(natural_node)
+            extrapolated_shape_functions = self.get_extrapolated_shape_functions(extrapolated_natural_point)
+            natural_point_moment = np.dot(gauss_points_moments.T, extrapolated_shape_functions.T)
+            nodal_moments[i] = natural_point_moment[0]
+            nodal_moments[i + 1] = natural_point_moment[1]
+            nodal_moments[i + 2] = natural_point_moment[2]
+            i += 3
+        return nodal_moments
 
     def get_gauss_points_moments(self, nodal_disp):
         gauss_points_moments = np.zeros((self.gauss_points_count, 3))
         for i, gauss_point in enumerate(self.gauss_points):
-            gauss_points_moments[i, 0] = self.get_gauss_point_moment(gauss_point, nodal_disp).x
-            gauss_points_moments[i, 1] = self.get_gauss_point_moment(gauss_point, nodal_disp).y
-            gauss_points_moments[i, 2] = self.get_gauss_point_moment(gauss_point, nodal_disp).xy
+            gauss_point_moment = self.get_gauss_point_moment(gauss_point, nodal_disp)
+            gauss_points_moments[i, 0] = gauss_point_moment[0]
+            gauss_points_moments[i, 1] = gauss_point_moment[1]
+            gauss_points_moments[i, 2] = gauss_point_moment[2]
         return gauss_points_moments
 
     def get_gauss_point_moment(self, gauss_point, nodal_disp):
         gauss_point_b = self.get_shape_derivatives(gauss_point)
         m = self.section.d @ gauss_point_b @ nodal_disp
-        return Moment(x=m[0], y=m[1], xy=m[2])
-
-    def get_yield_components_force(self, nodal_disp):
-        yield_components_force = np.zeros(3 * self.gauss_points_count)
-        i = 0
-        for gauss_point in self.gauss_points:
-            yield_components_force[i] = self.get_gauss_point_moment(gauss_point, nodal_disp).x
-            yield_components_force[i + 1] = self.get_gauss_point_moment(gauss_point, nodal_disp).y
-            yield_components_force[i + 2] = self.get_gauss_point_moment(gauss_point, nodal_disp).xy
-            i += 3
-        return yield_components_force
+        return m
 
     def get_unit_distortion(self, gauss_point_component_num):
         distortion = np.zeros(5)
@@ -321,10 +299,17 @@ class PlateMember:
         else:
             nodal_force = self.k @ nodal_disp
 
+        gauss_points_moments = self.get_gauss_points_moments(nodal_disp)
+
+        # NOTE: b/c gauss_points_moments array is altered by get_nodal_moments function,
+        # and adds fixed internals to it, it is important to make a copy of it to use in
+        # sensitivity calculations
+        yield_components_force = gauss_points_moments.copy().ravel()
+
         response = Response(
             nodal_force=nodal_force,
-            yield_components_force=self.get_yield_components_force(nodal_disp),
-            nodal_moments=self.get_nodal_moments(nodal_disp, fixed_internal),
+            yield_components_force=yield_components_force,
+            nodal_moments=self.get_nodal_moments(fixed_internal, gauss_points_moments),
         )
         return response
 
