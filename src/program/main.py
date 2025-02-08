@@ -1,10 +1,7 @@
-import copy
 import numpy as np
-from scipy.sparse import csr_matrix, lil_matrix
-# from line_profiler import profile
 
 from .models import FPM, SlackCandidate, Sifting, SiftedResults
-from .functions import zero_out_small_values, print_specific_properties
+from .functions import print_specific_properties
 from ..analysis.initial_analysis import InitialData, AnalysisData, AnalysisType
 from ..settings import settings, SiftingType
 from ..functions import get_elastoplastic_response
@@ -21,7 +18,7 @@ class MahiniMethod:
         final_inc_phi_pms_prev=None,
         nodal_disp_sensitivity=None,
         elastic_nodal_disp=None,
-            ):
+    ):
 
         self.load_limit = initial_data.load_limit
         self.disp_limits = initial_data.disp_limits
@@ -67,7 +64,7 @@ class MahiniMethod:
             self.intact_phi_p0 = intact_phi_t @ self.p0
             self.intact_piece_count_ones = np.ones(self.intact_pieces_count)
 
-            initial_scores = self.load_limit * np.dot(self.intact_phi.T, self.p0)
+            initial_scores = self.load_limit * self.intact_phi.T @ self.p0
             self.sifting = Sifting(
                 intact_points=self.intact_points,
                 intact_pieces=self.intact_pieces,
@@ -108,65 +105,53 @@ class MahiniMethod:
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()
 
-        c = self._get_costs_row()
-        self.costs = c.copy()
+        # costs of basic variables (necessary for repricing):
         self.cb = np.zeros(self.slack_vars_count)
-        self.activated_costs = self.cb.copy()
+        # to reprice every k pivots (better to be 50 - 100):
+        self.pivot_count = 0
+        self.cbar = self.init_cbar()
+        self.costs = self.cbar.copy()
+
+        # c = self._get_costs_row()
+        # self.activated_costs = self.cb.copy()
 
         self.table = self._create_table()
+        self.columns = self._build_columns()
         self.basic_variables = self.get_initial_basic_variables()
         # if analysis is dynamic:
         if self.final_inc_phi_pms_prev is not None:
             self.update_b_for_dynamic_analysis()
             self.negative_b_count = np.count_nonzero(self.b < 0)
 
-            is_two_phase = True if self.negative_b_count > 0 else False
-            if is_two_phase:
-                two_phase_table = self.create_two_phase_table()
+            # is_two_phase = True if self.negative_b_count > 0 else False
+            # if is_two_phase:
+            #     two_phase_table = self.create_two_phase_table()
 
-                negative_b_counter = 1
-                for i in range(self.constraints_count):
-                    if self.b[i] < 0:
-                        self.update_b_for_negative_b_row(i)
-                        self.basic_variables = self.update_basic_variables_for_negative_b_row(
-                            basic_variables=self.basic_variables,
-                            negative_b_row=i,
-                        )
-                        two_phase_table = self.update_table_for_negative_b_row(
-                            two_phase_table=two_phase_table,
-                            negative_b_row=i,
-                            negative_b_num=negative_b_counter,
-                        )
-                        negative_b_counter += 1
-                self.table = two_phase_table.copy()
-                d = self.calculate_initial_d(self.table)
-                db = np.zeros(self.slack_vars_count)
-                self.activated_costs = self.cb.copy()
-                self.costs = c.copy()
+            #     negative_b_counter = 1
+            #     for i in range(self.constraints_count):
+            #         if self.b[i] < 0:
+            #             self.update_b_for_negative_b_row(i)
+            #             self.basic_variables = self.update_basic_variables_for_negative_b_row(
+            #                 basic_variables=self.basic_variables,
+            #                 negative_b_row=i,
+            #             )
+            #             two_phase_table = self.update_table_for_negative_b_row(
+            #                 two_phase_table=two_phase_table,
+            #                 negative_b_row=i,
+            #                 negative_b_num=negative_b_counter,
+            #             )
+            #             negative_b_counter += 1
+            #     self.table = two_phase_table.copy()
+            #     d = self.calculate_initial_d(self.table)
+            #     db = np.zeros(self.slack_vars_count)
+            #     self.activated_costs = self.cb.copy()
+            #     self.costs = c.copy()
 
-    # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
-    def _get_b_column(self):
-        yield_pieces_count = self.plastic_vars_count
-        disp_limits_count = self.disp_limits_count
+    # def _get_costs_row(self):
+    #     c = np.zeros(self.total_vars_count)
+    #     c[0:self.plastic_vars_count] = 1.0
+    #     return -1 * c
 
-        b = np.ones((self.constraints_count))
-        b[yield_pieces_count + self.softening_vars_count] = self.load_limit
-        if self.include_softening:
-            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:]
-
-        if self.disp_limits.any():
-            disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
-            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.disp_limits[:, 2])
-            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.disp_limits[:, 2])
-
-        return b
-
-    def _get_costs_row(self):
-        c = np.zeros(self.total_vars_count)
-        c[0:self.plastic_vars_count] = 1.0
-        return -1 * c
-
-    # @profile
     def _create_table(self):
         phi_p0 = self.phi.T @ self.p0
         phi_pv = self.phi.T @ self.pv
@@ -205,13 +190,10 @@ class MahiniMethod:
         table[:self.constraints_count, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
         return table
 
-    def update_b_for_dynamic_analysis(self):
-        self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - self.phi.T @ self.pv @ self.final_inc_phi_pms_prev
-
     def solve(self):
         basic_variables = self.basic_variables
-        activated_costs = self.activated_costs
-
+        cb = self.cb
+        cbar = self.cbar
         bbar = self.b
         b_matrix_inv = np.eye(self.slack_vars_count)
         phi_pms_cumulative = np.zeros(self.intact_components_count)
@@ -234,11 +216,12 @@ class MahiniMethod:
         increment = 0
         print("-------------------------------")
         print(f"{increment=}")
-        fpm, b_matrix_inv, basic_variables, activated_costs, will_out_row, will_out_var = self.enter_landa(
+        fpm, b_matrix_inv, basic_variables, cbar, will_out_row, will_out_var = self.enter_landa(
             fpm=fpm,
             b_matrix_inv=b_matrix_inv,
             basic_variables=basic_variables,
-            cb=activated_costs,
+            cb=cb,
+            cbar=cbar,
         )
 
         landa_row = will_out_row
@@ -291,6 +274,7 @@ class MahiniMethod:
             increment = len(load_level_history)
             print("-------------------------------")
             print(f"{increment=}")
+            print(f"{self.pivot_count=}")
             print(f"{load_level_cumulative=}")
             print(f"will_in_col=x-{will_in_col}")
             print(f"{will_out_row=}")
@@ -305,13 +289,17 @@ class MahiniMethod:
             sorted_slack_candidates, cbar = self.get_sorted_slack_candidates(
                 basic_variables=basic_variables,
                 b_matrix_inv=b_matrix_inv,
-                cb=activated_costs,
+                cb=cb,
+                cbar=cbar,
+                will_in_col=will_in_col,
+                will_out_row=will_out_row,
             )
 
             if settings.sifting_type is SiftingType.mahini:
                 b_matrix_inv_prev = b_matrix_inv.copy()
                 basic_variables_prev = basic_variables.copy()
-                cb_prev = activated_costs.copy()
+                cb_prev = cb.copy()
+                cbar_prev = cbar.copy()
                 bbar_prev = bbar.copy()
                 x_prev = x.copy()
                 fpm_prev = FPM(var=fpm.var, cost=fpm.cost)
@@ -334,11 +322,12 @@ class MahiniMethod:
                         continue
                     else:
                         print("unload spm")
-                        basic_variables, b_matrix_inv, activated_costs, landa_row = self.unload(
+                        basic_variables, b_matrix_inv, cb, cbar, landa_row = self.unload(
                             pm_var=spm_var,
                             basic_variables=basic_variables,
                             b_matrix_inv=b_matrix_inv,
-                            cb=activated_costs,
+                            cb=cb,
+                            cbar=cbar,
                             landa_row=landa_row,
                         )
                         check_violation = False
@@ -347,21 +336,23 @@ class MahiniMethod:
                     if self.is_will_out_var_opm(will_out_var):
                         print("unload opm")
                         opm_var = will_out_var
-                        basic_variables, b_matrix_inv, activated_costs, landa_row = self.unload(
+                        basic_variables, b_matrix_inv, cb, cbar, landa_row = self.unload(
                             pm_var=opm_var,
                             basic_variables=basic_variables,
                             b_matrix_inv=b_matrix_inv,
-                            cb=activated_costs,
+                            cb=cb,
+                            cbar=cbar,
                             landa_row=landa_row,
                         )
                         check_violation = False
                         break
                     else:
                         print("enter fpm")
-                        basic_variables, b_matrix_inv, activated_costs, fpm = self.enter_fpm(
+                        basic_variables, b_matrix_inv, cb, cbar, fpm = self.enter_fpm(
                             basic_variables=basic_variables,
                             b_matrix_inv=b_matrix_inv,
-                            cb=activated_costs,
+                            cb=cb,
+                            cbar=cbar,
                             will_out_row=will_out_row,
                             will_in_col=will_in_col,
                             abar=abar,
@@ -476,7 +467,8 @@ class MahiniMethod:
                         bbar = self.sifted_results_current.bbar_updated
 
                         basic_variables = basic_variables_prev
-                        activated_costs = cb_prev
+                        cb = cb_prev
+                        cbar = cbar_prev
 
                         # NOTE: not done for softening
                         # NOTE: SIFTING+: var nums should change
@@ -484,7 +476,9 @@ class MahiniMethod:
                         # disp limits are calculated in table creation.
                         # in mahini name is C_LastRows and updated after violation
                         # updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
-                        self.table = self._create_table()
+
+                        # self.table = self._create_table()
+                        self.columns = self._build_columns()
 
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
                         will_out_row, sorted_zipped_ba = self.get_will_out(abar, bbar, will_in_col, landa_row, basic_variables)
@@ -534,6 +528,63 @@ class MahiniMethod:
             }
         return result
 
+    # NOTE: SIFTING+: take care in advanced sifting b/c self.cs will change or not?
+    def _get_b_column(self):
+        yield_pieces_count = self.plastic_vars_count
+        disp_limits_count = self.disp_limits_count
+
+        b = np.ones((self.constraints_count))
+        b[yield_pieces_count + self.softening_vars_count] = self.load_limit
+        if self.include_softening:
+            b[yield_pieces_count:(yield_pieces_count + self.softening_vars_count)] = np.array(self.cs)[:]
+
+        if self.disp_limits.any():
+            disp_limit_base_num = yield_pieces_count + self.softening_vars_count + 1
+            b[disp_limit_base_num:(disp_limit_base_num + disp_limits_count)] = abs(self.disp_limits[:, 2])
+            b[(disp_limit_base_num + disp_limits_count):(disp_limit_base_num + 2 * disp_limits_count)] = abs(self.disp_limits[:, 2])
+
+        return b
+
+    def _build_columns(self):
+        phi_p0 = self.phi.T @ self.p0
+        phi_pv = self.phi.T @ self.pv
+        phi_pv_phi = phi_pv @ self.phi
+
+        landa_base_num = self.plastic_vars_count + self.softening_vars_count
+        dv_phi = self.dv @ self.phi
+
+        raw_a = np.zeros((self.constraints_count, self.primary_vars_count))
+        raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
+        raw_a[0:self.plastic_vars_count, landa_base_num] = phi_p0
+
+        if self.include_softening:
+            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), 0:self.plastic_vars_count] = self.q
+            raw_a[0:self.plastic_vars_count, self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = - self.h
+            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = self.w
+        raw_a[landa_base_num, landa_base_num] = 1.0
+
+        if self.disp_limits.any():
+            disp_limit_base_num = self.plastic_vars_count + self.softening_vars_count + 1
+            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), 0:self.plastic_vars_count] = dv_phi
+            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), 0:self.plastic_vars_count] = - dv_phi
+
+            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
+            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
+
+        columns = {}
+        for col_idx in range(self.primary_vars_count):
+            columns[col_idx] = raw_a[:, col_idx].copy()
+
+        for slack_i in range(self.constraints_count):
+            e = np.zeros(self.constraints_count)
+            e[slack_i] = 1.0
+            columns[self.primary_vars_count + slack_i] = e
+
+        return columns
+
+    def update_b_for_dynamic_analysis(self):
+        self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - self.phi.T @ self.pv @ self.final_inc_phi_pms_prev
+
     def get_slack_var(self, primary_var):
         if primary_var < self.primary_vars_count:
             # y variables from x variables
@@ -550,9 +601,9 @@ class MahiniMethod:
             # y variables from z variables
             return slack_var - self.constraints_count
 
-    def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb):
+    def enter_landa(self, fpm, b_matrix_inv, basic_variables, cb, cbar):
         will_in_col = fpm.var
-        a = self.table[:, will_in_col]
+        a = self.columns[will_in_col]
         will_out_row, sorted_zipped_ba = self.get_will_out(a, self.b)
         will_out_var = basic_variables[will_out_row]
         print(f"{will_in_col=}")
@@ -561,20 +612,25 @@ class MahiniMethod:
         print("enter landa")
         basic_variables = self.update_basic_variables(basic_variables, will_out_row, will_in_col)
         b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, a, will_out_row)
-        cb = self.update_cb(cb, will_in_col, will_out_row)
-        cbar = self.calculate_cbar(cb, b_matrix_inv)
-        fpm = self.update_fpm(will_out_row, cbar)
-        return fpm, b_matrix_inv, basic_variables, cb, will_out_row, will_out_var
+        self.pivot_count += 1
 
-    def enter_fpm(self, basic_variables, b_matrix_inv, cb, will_out_row, will_in_col, abar):
+        # NOTE: commenting update_cp here, had no effect in test results
+        # cb = self.update_cb(cb, will_in_col, will_out_row)
+
+        cbar = self.update_cbar(cb, cbar, b_matrix_inv, will_in_col, will_out_row)
+        fpm = self.update_fpm(will_out_row, cbar)
+        return fpm, b_matrix_inv, basic_variables, cbar, will_out_row, will_out_var
+
+    def enter_fpm(self, basic_variables, b_matrix_inv, cb, cbar, will_out_row, will_in_col, abar):
         b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, will_out_row)
+        self.pivot_count += 1
         cb = self.update_cb(cb, will_in_col, will_out_row)
-        cbar = self.calculate_cbar(cb, b_matrix_inv)
+        cbar = self.update_cbar(cb, cbar, b_matrix_inv, will_in_col, will_out_row)
         basic_variables = self.update_basic_variables(basic_variables, will_out_row, will_in_col)
         fpm = self.update_fpm(will_out_row, cbar)
-        return basic_variables, b_matrix_inv, cb, fpm
+        return basic_variables, b_matrix_inv, cb, cbar, fpm
 
-    def unload(self, pm_var, basic_variables, b_matrix_inv, cb, landa_row):
+    def unload(self, pm_var, basic_variables, b_matrix_inv, cb, cbar, landa_row):
         # TODO: should handle if third pivot column is a y not x. possible bifurcation.
         # TODO: loading whole b_matrix_inv in input and output is costly, try like mahini method.
         # TODO: check line 60 of unload and line 265 in mclp of mahini code
@@ -587,20 +643,6 @@ class MahiniMethod:
             # print(f"{primary_var=}")
             if primary_var in basic_variables:
                 exiting_row = self.get_var_row(primary_var, basic_variables)
-                # print("primary var in basic variables")
-                # print(f"{primary_var=}")
-                # print("first:")
-                # print(f"in: {self.get_slack_var(exiting_row)=}")
-                # print(f"out: {exiting_row=}")
-                # print("---")
-                # print("second:")
-                # print(f"in: {self.get_slack_var(primary_var)=}")
-                # print(f"out: {primary_var=}")
-                # print("---")
-                # print("third:")
-                # print(f"in: {basic_variables[primary_var]=}")
-                # print(f"out: {exiting_row=}")
-                # print("---")
 
                 unloading_pivot_elements = [
                     {
@@ -619,11 +661,13 @@ class MahiniMethod:
                 for element in unloading_pivot_elements:
                     abar = self.calculate_abar(element["column"], b_matrix_inv)
                     b_matrix_inv = self.update_b_matrix_inverse(b_matrix_inv, abar, element["row"])
+                    self.pivot_count += 1
                     cb = self.update_cb(
                         cb=cb,
                         will_in_col=element["column"],
-                        will_out_row=element["row"]
+                        will_out_row=element["row"],
                     )
+                    cbar = self.update_cbar(cb, cbar, b_matrix_inv, element["column"], element["row"])
                     basic_variables = self.update_basic_variables(
                         basic_variables=basic_variables,
                         will_out_row=element["row"],
@@ -632,10 +676,8 @@ class MahiniMethod:
 
                     if element["column"] == self.landa_var:
                         landa_row = element["row"]
-                # for var in basic_variables:
-                #     if var < self.primary_vars_count:
-                #         print(f"{var=}")
-        return basic_variables, b_matrix_inv, cb, landa_row
+
+        return basic_variables, b_matrix_inv, cb, cbar, landa_row
 
     def get_pm_var_family(self, pm_var):
         if self.softening_vars_count:
@@ -660,15 +702,37 @@ class MahiniMethod:
         # TODO: no need to calculate all table, just calculate a every time,
         # like cprow in mahini code.
 
-        a = self.table[:, col]
-        abar = np.dot(b_matrix_inv, a)
+        a = self.columns[col]
+        abar = b_matrix_inv @ a
         return abar
 
     def calculate_bbar(self, b_matrix_inv, bbar):
-        bbar = np.dot(b_matrix_inv, bbar)
+        bbar = b_matrix_inv @ bbar
         return bbar
 
-    def calculate_cbar(self, cb, b_matrix_inv):
+    def init_cbar(self):
+        """
+        Create the initial reduced-cost array cbar of length total_vars_count.
+        In your code, 'costs' is a vector where only the first 'plastic_vars_count' entries
+        are 1.0 (then negated). So cbar is basically the same at iteration 0.
+        """
+
+        c = np.zeros(self.total_vars_count)
+        c[0:self.plastic_vars_count] = 1.0
+        costs = -c
+        # Initially, if the basic variables are the slacks, cbar can match 'costs' for nonbasic
+        # or all variables. Or you can explicitly set cbar=costs if you haven't pivoted yet.
+        return costs.copy()  # 'costs' is your original "objective row," negated for minimization
+
+    def update_cbar(self, cb, cbar, b_matrix_inv, will_in_col, will_out_row):
+        if self.pivot_count % settings.cbar_reprice_pivots_interval == 0:
+            cbar = self.reprice_cbar(cb, b_matrix_inv)
+        else:
+            pivot_row = self.build_pivot_row(b_matrix_inv, will_out_row)
+            cbar = self.update_cbar_with_pivot_row(cbar, will_in_col, pivot_row)
+        return cbar
+
+    def reprice_cbar(self, cb, b_matrix_inv):
         # TODO: it seems we can calculate costs along with b_matrix_inv
         # and last member of selected a column, this will cause no need for full table calcs.
         # it seems fpm cost is Cprow(m + 4) in mahini code, check again.
@@ -678,20 +742,51 @@ class MahiniMethod:
         cbar = self.costs - pi_table
         return cbar
 
-    def calculate_dbar(self, db, b_matrix_inv):
-        sigma_transpose = np.dot(db, b_matrix_inv)
-        dbar = np.zeros(self.total_vars_count + self.negative_b_count)
-        for i in range(self.total_vars_count + self.negative_b_count):
-            dbar[i] = self.d[i] - np.dot(sigma_transpose, self.table[:, i])
-        return dbar
+    def build_pivot_row(self, b_matrix_inv, pivot_row_index):
+        """
+        Returns the 'pivot row' of length total_vars_count, i.e. the row
+        from the final tableau after the pivot.
+
+        pivot_row[j] = ( row pivot_row_index of b_matrix_inv ) dot ( column j )
+        """
+        pivot_row = np.zeros(self.total_vars_count)
+
+        # The row of B^-1 we pivoted on:
+        row_of_binv = b_matrix_inv[pivot_row_index, :]  # shape (constraints_count,)
+
+        # For each possible column j in the entire problem:
+        for j in range(self.total_vars_count):
+            a_j = self.columns[j]    # or self.get_column(j) if you're computing on the fly
+            # pivot_row[j] is that row_of_binv dot a_j
+            pivot_row[j] = row_of_binv @ a_j
+
+        return pivot_row
+
+    def update_cbar_with_pivot_row(self, cbar, col_in, pivot_row):
+        """
+        In-place row operation on cbar, using the standard simplex formula:
+        cbar[j] <- cbar[j] - (cbar[col_in]) * pivot_row[j]
+        Then set cbar[col_in] = 0.0 (since it's now in the basis).
+        """
+        c_in = cbar[col_in]
+        cbar -= c_in * pivot_row
+        cbar[col_in] = 0.0
+        return cbar
 
     def update_cb(self, cb, will_in_col, will_out_row):
         cb[will_out_row] = self.costs[will_in_col]
         return cb
 
-    def update_db(self, db, will_in_col, will_out_row):
-        db[will_out_row] = self.d[will_in_col]
-        return db
+    # def calculate_dbar(self, db, b_matrix_inv):
+    #     sigma_transpose = np.dot(db, b_matrix_inv)
+    #     dbar = np.zeros(self.total_vars_count + self.negative_b_count)
+    #     for i in range(self.total_vars_count + self.negative_b_count):
+    #         dbar[i] = self.d[i] - np.dot(sigma_transpose, self.table[:, i])
+    #     return dbar
+
+    # def update_db(self, db, will_in_col, will_out_row):
+    #     db[will_out_row] = self.d[will_in_col]
+    #     return db
 
     def get_will_out(self, abar, bbar, will_in_col=None, landa_row=None, basic_variables=None):
         # TODO: handle unbounded problem,
@@ -747,21 +842,43 @@ class MahiniMethod:
             basic_variables[i] = self.primary_vars_count + i
         return basic_variables
 
+    # def update_b_matrix_inverse_old(self, b_matrix_inv, abar, will_out_row):
+    #     e = np.eye(self.slack_vars_count)
+    #     eta = np.zeros(self.slack_vars_count)
+    #     will_out_item = abar[will_out_row]
+
+    #     for i, item in enumerate(abar):
+    #         if i == will_out_row:
+    #             eta[i] = 1 / will_out_item
+    #         else:
+    #             eta[i] = -item / will_out_item
+    #     e[:, will_out_row] = eta
+    #     sparse_e = csr_matrix(e)
+    #     sparse_b_inv = csr_matrix(b_matrix_inv)
+    #     updated_b_matrix_inv = sparse_e.dot(sparse_b_inv)
+    #     return updated_b_matrix_inv.toarray()
+
     def update_b_matrix_inverse(self, b_matrix_inv, abar, will_out_row):
-        e = np.eye(self.slack_vars_count)
-        eta = np.zeros(self.slack_vars_count)
+        # IMPROVE: A much faster way is to skip building the E matrix and multiplying it by b_inv
+        # In the revised simplex (product‐form) update, you can directly do the row operation on 
+        # b_inv in‐place, which is exactly what multiplying on the left by E does.
+        # in a fully vectorized form:
         will_out_item = abar[will_out_row]
 
-        for i, item in enumerate(abar):
-            if i == will_out_row:
-                eta[i] = 1 / will_out_item
-            else:
-                eta[i] = -item / will_out_item
-        e[:, will_out_row] = eta
-        sparse_e = csr_matrix(e)
-        sparse_b_inv = csr_matrix(b_matrix_inv)
-        updated_b_matrix_inv = sparse_e.dot(sparse_b_inv)
-        return updated_b_matrix_inv.toarray()
+        # Copy out pivot row so we don't overwrite it prematurely
+        pivot_row = b_matrix_inv[will_out_row].copy()
+
+        # Scale pivot row in place
+        b_matrix_inv[will_out_row] /= will_out_item
+
+        # Compute all row factors once
+        row_factors = abar / will_out_item
+        row_factors[will_out_row] = 0.0  # pivot row already scaled
+
+        # Subtract outer product
+        b_matrix_inv -= np.outer(row_factors, pivot_row)
+
+        return b_matrix_inv
 
     def is_candidate_fpm(self, fpm, slack_candidate):
         if fpm.cost <= slack_candidate.cost:
@@ -774,10 +891,6 @@ class MahiniMethod:
         return True if will_out_var < (self.primary_vars_count - 1) else False
 
     def update_basic_variables(self, basic_variables, will_out_row, will_in_col):
-        # print(f"{will_in_col=}")
-        # for basic in basic_variables:
-        #     if basic < self.landa_var:
-        #         print(f"{basic=}")
         basic_variables[will_out_row] = will_in_col
         return basic_variables
 
@@ -787,8 +900,9 @@ class MahiniMethod:
         fpm.cost = cbar[will_out_row]
         return fpm
 
-    def get_sorted_slack_candidates(self, basic_variables, b_matrix_inv, cb):
-        cbar = self.calculate_cbar(cb, b_matrix_inv)
+    def get_sorted_slack_candidates(self, basic_variables, b_matrix_inv, cb, cbar, will_in_col, will_out_row):
+        # NOTE: must not update cb here. just update cbar.
+        cbar = self.update_cbar(cb, cbar, b_matrix_inv, will_in_col, will_out_row)
         slack_candidates = []
         for var in basic_variables:
             if var < self.landa_var:
@@ -801,19 +915,19 @@ class MahiniMethod:
         slack_candidates.sort(key=lambda y: y.cost)
         return slack_candidates, cbar
 
-    def get_sorted_slack_d_candidates(self, basic_variables, b_matrix_inv, db):
-        dbar = self.calculate_dbar(db, b_matrix_inv)
-        slack_candidates = []
-        for var in basic_variables:
-            if var < self.landa_var:
-                slack_var = self.get_slack_var(var)
-                slack_candidate = SlackCandidate(
-                    var=slack_var,
-                    cost=dbar[slack_var]
-                )
-                slack_candidates.append(slack_candidate)
-        slack_candidates.sort(key=lambda y: y.cost)
-        return slack_candidates
+    # def get_sorted_slack_d_candidates(self, basic_variables, b_matrix_inv, db):
+    #     dbar = self.calculate_dbar(db, b_matrix_inv)
+    #     slack_candidates = []
+    #     for var in basic_variables:
+    #         if var < self.landa_var:
+    #             slack_var = self.get_slack_var(var)
+    #             slack_candidate = SlackCandidate(
+    #                 var=slack_var,
+    #                 cost=dbar[slack_var]
+    #             )
+    #             slack_candidates.append(slack_candidate)
+    #     slack_candidates.sort(key=lambda y: y.cost)
+    #     return slack_candidates
 
     def reset(self, basic_variables, bbar):
         x = np.zeros(self.constraints_count)
@@ -865,29 +979,29 @@ class MahiniMethod:
 
         return will_out_yield_point
 
-    def update_table_for_negative_b_row(self, two_phase_table, negative_b_row, negative_b_num):
-        two_phase_table[negative_b_row, :] = - two_phase_table[negative_b_row, :]
-        two_phase_table[negative_b_row, self.primary_vars_count + negative_b_num] = 1
-        return two_phase_table
+    # def update_table_for_negative_b_row(self, two_phase_table, negative_b_row, negative_b_num):
+    #     two_phase_table[negative_b_row, :] = - two_phase_table[negative_b_row, :]
+    #     two_phase_table[negative_b_row, self.primary_vars_count + negative_b_num] = 1
+    #     return two_phase_table
 
-    def update_b_for_negative_b_row(self, negative_b_row):
-        self.b[negative_b_row] = - self.b[negative_b_row]
+    # def update_b_for_negative_b_row(self, negative_b_row):
+    #     self.b[negative_b_row] = - self.b[negative_b_row]
 
-    def update_basic_variables_for_negative_b_row(self, basic_variables, negative_b_row):
-        basic_variables[negative_b_row] = int(basic_variables[negative_b_row] + self.constraints_count)
-        return basic_variables
+    # def update_basic_variables_for_negative_b_row(self, basic_variables, negative_b_row):
+    #     basic_variables[negative_b_row] = int(basic_variables[negative_b_row] + self.constraints_count)
+    #     return basic_variables
 
-    def create_two_phase_table(self):
-        two_phase_table = np.array(
-            np.zeros((self.constraints_count, self.table.shape[1] + self.negative_b_count))
-        )
-        two_phase_table[:, :-self.negative_b_count] = self.table
-        return two_phase_table
+    # def create_two_phase_table(self):
+    #     two_phase_table = np.array(
+    #         np.zeros((self.constraints_count, self.table.shape[1] + self.negative_b_count))
+    #     )
+    #     two_phase_table[:, :-self.negative_b_count] = self.table
+    #     return two_phase_table
 
-    def calculate_initial_d(self, table):
-        d = np.zeros(self.total_vars_count + self.negative_b_count)
-        d[:self.total_vars_count] = table.sum(axis=0)[:self.total_vars_count]
-        return d
+    # def calculate_initial_d(self, table):
+    #     d = np.zeros(self.total_vars_count + self.negative_b_count)
+    #     d[:self.total_vars_count] = table.sum(axis=0)[:self.total_vars_count]
+    #     return d
 
     def calc_violation_scores(self, intact_phi_pms, load_level, intact_h_sms=None):
         term1 = self.intact_phi_pv @ intact_phi_pms
@@ -904,7 +1018,7 @@ class MahiniMethod:
         return intact_pms
 
     def get_phi_pms(self, intact_pms):
-        intact_phi_pms = np.dot(self.intact_phi, intact_pms)
+        intact_phi_pms = self.intact_phi @ intact_pms
         return intact_phi_pms
 
     def get_plastic_vars_in_basic_variables(self, basic_variables, landa_var, structure_sifted_yield_pieces):
