@@ -22,6 +22,13 @@ class AttachedMember:
     member_node_num: int
 
 
+@dataclass
+class VectorizedNodesMap:
+    node_ids: np.array
+    member_ids: np.array
+    local_node_nums: np.array
+
+
 class Structure:
     # TODO: can't solve truss, fix reduced matrix to model trusses.
     def __init__(self, input):
@@ -35,6 +42,7 @@ class Structure:
         self.nodes = self.get_nodes()
         self.nodes_count = len(self.nodes)
         self.nodes_map = self.create_nodes_map()
+        self.vectorized_nodes_map = self.create_vectorized_nodes_map()
         self.node_dofs_count = input["node_dofs_count"]
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
@@ -116,6 +124,25 @@ class Structure:
                             )
                         )
         return nodes_map
+
+    def create_vectorized_nodes_map(self):
+        # 1) Build arrays listing all "links" from (node -> member -> local_node_index).
+        #    We'll gather them so we can do a single pass with advanced indexing.
+        node_ids = []
+        member_ids = []
+        local_node_nums = []
+        for node in self.nodes:
+            n_id = node.num
+            attached_list = self.nodes_map[n_id].attached_members
+            for attached_member in attached_list:
+                node_ids.append(n_id)
+                member_ids.append(attached_member.member.num)
+                local_node_nums.append(attached_member.member_node_num)
+
+        node_ids = np.array(node_ids, dtype=int)
+        member_ids = np.array(member_ids, dtype=int)
+        local_node_nums = np.array(local_node_nums, dtype=int)
+        return VectorizedNodesMap(node_ids=node_ids, member_ids=member_ids, local_node_nums=local_node_nums,)
 
     def _get_analysis_type(self):
         if self.general_properties.get("dynamic_analysis") and self.general_properties["dynamic_analysis"]["enabled"]:

@@ -233,19 +233,60 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
 
 
 def average_nodal_responses(structure, members_responses):
-    comp_count = 3  # response_components_count
-    nodes_map = structure.nodes_map
-    nodal_responses = np.zeros(structure.nodes_count * comp_count)
-    for node in structure.nodes:
-        node_sum_response = np.zeros(comp_count)
-        for attached_member in nodes_map[node.num].attached_members:
-            start = comp_count * attached_member.member_node_num
-            end = comp_count * (attached_member.member_node_num + 1)
-            member_node_response = members_responses[attached_member.member.num, start:end]
-            node_sum_response += member_node_response
-        node_average_response = node_sum_response / len(nodes_map[node.num].attached_members)
-        nodal_responses[comp_count * node.num:comp_count * (node.num + 1)] = node_average_response
-    return nodal_responses
+    """
+    Vectorized version of average nodal responses using NumPy advanced indexing
+    and np.add.at. Accumulates all member->node contributions in one shot.
+
+    Parameters
+    ----------
+    structure : object
+        Must have:
+         - structure.nodes : iterable of node objects (each with a .num index)
+         - structure.nodes_count : total number of nodes
+         - structure.nodes_map[node_id].attached_members : list of objects each with:
+               - .member : an object with member.num (the member ID)
+               - .member_node_num : the local node index within that member
+    members_responses : ndarray of shape (n_members, dofs_per_member)
+        The row for each member, columns are the dof responses.
+
+    Returns
+    -------
+    1D ndarray of length structure.nodes_count * 3
+        The average 3-component (e.g. x,y,z or whatever) nodal response.
+    """
+
+    comp_count = 3  # e.g. 3 response components per node
+    vectorized_nodes_map = structure.vectorized_nodes_map
+    local_node_nums = vectorized_nodes_map.local_node_nums
+    member_ids = vectorized_nodes_map.member_ids
+    node_ids = vectorized_nodes_map.node_ids
+
+    # 2) Determine the column offsets for each attached member's local node.
+    #    If local_node_num=0 => offset=0, local_node_num=1 => offset=3, etc.
+    offsets = comp_count * local_node_nums  # shape (N,)
+
+    # 3) Gather the relevant rows/columns from members_responses using advanced indexing.
+    #    We'll build an (N, 3) array of each (memberID, offset..offset+2).
+    gather_cols = offsets[:, None] + np.arange(comp_count)  # shape (N,3)
+    # gather the needed 3-component slice from each row in one shot:
+    # shape of subset => (N, 3)
+    subset = members_responses[member_ids[:, None], gather_cols]
+
+    # 4) Accumulate those subsets into a node-based sums array using np.add.at.
+    #    sums[node_id] += subset[i], etc., for each i in [0..N-1].
+    node_count = structure.nodes_count
+    sums = np.zeros((node_count, comp_count), dtype=float)
+    np.add.at(sums, node_ids, subset)
+
+    # 5) Also count how many times each node appears (how many attached members).
+    counts = np.zeros(node_count, dtype=int)
+    np.add.at(counts, node_ids, 1)
+
+    # 6) Divide the sums by the counts to get the average.
+    sums /= counts[:, None]  # broadcast over comp_count dimension
+
+    # 7) Flatten to match the original function’s 1D layout.
+    return sums.ravel()
 
 
 def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
