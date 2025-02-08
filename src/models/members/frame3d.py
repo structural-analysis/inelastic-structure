@@ -196,9 +196,9 @@ class Frame3DMember:
         # nodal_disp: numpy array
 
         if fixed_force is None:
-            nodal_force = np.dot(self.k, nodal_disp)
+            nodal_force = self.k @ nodal_disp
         else:
-            nodal_force = np.dot(self.k, nodal_disp) + fixed_force
+            nodal_force = self.k @ nodal_disp + fixed_force
 
         yield_components_force = nodal_force[self.yield_components_dofs]
 

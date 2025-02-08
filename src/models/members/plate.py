@@ -237,7 +237,7 @@ class PlateMember:
         for natural_node in self.natural_nodes:
             extrapolated_natural_point = self.get_extrapolated_natural_point(natural_node)
             extrapolated_shape_functions = self.get_extrapolated_shape_functions(extrapolated_natural_point)
-            natural_point_moment = np.dot(gauss_points_moments.T, extrapolated_shape_functions.T)
+            natural_point_moment = gauss_points_moments.T @ extrapolated_shape_functions.T
             nodal_moments[i] = natural_point_moment[0]
             nodal_moments[i + 1] = natural_point_moment[1]
             nodal_moments[i + 2] = natural_point_moment[2]

@@ -125,7 +125,7 @@ class Structure:
         return type
 
     def _transform_loc_2d_matrix_to_glob(self, member_transform, member_stiffness):
-        member_global_stiffness = np.dot(np.dot(np.transpose(member_transform), member_stiffness), member_transform)
+        member_global_stiffness = (np.transpose(member_transform) @ member_stiffness) @ member_transform
         return member_global_stiffness
 
     def get_stiffness(self):
@@ -288,8 +288,8 @@ class Structure:
             structure_prop=self.k,
         )
         reduced_k00_inv = np.linalg.inv(reduced_k00)
-        ku0 = -(np.dot(reduced_k00_inv, reduced_k0t))
-        condensed_k = reduced_ktt - np.dot(np.dot(np.transpose(reduced_k0t), reduced_k00_inv), reduced_k0t)
+        ku0 = -(reduced_k00_inv @ reduced_k0t)
+        condensed_k = reduced_ktt - (np.transpose(reduced_k0t) @ reduced_k00_inv) @ reduced_k0t
         condensation_params = {
             "condensed_k": condensed_k,
             "condensed_m": condensed_m,
@@ -301,7 +301,7 @@ class Structure:
         return condensation_params
 
     def get_modal_property(self, property, modes):
-        property_modal = np.dot(np.transpose(modes), np.dot(property, modes))
+        property_modal = np.transpose(modes) @ (property @ modes)
         return property_modal
 
     def get_selected_modes_count(self):

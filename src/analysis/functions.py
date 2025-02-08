@@ -132,7 +132,7 @@ def get_sensitivity(structure, loads):
         # FIXME: GENERALIZE PLEASE
         for comp_num, force in enumerate(member.udefs.T):
             fv = np.zeros((structure.dofs_count, 1))
-            global_force = np.dot(member.t.T, force.T)
+            global_force = member.t.T @ force.T
             local_node_base_dof = 0
             for node in member.nodes:
                 global_node_base_dof = structure.node_dofs_count * node.num
@@ -223,8 +223,8 @@ def get_dynamic_nodal_disp(structure, loads, t1, t2, modes, total_load, previous
         previous_a2s=previous_a2s,
         previous_b2s=previous_b2s,
     )
-    ut = np.dot(modes, modal_disps)
-    u0 = np.dot(structure.reduced_k00_inv, reduced_p0) + np.dot(structure.ku0, ut)
+    ut = modes @ modal_disps
+    u0 = structure.reduced_k00_inv @ reduced_p0 + structure.ku0 @ ut
     nodal_disp = structure.undo_disp_condensation(ut, u0)
 
     return a2s, b2s, a_factor, b_factor, modal_loads, nodal_disp
@@ -357,7 +357,7 @@ def get_dynamic_sensitivity(structure, loads, deltat):
     for member_num, member in enumerate(members):
         for load in member.udefs.T:
             fv = np.zeros((structure.dofs_count, 1))
-            global_load = np.dot(member.t.T, load.T)
+            global_load = member.t.T @ load.T
             local_node_base_dof = 0
             for node in member.nodes:
                 global_node_base_dof = structure.node_dofs_count * node.num
@@ -444,7 +444,7 @@ def get_a2s_b2s_sensitivity_constant(structure, loads, deltat, modal_loads_sensi
     for member in members:
         for load in member.udefs.T:
             fv = np.zeros((structure.dofs_count, 1))
-            global_load = np.dot(member.t.T, load.T)
+            global_load = member.t.T @ load.T
             local_node_base_dof = 0
             for node in member.nodes:
                 global_node_base_dof = structure.node_dofs_count * node.num
