@@ -73,6 +73,9 @@ pivot optimization:
 لازم نیست وقتی میخواهیم پیوت انجام دهیم تمام جدول را به روز کنیم
 کد ماهینی را نگاه کنیم و ایده بگیریم
 
+performance:
+- try to change all np.dot()s to @
+
 - check if get_sorted_slack_candidates no need to update cbar and just use current cbar.
 
 - Make sure your arrays are float64 and in standard NumPy row‐major order for best BLAS performance. If you do big multiplications, or if you do @ self.table repeatedly, it’s good to ensure self.table.flags[‘C_CONTIGUOUS’] is true in NumPy.
