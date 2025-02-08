@@ -6,8 +6,6 @@ from ..analysis.initial_analysis import InitialData, AnalysisData, AnalysisType
 from ..settings import settings, SiftingType
 from ..functions import get_elastoplastic_response
 
-# np.set_printoptions(threshold=np.inf, precision=4)
-
 
 class MahiniMethod:
     def __init__(
@@ -112,11 +110,10 @@ class MahiniMethod:
         self.cbar = self.init_cbar()
         self.costs = self.cbar.copy()
 
-        # c = self._get_costs_row()
-        # self.activated_costs = self.cb.copy()
-
+        self.raw_a = self._build_raw_a()
         self.table = self._create_table()
         self.columns = self._build_columns()
+
         self.basic_variables = self.get_initial_basic_variables()
         # if analysis is dynamic:
         if self.final_inc_phi_pms_prev is not None:
@@ -151,44 +148,6 @@ class MahiniMethod:
     #     c = np.zeros(self.total_vars_count)
     #     c[0:self.plastic_vars_count] = 1.0
     #     return -1 * c
-
-    def _create_table(self):
-        phi_p0 = self.phi.T @ self.p0
-        phi_pv = self.phi.T @ self.pv
-        phi_pv_phi = phi_pv @ self.phi
-
-        landa_base_num = self.plastic_vars_count + self.softening_vars_count
-        dv_phi = self.dv @ self.phi
-
-        raw_a = np.zeros((self.constraints_count, self.primary_vars_count))
-        raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
-        raw_a[0:self.plastic_vars_count, landa_base_num] = phi_p0
-
-        if self.include_softening:
-            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), 0:self.plastic_vars_count] = self.q
-            raw_a[0:self.plastic_vars_count, self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = - self.h
-            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = self.w
-        raw_a[landa_base_num, landa_base_num] = 1.0
-
-        if self.disp_limits.any():
-            disp_limit_base_num = self.plastic_vars_count + self.softening_vars_count + 1
-            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), 0:self.plastic_vars_count] = dv_phi
-            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), 0:self.plastic_vars_count] = - dv_phi
-
-            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
-            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
-
-        print(f"{self.q.shape=}")
-        print(f"{self.h.shape=}")
-        print(f"{self.w.shape=}")
-        print(f"{dv_phi.shape=}")
-        print(f"{self.d0.shape=}")
-
-        columns_count = self.primary_vars_count + self.slack_vars_count
-        table = np.zeros((self.constraints_count, columns_count))
-        table[0:self.constraints_count, 0:self.primary_vars_count] = raw_a
-        table[:self.constraints_count, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
-        return table
 
     def solve(self):
         basic_variables = self.basic_variables
@@ -477,7 +436,8 @@ class MahiniMethod:
                         # in mahini name is C_LastRows and updated after violation
                         # updated_indices = [piece.num_in_structure for piece in self.structure_sifted_yield_pieces_current]
 
-                        # self.table = self._create_table()
+                        self.raw_a = self._build_raw_a()
+                        self.table = self._create_table()
                         self.columns = self._build_columns()
 
                         abar = self.calculate_abar(will_in_col, b_matrix_inv)
@@ -545,42 +505,100 @@ class MahiniMethod:
 
         return b
 
+    def _create_table(self):
+        """
+        Builds the full table with shape (constraints_count, total_vars_count).
+        The left block is 'raw_a', and the right block is an identity matrix for slack vars.
+        """
+        # 1) Build the raw_a block once
+        raw_a = self.raw_a
+
+        # 2) Create the full table
+        columns_count = self.primary_vars_count + self.slack_vars_count
+        table = np.zeros((self.constraints_count, columns_count))
+
+        # Place raw_a in the left block (primary vars)
+        table[:, :self.primary_vars_count] = raw_a
+
+        # Place an identity for slack columns
+        table[:, self.primary_vars_count:self.total_vars_count] = np.eye(self.constraints_count)
+
+        return table
+
     def _build_columns(self):
-        phi_p0 = self.phi.T @ self.p0
-        phi_pv = self.phi.T @ self.pv
-        phi_pv_phi = phi_pv @ self.phi
+        """
+        Builds a dictionary of columns for columns[ col_idx ] = 1D array (length constraints_count).
+        This avoids building a full table array.
+        """
+        # 1) Build the raw_a block
+        raw_a = self.raw_a
 
-        landa_base_num = self.plastic_vars_count + self.softening_vars_count
-        dv_phi = self.dv @ self.phi
-
-        raw_a = np.zeros((self.constraints_count, self.primary_vars_count))
-        raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
-        raw_a[0:self.plastic_vars_count, landa_base_num] = phi_p0
-
-        if self.include_softening:
-            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), 0:self.plastic_vars_count] = self.q
-            raw_a[0:self.plastic_vars_count, self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = - self.h
-            raw_a[self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count), self.plastic_vars_count:(self.plastic_vars_count + self.softening_vars_count)] = self.w
-        raw_a[landa_base_num, landa_base_num] = 1.0
-
-        if self.disp_limits.any():
-            disp_limit_base_num = self.plastic_vars_count + self.softening_vars_count + 1
-            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), 0:self.plastic_vars_count] = dv_phi
-            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), 0:self.plastic_vars_count] = - dv_phi
-
-            raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
-            raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
-
+        # 2) Build a dictionary for the primary columns
         columns = {}
         for col_idx in range(self.primary_vars_count):
             columns[col_idx] = raw_a[:, col_idx].copy()
 
+        # 3) Build slack columns as identity columns
         for slack_i in range(self.constraints_count):
             e = np.zeros(self.constraints_count)
             e[slack_i] = 1.0
             columns[self.primary_vars_count + slack_i] = e
 
         return columns
+
+    def _build_raw_a(self) -> np.ndarray:
+        """
+        Builds the 'raw_a' block for the primary variables (size: constraints_count x primary_vars_count).
+        This is the shared logic used by both _create_table() and _build_columns().
+        """
+        # Precompute needed arrays:
+        phi_p0 = self.phi.T @ self.p0
+        phi_pv = self.phi.T @ self.pv
+        phi_pv_phi = phi_pv @ self.phi
+        dv_phi = self.dv @ self.phi
+
+        landa_base_num = self.plastic_vars_count + self.softening_vars_count
+
+        # Initialize the raw_a block
+        raw_a = np.zeros((self.constraints_count, self.primary_vars_count))
+
+        # Fill plastic region (top portion)
+        raw_a[0:self.plastic_vars_count, 0:self.plastic_vars_count] = phi_pv_phi
+        raw_a[0:self.plastic_vars_count, landa_base_num] = phi_p0
+
+        # If softening is included, fill its blocks
+        if self.include_softening:
+            s_start = self.plastic_vars_count
+            s_end = self.plastic_vars_count + self.softening_vars_count
+
+            # Q block
+            raw_a[s_start:s_end, 0:self.plastic_vars_count] = self.q
+            # -H block
+            raw_a[0:self.plastic_vars_count, s_start:s_end] = -self.h
+            # W block
+            raw_a[s_start:s_end, s_start:s_end] = self.w
+
+        # Landa row
+        raw_a[landa_base_num, landa_base_num] = 1.0
+
+        # If displacement limits exist, fill them
+        if self.disp_limits.any():
+            disp_limit_base_num = landa_base_num + 1  # same as plastic_vars_count + softening_vars_count + 1
+            dl_start = disp_limit_base_num
+            dl_mid = disp_limit_base_num + self.disp_limits_count
+            dl_end = disp_limit_base_num + 2 * self.disp_limits_count
+
+            # +dv_phi
+            raw_a[dl_start:dl_mid, 0:self.plastic_vars_count] = dv_phi
+            # -dv_phi
+            raw_a[dl_mid:dl_end, 0:self.plastic_vars_count] = -dv_phi
+
+            # +d0
+            raw_a[dl_start:dl_mid, landa_base_num] = self.d0
+            # -d0
+            raw_a[dl_mid:dl_end, landa_base_num] = -self.d0
+
+        return raw_a
 
     def update_b_for_dynamic_analysis(self):
         self.b[0:self.plastic_vars_count] = self.b[0:self.plastic_vars_count] - self.phi.T @ self.pv @ self.final_inc_phi_pms_prev
@@ -737,9 +755,16 @@ class MahiniMethod:
         # and last member of selected a column, this will cause no need for full table calcs.
         # it seems fpm cost is Cprow(m + 4) in mahini code, check again.
 
+        # shape: (m,) if constraints_count = m
         pi_transpose = cb @ b_matrix_inv
+
+        # shape: (n,) if table is (m, n)
         pi_table = pi_transpose @ self.table
-        cbar = self.costs - pi_table
+
+        # Instead of `cbar = self.costs - pi_table`, do in-place or with a pre-allocated array:
+        cbar = np.empty_like(self.costs)
+        np.subtract(self.costs, pi_table, out=cbar)
+
         return cbar
 
     def build_pivot_row(self, b_matrix_inv, pivot_row_index):
@@ -1003,10 +1028,19 @@ class MahiniMethod:
     #     d[:self.total_vars_count] = table.sum(axis=0)[:self.total_vars_count]
     #     return d
 
+    # def calc_violation_scores_old(self, intact_phi_pms, load_level, intact_h_sms=None):
+    #     term1 = self.intact_phi_pv @ intact_phi_pms
+    #     term2 = self.intact_phi_p0 * load_level
+    #     scores = term1 + term2 - self.intact_piece_count_ones
+    #     if self.include_softening:
+    #         scores -= intact_h_sms
+    #     return scores
+
     def calc_violation_scores(self, intact_phi_pms, load_level, intact_h_sms=None):
-        term1 = self.intact_phi_pv @ intact_phi_pms
-        term2 = self.intact_phi_p0 * load_level
-        scores = term1 + term2 - self.intact_piece_count_ones
+        scores = np.empty_like(self.intact_piece_count_ones)
+        scores[:] = self.intact_phi_pv @ intact_phi_pms
+        scores += self.intact_phi_p0 * load_level
+        scores -= self.intact_piece_count_ones
         if self.include_softening:
             scores -= intact_h_sms
         return scores
