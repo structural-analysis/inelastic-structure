@@ -72,3 +72,10 @@ payanname mahini:
 pivot optimization:
 لازم نیست وقتی میخواهیم پیوت انجام دهیم تمام جدول را به روز کنیم
 کد ماهینی را نگاه کنیم و ایده بگیریم
+
+- check if get_sorted_slack_candidates no need to update cbar and just use current cbar.
+
+- Make sure your arrays are float64 and in standard NumPy row‐major order for best BLAS performance. If you do big multiplications, or if you do @ self.table repeatedly, it’s good to ensure self.table.flags[‘C_CONTIGUOUS’] is true in NumPy.
+
+- Numba: You can annotate your pivot iteration routine and let Numba compile it to machine code. This often yields an order‐of‐magnitude improvement if your code is numeric, uses arrays, and has loops.
+Alternatively, a small portion of pivot logic can be written in Cython/C++ for maximum speed.
