@@ -1,0 +1,19 @@
+sec1:
+  material:
+    e: 2.0e+11
+    sy: 240.0e+6
+    nu: 0.3
+    g: 7.692e+10
+  geometry:
+    a: 80.0e-4
+    i33: 2.666666e-5
+    i22: 1.066666e-6
+    j: 3.729e-6
+  nonlinear:
+    is_direct_capacity: false
+    zp33: 4.0e-4
+    zp22: 8.0e-5
+    ap: 1920000
+    mp33: 96000
+    mp22: 19200
+  softening: null

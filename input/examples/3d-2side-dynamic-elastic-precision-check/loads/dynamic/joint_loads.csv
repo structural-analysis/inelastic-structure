@@ -1,0 +1,4 @@
+load,node,dof(0:x|1:y|2:teta_z),load_magnitude
+sin-02,1,0,0.75
+sin-02,2,2,-0.3
+sin-02,3,1,0.15
