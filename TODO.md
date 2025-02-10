@@ -79,4 +79,5 @@ performance:
 - float32 for all arrays.
 - compare with mahini using o1
 - checkif mahini not use full table for score and violation and cbar update
-
+- plate and wall member object calculations is based on natural r, s. so all elements have some common things probabely
+- multi‐RHS solves for get_sensitivity

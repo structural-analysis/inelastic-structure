@@ -33,6 +33,8 @@ class PlateMember:
             points_count=self.gauss_points_count,
             include_softening=include_softening,
         )
+        self.B_all = self._precompute_shape_derivatives()
+        self.extrap_all = self._precompute_extrapolation()
         self.k = self.get_stiffness()
         self.t = self.get_transform()
         self.m = None
@@ -88,6 +90,53 @@ class PlateMember:
                 NaturalPoint(r=-1, s=0),
             ]
         return natural_nodes
+
+    def _precompute_shape_derivatives(self):
+        """
+        Build a 3D array B_all so that B_all[i] == get_shape_derivatives(self.gauss_points[i]).
+        Shape: (ng, 5, dofs_count).
+        """
+        gauss_pts = self.gauss_points
+        ng = len(gauss_pts)
+        B_all = np.zeros((ng, 5, self.dofs_count), dtype=float)
+        for i, gp in enumerate(gauss_pts):
+            B_all[i] = self.get_shape_derivatives(gp)  # shape (5, dofs_count)
+        return B_all
+
+    def _precompute_extrapolation(self):
+        """
+        Build an array (node_count, gauss_count) where each row is the shape
+        function used to extrapolate from all gauss points to that node.
+
+        For Q4 or Q8R, we have 4 gauss points. Each 'natural_node' gets an
+        'extrapolated_natural_point', and we call get_extrapolated_shape_functions(...).
+
+        If your element_type == 'Q8R', you still have 4 gauss points, but 8 nodes.
+        So each row i has 4 shape-function values for the i-th node, each col is
+        a gauss point.
+        """
+        node_count = len(self.natural_nodes)
+        gp_count = len(self.gauss_points)
+        shape_funcs_extrap = np.zeros((node_count, gp_count), dtype=float)
+
+        if self.element_type in ("Q4", "Q8R"):
+            for i, node in enumerate(self.natural_nodes):
+                extr_pt = self.get_extrapolated_natural_point(node)
+                if extr_pt is None:
+                    # For Q4R or missing logic, handle carefully
+                    shape_funcs_extrap[i, :] = 0.0
+                else:
+                    # shape_vals shape => (4,)
+                    shape_vals = self.get_extrapolated_shape_functions(extr_pt)  
+                    # each entry shape_vals[g] = the shape function of that node w.r.t. gauss_point g
+                    # but in your code, get_extrapolated_shape_functions() returns them in a certain order.
+                    # We'll assume it matches [gp0, gp1, gp2, gp3]
+                    shape_funcs_extrap[i] = shape_vals
+        else:
+            # if "Q8" or something else not implemented, set zero or raise an error
+            pass
+
+        return shape_funcs_extrap
 
     def get_nodal_shape_functions(self, natural_point):
         r = natural_point.r
@@ -170,7 +219,6 @@ class PlateMember:
             ])
         return j
 
-    @lru_cache(maxsize=192)
     def get_shape_derivatives(self, natural_point):
         r = natural_point.r
         s = natural_point.s
@@ -227,36 +275,20 @@ class PlateMember:
     def get_transform(self):
         return np.eye(self.dofs_count)
 
-    def get_nodal_moments(self, fixed_internal, gauss_points_moments):
-        nodal_moments = np.zeros(3 * self.nodes_count)
-        if fixed_internal.any():
-            for i in range(self.gauss_points_count):
-                gauss_points_moments[i, :] += fixed_internal[3 * i:3 * (i + 1)]
+    def get_nodal_moments_vectorized(self, gauss_points_moments, fixed_internal=None):
+        # Only add fixed_internal if it's nonempty and actually has nonzero entries
+        if fixed_internal is not None and fixed_internal.size and np.count_nonzero(fixed_internal):
+            gauss_points_moments = gauss_points_moments.copy()
+            fi_2D = fixed_internal.reshape(-1, 3)  # shape (ng,3)
+            gauss_points_moments += fi_2D
 
-        i = 0
-        for natural_node in self.natural_nodes:
-            extrapolated_natural_point = self.get_extrapolated_natural_point(natural_node)
-            extrapolated_shape_functions = self.get_extrapolated_shape_functions(extrapolated_natural_point)
-            natural_point_moment = gauss_points_moments.T @ extrapolated_shape_functions.T
-            nodal_moments[i] = natural_point_moment[0]
-            nodal_moments[i + 1] = natural_point_moment[1]
-            nodal_moments[i + 2] = natural_point_moment[2]
-            i += 3
-        return nodal_moments
+        nodal_moms_2D = gauss_points_moments.T @ self.extrap_all.T  # => shape(3, node_count)
+        return nodal_moms_2D.T.ravel()
 
-    def get_gauss_points_moments(self, nodal_disp):
-        gauss_points_moments = np.zeros((self.gauss_points_count, 3))
-        for i, gauss_point in enumerate(self.gauss_points):
-            gauss_point_moment = self.get_gauss_point_moment(gauss_point, nodal_disp)
-            gauss_points_moments[i, 0] = gauss_point_moment[0]
-            gauss_points_moments[i, 1] = gauss_point_moment[1]
-            gauss_points_moments[i, 2] = gauss_point_moment[2]
-        return gauss_points_moments
-
-    def get_gauss_point_moment(self, gauss_point, nodal_disp):
-        gauss_point_b = self.get_shape_derivatives(gauss_point)
-        m = self.section.d @ gauss_point_b @ nodal_disp
-        return m
+    def get_gauss_points_moments_vectorized(self, nodal_disp):
+        result1 = np.einsum('gij,j->gi', self.B_all, nodal_disp)
+        temp = (self.section.d @ result1.T).T  # => (ng,5)
+        return temp[:, 0:3]
 
     def get_unit_distortion(self, gauss_point_component_num):
         distortion = np.zeros(5)
@@ -286,9 +318,6 @@ class PlateMember:
         return nodal_forces, gauss_points_moments
 
     def get_response(self, nodal_disp, fixed_external=None, fixed_internal=None):
-        # fixed internal: fixed internal tractions like stress, force, moment, ... in gauss points of a member
-        # fixed external: fixed external forces like force, moment, ... nodes of a member
-
         if fixed_external is None:
             fixed_external = np.zeros(self.dofs_count)
         if fixed_internal is None:
@@ -299,19 +328,16 @@ class PlateMember:
         else:
             nodal_force = self.k @ nodal_disp
 
-        gauss_points_moments = self.get_gauss_points_moments(nodal_disp)
+        gp_mom = self.get_gauss_points_moments_vectorized(nodal_disp)
+        yield_components_force = gp_mom.copy().ravel()
+        nodal_mom = self.get_nodal_moments_vectorized(gp_mom, fixed_internal)
 
-        # NOTE: b/c gauss_points_moments array is altered by get_nodal_moments function,
-        # and adds fixed internals to it, it is important to make a copy of it to use in
-        # sensitivity calculations
-        yield_components_force = gauss_points_moments.copy().ravel()
-
-        response = Response(
+        # 5) Build and return
+        return Response(
             nodal_force=nodal_force,
             yield_components_force=yield_components_force,
-            nodal_moments=self.get_nodal_moments(fixed_internal, gauss_points_moments),
+            nodal_moments=nodal_mom,
         )
-        return response
 
     def get_distributed_equivalent_load_vector(self, q):
         rs = np.zeros(self.nodes_count)

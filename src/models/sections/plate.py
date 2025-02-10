@@ -80,10 +80,10 @@ class PlateSection:
         self.nonlinear = Nonlinear(self.material, self.geometry, input["nonlinear"])
         self.yield_specs = YieldSpecs(self.nonlinear)
         self.softening = Softening(self.yield_specs, input["softening"])
+        self.d = self.create_d()
 
-    @property
-    def d(self):
-        w = 5 / 6 # warping coefficient
+    def create_d(self):
+        w = 5 / 6  # warping coefficient
         t = self.geometry.thickness
         v = self.material.nu
         e = self.material.e

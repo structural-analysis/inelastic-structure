@@ -251,7 +251,6 @@ def get_modal_disp(structure, t1, t2, modal_loads, previous_modal_loads, previou
     return modal_disps, a2s, b2s, a_factor, b_factor
 
 
-# @profile
 def get_is_duhamel(damping, t1, t2, wns, wds):
     D = damping * wns
     D2 = D * D
