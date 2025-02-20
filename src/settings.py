@@ -11,7 +11,7 @@ class SiftingType(str, Enum):
 class Settings(BaseSettings):
     example_name: str = "plate-pure-perfect"
     sifting_type: SiftingType = SiftingType.mahini
-    monitor_incremental_disp: bool = False
+    monitor_incremental_disp: bool = True
     controlled_node_for_disp = 19
     controlled_node_dofs_count = 3
     controlled_node_dof_for_disp = 0
