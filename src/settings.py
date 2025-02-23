@@ -9,13 +9,13 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-circular-fine-perfect"
+    example_name: str = "plate-circular-fine-soft"
     sifting_type: SiftingType = SiftingType.mahini
     monitor_incremental_disp: bool = True
-    controlled_node_for_disp = 0
+    controlled_node_for_disp = 37
     controlled_node_dofs_count = 3
     controlled_node_dof_for_disp = 0
-    controlled_node_for_mises = 0
+    controlled_node_for_mises = 37
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
