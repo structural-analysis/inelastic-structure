@@ -3,28 +3,18 @@ import csv
 
 # inputs:
 load_factor = 1
-xy_data_name = 'disp'
+data_names = ["u3-j", "sm1-j", "sm2-j", "sm3-j"]
 
-# Get the XY data from the session
-xy_data = session.xyDataObjects[xy_data_name]
+def export_xy_data(data_name):
+    xy_data = session.xyDataObjects[data_name]
+    output_file = f'C:/Users/Hamed/projects/thesis/{data_name}.csv'
+    with open(output_file, 'w', newline='') as csvfile:  # Added newline=''
+        writer = csv.writer(csvfile)
+        writer.writerow(['X', 'Y'])
+        for data_point in xy_data:
+            if data_point:
+                writer.writerow([data_point[0] * load_factor, abs(data_point[1])])
+    print('XY data has been successfully exported to {}'.format(output_file))
 
-# Define the output file path
-output_file = f'C:/Users/Hamed/projects/thesis/{xy_data_name}.csv'
-
-# Create and write to the CSV file
-with open(output_file, 'w') as csvfile:
-    writer = csv.writer(csvfile)
-    # Write headers
-    writer.writerow(['X', 'Y'])
-    # Write the data points
-    for data_point in xy_data:
-        if data_point:
-            writer.writerow([data_point[0] * load_factor, abs(data_point[1])])
-
-print('XY data has been successfully exported to {}'.format(output_file))
-
-# Show the content of the saved file
-with open(output_file, 'r') as file:
-    content = file.read()
-
-print(content)
+for data_name in data_names:
+    export_xy_data(data_name)

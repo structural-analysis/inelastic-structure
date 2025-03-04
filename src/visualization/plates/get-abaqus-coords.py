@@ -2,7 +2,7 @@ from abaqus import *
 from abaqusConstants import *
 import mesh
 import csv
-part_name = 'ring-3d'
+part_name = 'plate'
 model = mdb.models['Model-1']
 part = model.parts[part_name]
 elements = part.elements
