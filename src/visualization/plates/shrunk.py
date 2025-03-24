@@ -218,7 +218,7 @@ def visualize_shape_projection_mx_my_3shapes(coords):
     # Define each alpha + style
     shapes = [
         (1.0,  "-k",  "gray",  "α=1.0"),
-        (0.8,  "--k",  "red",  r"α=$α_s$"),
+        (0.8,  "--k",  "red",  r"α=$α_i$"),
         (0.5,  ":k",  "green", r"α=$α_{\min}$"),
     ]
 
