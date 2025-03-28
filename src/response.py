@@ -45,6 +45,7 @@ class DesiredResponse(list, Enum):
         "nodal_disp",
         "nodal_moments",
         "members_nodal_moments",
+        "yield_points_forces",
     ]
 
 
@@ -88,6 +89,9 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         members_nodal_stresses_sensitivity = initial_analysis.members_nodal_stresses_sensitivity
         members_nodal_stresses = np.zeros((increments_count, structure.members_count, structure.max_member_nodal_components_count))
         nodal_stresses = np.zeros((increments_count, structure.nodal_components_count))
+
+        yield_points_forces_sensitivity = initial_analysis.yield_points_forces_sensitivity
+        yield_points_forces = np.zeros((increments_count, structure.intact_components_count))
 
         for i in range(increments_count):
             phi_x = phi_x_history[i]
@@ -147,9 +151,16 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     elastic_response=initial_analysis.elastic_members_nodal_moments,
                     sensitivity=members_nodal_moments_sensitivity,
                 )
+                elastoplastic_yield_points_forces = get_elastoplastic_response(
+                    load_level=load_level,
+                    phi_x=phi_x,
+                    elastic_response=initial_analysis.elastic_yield_points_forces,
+                    sensitivity=yield_points_forces_sensitivity,
+                )
 
                 members_nodal_moments[i, :, :] = elastoplastic_members_nodal_moments
                 nodal_moments[i, :] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_moments)
+                yield_points_forces[i, :] = elastoplastic_yield_points_forces
 
             plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
 
@@ -176,6 +187,7 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 {
                     "nodal_moments": nodal_moments,
                     "members_nodal_moments": members_nodal_moments,
+                    "yield_points_forces": yield_points_forces,
                 }
             )
 

@@ -47,6 +47,8 @@ class Structure:
         self.analysis_type = self._get_analysis_type()
         self.dofs_count = self.node_dofs_count * self.nodes_count
         self.yield_specs = StructureYieldSpecs(members=self.members, include_softening=self.include_softening)
+        self.yield_points_count = self.yield_specs.intact_points_count
+        self.intact_components_count = self.yield_specs.intact_components_count
         self.nodal_boundaries = input["nodal_boundaries"]
         self.linear_boundaries = input["linear_boundaries"]
         self.boundaries = self.aggregate_boundaries()
