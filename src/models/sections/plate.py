@@ -17,8 +17,8 @@ class Geometry:
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.mp = 0.25 * geometry.thickness ** 2 * material.sy
-        print(f"{self.mp=}")
-        input()
+        # print(f"{self.mp=}")
+        # input()
         self.yield_surface = input_nonlinear["yield_surface"]
 
 

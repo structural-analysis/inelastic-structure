@@ -187,8 +187,8 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 }
             )
 
-        yield_points = get_structure_yield_points(structure)
         if has_any_response(members_nodal_moments):
+            yield_points = get_structure_yield_points(structure)
             responses.update(
                 {
                     "nodal_moments": nodal_moments,
