@@ -46,7 +46,8 @@ class DesiredResponse(list, Enum):
         "nodal_moments",
         "members_nodal_moments",
         "yield_points_forces",
-        "yield_points_mises_moments"
+        "yield_points_mises_moments",
+        "yield_points",
     ]
 
 
@@ -186,6 +187,7 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 }
             )
 
+        yield_points = get_structure_yield_points(structure)
         if has_any_response(members_nodal_moments):
             responses.update(
                 {
@@ -193,6 +195,7 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     "members_nodal_moments": members_nodal_moments,
                     "yield_points_forces": yield_points_forces,
                     "yield_points_mises_moments": yield_points_mises_moments,
+                    "yield_points": yield_points,
                 }
             )
 
@@ -247,6 +250,32 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
             )
 
     return responses
+
+
+def get_structure_yield_points(structure):
+    yield_points = np.zeros((structure.yield_points_count, 3))
+    index = 0
+    for member in structure.members:
+        nodes = np.array([[node.x, node.y] for node in member.nodes])
+        for point in member.gauss_points:
+            r, s = point.r, point.s
+
+            n1 = 0.5 * (1 - r ** 2) * (1 - s)
+            n3 = 0.5 * (1 + r) * (1 - s ** 2)
+            n5 = 0.5 * (1 - r ** 2) * (1 + s)
+            n7 = 0.5 * (1 - r) * (1 - s ** 2)
+            n0 = 0.25 * (1 - r) * (1 - s) - 0.5 * (n7 + n1)
+            n2 = 0.25 * (1 + r) * (1 - s) - 0.5 * (n1 + n3)
+            n4 = 0.25 * (1 + r) * (1 + s) - 0.5 * (n3 + n5)
+            n6 = 0.25 * (1 - r) * (1 + s) - 0.5 * (n5 + n7)
+
+            n = np.array([n0, n1, n2, n3, n4, n5, n6, n7])
+            xy = np.dot(n, nodes)
+            yield_points[index] = [index, xy[0], xy[1]]
+            index += 1
+    
+    return yield_points
+
 
 def get_mises_moments(elastoplastic_yield_points_forces):
     moments = elastoplastic_yield_points_forces.reshape(-1, 3)
@@ -493,6 +522,11 @@ def write_dynamic_responses_to_file(example_name, structure_type, responses, des
 
 
 def write_response_to_file(example_name, response, response_name):
+    if response_name == "yield_points":
+        response_dir = os.path.join(outputs_dir, example_name)
+        dir = os.path.join(response_dir, "yield_points.csv")
+        np.savetxt(fname=dir, X=response, delimiter=",", fmt="%d,%.3f,%.3f")
+        return
     for increment in range(response.shape[0]):
         response_dir = os.path.join(outputs_dir, example_name, str(increment), response_name)
         os.makedirs(response_dir, exist_ok=True)

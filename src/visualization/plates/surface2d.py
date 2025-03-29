@@ -8,8 +8,8 @@ from src.settings import settings
 from .shrunk import build_discretizing_points, compute_convex_hull_2d
 
 
-mp = 150000
-yield_point_num = 31
+mp = 6000
+yield_point_num = 21
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
 alpha = 0.7

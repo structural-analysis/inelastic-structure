@@ -9,7 +9,7 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-1element-inelastic-q8r"
+    example_name: str = "plate-circular-fine-soft"
     sifting_type: SiftingType = SiftingType.mahini
     monitor_incremental_disp: bool = False
     controlled_node_for_disp = 37

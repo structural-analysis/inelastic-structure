@@ -8,8 +8,8 @@ import numpy as np
 from src.settings import settings
 from .j2 import build_discretizing_points_and_gradients
 
-mp = 150000
-yield_point_num = 31
+mp = 6000
+yield_point_num = 21
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
 alpha = 0.7
