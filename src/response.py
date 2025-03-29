@@ -46,6 +46,7 @@ class DesiredResponse(list, Enum):
         "nodal_moments",
         "members_nodal_moments",
         "yield_points_forces",
+        "yield_points_mises_moments"
     ]
 
 
@@ -92,6 +93,7 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
 
         yield_points_forces_sensitivity = initial_analysis.yield_points_forces_sensitivity
         yield_points_forces = np.zeros((increments_count, structure.intact_components_count))
+        yield_points_mises_moments = np.zeros((increments_count, structure.yield_points_count))
 
         for i in range(increments_count):
             phi_x = phi_x_history[i]
@@ -161,6 +163,8 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 members_nodal_moments[i, :, :] = elastoplastic_members_nodal_moments
                 nodal_moments[i, :] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_moments)
                 yield_points_forces[i, :] = elastoplastic_yield_points_forces
+                elastoplastic_yield_points_mises_moments = get_mises_moments(elastoplastic_yield_points_forces)
+                yield_points_mises_moments [i, :] = elastoplastic_yield_points_mises_moments
 
             plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
 
@@ -188,6 +192,7 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     "nodal_moments": nodal_moments,
                     "members_nodal_moments": members_nodal_moments,
                     "yield_points_forces": yield_points_forces,
+                    "yield_points_mises_moments": yield_points_mises_moments,
                 }
             )
 
@@ -242,6 +247,12 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
             )
 
     return responses
+
+def get_mises_moments(elastoplastic_yield_points_forces):
+    moments = elastoplastic_yield_points_forces.reshape(-1, 3)
+    mx, my, mxy = moments[:, 0], moments[:, 1], moments[:, 2]
+    mises_moments = np.sqrt(mx**2 + my**2 - mx*my + 3*mxy**2)
+    return mises_moments
 
 
 def average_nodal_responses(structure, members_responses):

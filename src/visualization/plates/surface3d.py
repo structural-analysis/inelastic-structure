@@ -9,7 +9,7 @@ from src.settings import settings
 from .j2 import build_discretizing_points_and_gradients
 
 mp = 150000
-node = 4
+yield_point_num = 31
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
 alpha = 0.7
@@ -35,7 +35,7 @@ def find_subdirs(path):
     return subdirs_int
 
 
-def get_state_points(mp, node):
+def get_state_points(mp, yield_point_num):
     example_path = get_example_path()  # Make sure this function is defined
     increments = find_subdirs(example_path)  # Make sure this function is defined
 
@@ -45,18 +45,18 @@ def get_state_points(mp, node):
     all_mxy = []
 
     for inc in increments:
-        inc_nodal_moments_array_path = os.path.join(example_path, str(inc), "nodal_moments", "0.csv")
+        inc_nodal_moments_array_path = os.path.join(example_path, str(inc), "yield_points_forces", "0.csv")
         moments = pd.read_csv(inc_nodal_moments_array_path, header=None)
         
         # Extract and normalize moments
         mx = moments.iloc[::3, 0].values / mp
         my = moments.iloc[1::3, 0].values / mp
-        mxy = moments.iloc[2::3, 0].values / (2 * mp)
+        mxy = moments.iloc[2::3, 0].values / (mp)
 
         # Add to our collection
-        all_mx.append(mx[node])
-        all_my.append(my[node])
-        all_mxy.append(mxy[node])
+        all_mx.append(mx[yield_point_num])
+        all_my.append(my[yield_point_num])
+        all_mxy.append(mxy[yield_point_num])
 
     points = []
     for i in range(len(all_mx)):
@@ -67,13 +67,12 @@ def get_state_points(mp, node):
                 mxy=all_mxy[i],
             )
         )
-    print(f"{points=}")
-    input()
+
     return points
 
 
-def visualize_shape_with_single_piece_caps(coords, mp, node):
-    points = get_state_points(mp, node)
+def visualize_shape_with_single_piece_caps(coords, mp, yield_point_num):
+    points = get_state_points(mp, yield_point_num)
     fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(111, projection="3d")
 
@@ -129,4 +128,4 @@ def visualize_shape_with_single_piece_caps(coords, mp, node):
     plt.show()
 
 coords, grads = build_discretizing_points_and_gradients(xi_vals, theta_vals)
-visualize_shape_with_single_piece_caps(coords, mp, node)
+visualize_shape_with_single_piece_caps(coords, mp, yield_point_num)
