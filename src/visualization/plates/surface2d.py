@@ -9,7 +9,9 @@ from .shrunk import build_discretizing_points, compute_convex_hull_2d
 
 
 mp = 6000
-yield_point_num = 21
+yield_point_num = 6 # 5, 6
+target_incs = [100, 200, 400]
+every_n_incs = 20
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
 alpha = 0.7
@@ -34,110 +36,127 @@ def find_subdirs(path):
     subdirs_int = sorted([int(subdir) for subdir in subdirs if subdir.isdigit()])
     return subdirs_int
 
+def interpolate(k0, a0, k2, a2, k1):
+    return a0 + (a2 - a0) * (k1 - k0) / (k2 - k0)
 
-def get_state_points(mp, yield_point_num):
-    example_path = get_example_path()  # Make sure this function is defined
-    increments = find_subdirs(example_path)  # Make sure this function is defined
+def get_surface_size_for_yield_point_in_inc(example_path, yield_point_num, target_inc):
+    curvatures_file_path = os.path.join(example_path, str(target_inc), "yield_points_mises_curvatures/0.csv")
+    target_curvature = np.loadtxt(fname=curvatures_file_path, usecols=range(1), delimiter=",", ndmin=2, dtype=str)[yield_point_num]
+    surface_size = interpolate(0, 1, 5, 0.2, float(target_curvature[0]))
+    return surface_size
 
-    # Prepare lists to store all points
-    all_mx = []
-    all_my = []
-    all_mxy = []
+def get_state_points(mp, yield_point_num, target_inc):
+    example_path = get_example_path()  # Ensure this function is defined
+    increments = find_subdirs(example_path)  # Ensure this function is defined
+    surface_size = get_surface_size_for_yield_point_in_inc(example_path, yield_point_num, target_inc)
+    
+    # Convert increments to integers and filter up to target_inc
+    increments = sorted([int(inc) for inc in increments if int(inc) <= target_inc])
 
-    for inc in increments:
+    # Select one increment per n increments
+    filtered_increments = [inc for i, inc in enumerate(increments) if i % every_n_incs == 0]
+
+    # Ensure target_inc is included
+    if target_inc not in filtered_increments:
+        filtered_increments.append(target_inc)
+        filtered_increments.sort()  # Keep order sorted
+
+    all_mx, all_my, all_mxy = [], [], []
+
+    for inc in filtered_increments:
         inc_nodal_moments_array_path = os.path.join(example_path, str(inc), "yield_points_forces", "0.csv")
+        
+        if not os.path.exists(inc_nodal_moments_array_path):
+            print(f"Warning: Missing file for increment {inc}, skipping...")
+            continue
+        
         moments = pd.read_csv(inc_nodal_moments_array_path, header=None)
         
         # Extract and normalize moments
         mx = moments.iloc[::3, 0].values / mp
         my = moments.iloc[1::3, 0].values / mp
-        mxy = moments.iloc[2::3, 0].values / (mp)
+        mxy = moments.iloc[2::3, 0].values / mp
 
-        # Add to our collection
-        all_mx.append(mx[yield_point_num])
-        all_my.append(my[yield_point_num])
-        all_mxy.append(mxy[yield_point_num])
+        if yield_point_num < len(mx):  # Ensure index is within bounds
+            all_mx.append(mx[yield_point_num])
+            all_my.append(my[yield_point_num])
+            all_mxy.append(mxy[yield_point_num])
+        else:
+            print(f"Warning: yield_point_num {yield_point_num} out of bounds for increment {inc}")
 
-    points = []
-    for i in range(len(all_mx)):
-        points.append(
-            Point3d(
-                mx=all_mx[i],
-                my=all_my[i],
-                mxy=all_mxy[i],
-            )
-        )
+    # Convert lists into Point3d objects
+    points = [Point3d(mx=mx, my=my, mxy=mxy) for mx, my, mxy in zip(all_mx, all_my, all_mxy)]
 
-    return points
+    return points, surface_size
 
 
-def visualize_shape_projection(coords, mp, yield_point_num, view):
+def visualize_shape_projection(coords, mp, yield_point_num, target_incs):
     """
-    Plot 3 shapes in the (Mx, My) plane:
-      1) Original shape (alpha=1.0)
-      2) Shrunk shape (alpha=0.8)
-      3) Minimum shrunk shape (alpha=0.5)
+    Plot 3 shapes for different increments in a single figure:
+      - Rows: Different target increments
+      - Columns: Different views ("Mx-My", "Mx-Mxy", "My-Mxy")
     """
-    points = get_state_points(mp, yield_point_num)
-    # --- Flatten coords (N,3) -> keep only (Mx, My) ---
-    all_points = coords.reshape(-1, 3)
-    if view == "mx-my":
-        selected_view = all_points[:, :2]
-    elif view =="mx-mxy":
-        selected_view = all_points[:, [0, 2]]
-    elif view =="my-mxy":
-        selected_view = all_points[:, 1:]
+    views = ["mx-my", "mx-mxy", "my-mxy"]
+    num_rows = len(target_incs)
+    num_cols = len(views)
 
-    # --- Get the 2D convex hull of all points, then "close" it ---
-    hull_points = compute_convex_hull_2d(selected_view)
-    hull_points_closed = np.vstack([hull_points, hull_points[0]])
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(6 * num_cols, 6 * num_rows))  # Adjust figure size
 
-    # --- Prepare a figure ---
-    fig, ax = plt.subplots(figsize=(6, 6))
+    all_points = coords.reshape(-1, 3)  # Flatten coordinates
 
-    # Define each alpha + style
-    shapes = [
-        (1.0,  "--k",  "gray",  "original"),
-        (0.8,  "-k",  "red",  "softened"),
-    ]
+    for row, target_inc in enumerate(target_incs):
+        points, surface_size = get_state_points(mp, yield_point_num, target_inc)
+        for col, view in enumerate(views):
+            ax = axs[row, col] if num_rows > 1 else axs[col]  # Handle single-row case
 
-    # --- Plot each shape ---
-    for alpha_val, line_style, fill_color, label_str in shapes:
-        # Scale points by alpha about origin
-        scaled = alpha_val * hull_points_closed
-        ax.plot(scaled[:, 0], scaled[:, 1], line_style, label=label_str)
-        # # Optional fill
-        # ax.fill(scaled[:, 0], scaled[:, 1], alpha=0.1, color=fill_color)
+            # Select view
+            if view == "mx-my":
+                selected_view = all_points[:, :2]
+                xlabel, ylabel = r"$M_x$", r"$M_y$"
+            elif view == "mx-mxy":
+                selected_view = all_points[:, [0, 2]]
+                xlabel, ylabel = r"$M_x$", r"$M_{xy}$"
+            elif view == "my-mxy":
+                selected_view = all_points[:, 1:]
+                xlabel, ylabel = r"$M_y$", r"$M_{xy}$"
 
-    if view == "mx-my":
-        ax.set_xlabel(r"$M_x$", fontsize=14)
-        ax.set_ylabel(r"$M_y$", fontsize=14)
-        for point in points:
-            ax.scatter(point.mx, point.my, c='b', marker='o', alpha=0.5)
-    elif view =="mx-mxy":
-        ax.set_xlabel(r"$M_x$", fontsize=14)
-        ax.set_ylabel(r"$M_xy$", fontsize=14)
-        for point in points:
-            ax.scatter(point.mx, point.mxy, c='b', marker='o', alpha=0.5)
-    elif view =="my-mxy":
-        ax.set_xlabel(r"$M_y$", fontsize=14)
-        ax.set_ylabel(r"$M_xy$", fontsize=14)
-        for point in points:
-            ax.scatter(point.my, point.mxy, c='b', marker='o', alpha=0.5)
+            # Compute Convex Hull
+            hull_points = compute_convex_hull_2d(selected_view)
+            hull_points_closed = np.vstack([hull_points, hull_points[0]])
 
-    # --- Cosmetics ---
-    ax.set_aspect("equal", "box")
-    # ax.set_title("2D Projection With Isotropic Softening (Three Shapes)", fontsize=13)
-    # Remove top and right spines (box effect)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+            # Define styles
+            shapes = [
+                (1.0, "--k", "gray", "original"),
+                (surface_size, "-k", "red", "softened"),
+            ]
 
-    ax.legend(loc="best", fontsize=14)
+            # Plot each shape
+            for alpha_val, line_style, fill_color, label_str in shapes:
+                scaled = alpha_val * hull_points_closed
+                ax.plot(scaled[:, 0], scaled[:, 1], line_style, label=label_str)
+
+            # Plot yield points
+            for point in points:
+                if view == "mx-my":
+                    ax.scatter(point.mx, point.my, c='b', marker='o', alpha=0.5)
+                elif view == "mx-mxy":
+                    ax.scatter(point.mx, point.mxy, c='b', marker='o', alpha=0.5)
+                elif view == "my-mxy":
+                    ax.scatter(point.my, point.mxy, c='b', marker='o', alpha=0.5)
+
+            # Set labels and aesthetics
+            ax.set_xlabel(xlabel, fontsize=14)
+            ax.set_ylabel(ylabel, fontsize=14)
+            ax.set_aspect("equal", "box")
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.legend(loc="best", fontsize=10)
+            ax.set_title(f"Inc: {target_inc}, View: {view}", fontsize=14)
+
+    plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
     coords = build_discretizing_points(xi_vals, theta_vals)
-    visualize_shape_projection(coords, mp, yield_point_num, "mx-my")
-    visualize_shape_projection(coords, mp, yield_point_num, "mx-mxy")
-    visualize_shape_projection(coords, mp, yield_point_num, "my-mxy")
+    visualize_shape_projection(coords, mp, yield_point_num, target_incs)

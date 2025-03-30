@@ -9,10 +9,11 @@ from src.settings import settings
 from .j2 import build_discretizing_points_and_gradients
 
 mp = 6000
-yield_point_num = 21
+yield_point_num = 6
+every_n_incs = 30
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
-alpha = 0.7
+alpha = 0.3
 edgecolor = "#2b3a52"
 facecolor = "#bfd8ff"
 
@@ -44,7 +45,10 @@ def get_state_points(mp, yield_point_num):
     all_my = []
     all_mxy = []
 
-    for inc in increments:
+    # Select one increment per n increments
+    filtered_increments = [inc for i, inc in enumerate(increments) if i % every_n_incs == 0]
+
+    for inc in filtered_increments:
         inc_nodal_moments_array_path = os.path.join(example_path, str(inc), "yield_points_forces", "0.csv")
         moments = pd.read_csv(inc_nodal_moments_array_path, header=None)
         
@@ -103,7 +107,7 @@ def visualize_shape_with_single_piece_caps(coords, mp, yield_point_num):
     ax.add_collection3d(cap_poly_low)
     ax.add_collection3d(cap_poly_high)
     for point in points:
-        ax.scatter(point.mx, point.my, point.mxy, c='b', marker='o', alpha=0.5)
+        ax.scatter(point.mx, point.my, point.mxy, s=80, c='b', marker='o', edgecolors='k', alpha=0.9)
     # ax.scatter(all_mx, all_my, all_mxy, c='b', marker='o', alpha=0.5)
 
     ax.set_xlim(-1.5, 1.5)
