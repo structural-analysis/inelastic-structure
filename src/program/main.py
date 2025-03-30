@@ -99,6 +99,7 @@ class MahiniMethod:
         print(f"{self.plastic_vars_count=}")
         print(f"{self.softening_vars_count=}")
         print(f"{self.limits_count=}")
+        print(f"{self.intact_plastic_vars_count=}")
 
         # IMPORTANT: must be placed after sifted variables
         self.b = self._get_b_column()

@@ -48,6 +48,8 @@ class DesiredResponse(list, Enum):
         "yield_points_forces",
         "yield_points_mises_moments",
         "yield_points",
+        "yield_points_curvatures",
+        "yield_points_mises_curvatures",
     ]
 
 
@@ -95,6 +97,9 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
         yield_points_forces_sensitivity = initial_analysis.yield_points_forces_sensitivity
         yield_points_forces = np.zeros((increments_count, structure.intact_components_count))
         yield_points_mises_moments = np.zeros((increments_count, structure.yield_points_count))
+
+        yield_points_curvatures = np.zeros((increments_count, structure.intact_components_count))
+        yield_points_mises_curvatures = np.zeros((increments_count, structure.yield_points_count))
 
         for i in range(increments_count):
             phi_x = phi_x_history[i]
@@ -166,6 +171,9 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                 yield_points_forces[i, :] = elastoplastic_yield_points_forces
                 elastoplastic_yield_points_mises_moments = get_mises_moments(elastoplastic_yield_points_forces)
                 yield_points_mises_moments [i, :] = elastoplastic_yield_points_mises_moments
+                yield_points_curvatures[i, :] = phi_x
+                plastic_yield_points_mises_curvatures = get_mises_curvatures(phi_x)
+                yield_points_mises_curvatures[i, :] = plastic_yield_points_mises_curvatures
 
             plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
 
@@ -196,6 +204,8 @@ def calculate_static_responses(initial_analysis, inelastic_analysis=None):
                     "yield_points_forces": yield_points_forces,
                     "yield_points_mises_moments": yield_points_mises_moments,
                     "yield_points": yield_points,
+                    "yield_points_curvatures": yield_points_curvatures,
+                    "yield_points_mises_curvatures": yield_points_mises_curvatures,
                 }
             )
 
@@ -282,6 +292,13 @@ def get_mises_moments(elastoplastic_yield_points_forces):
     mx, my, mxy = moments[:, 0], moments[:, 1], moments[:, 2]
     mises_moments = np.sqrt(mx**2 + my**2 - mx*my + 3*mxy**2)
     return mises_moments
+
+
+def get_mises_curvatures(phi_x):
+    curvatures = phi_x.reshape(-1, 3)
+    kx, ky, kxy = curvatures[:, 0], curvatures[:, 1], curvatures[:, 2]
+    mises_curvatures = np.sqrt(kx**2 + ky**2 - kx*ky + 3*kxy**2)
+    return mises_curvatures
 
 
 def average_nodal_responses(structure, members_responses):
