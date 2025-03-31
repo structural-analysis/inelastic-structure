@@ -3,7 +3,7 @@ import csv
 
 # inputs:
 load_factor = 1
-data_names = ["u3-j", "sm1-j", "sm2-j", "sm3-j"]
+data_names = ["sm1", "sm2", "sm3"]
 
 def export_xy_data(data_name):
     xy_data = session.xyDataObjects[data_name]
