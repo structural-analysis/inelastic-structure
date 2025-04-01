@@ -9,9 +9,10 @@ from .shrunk import build_discretizing_points, compute_convex_hull_2d
 
 
 mp = 6000
-yield_point_num = 6 # 5, 6
-target_incs = [100, 200, 400]
-every_n_incs = 20
+yield_point_num = 21 # 5, 6
+point_size = 100
+target_incs = [11, 357]
+every_n_incs = 15
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
 alpha = 0.7
@@ -42,7 +43,9 @@ def interpolate(k0, a0, k2, a2, k1):
 def get_surface_size_for_yield_point_in_inc(example_path, yield_point_num, target_inc):
     curvatures_file_path = os.path.join(example_path, str(target_inc), "yield_points_mises_curvatures/0.csv")
     target_curvature = np.loadtxt(fname=curvatures_file_path, usecols=range(1), delimiter=",", ndmin=2, dtype=str)[yield_point_num]
-    surface_size = interpolate(0, 1, 5, 0.2, float(target_curvature[0]))
+    surface_size = interpolate(0, 1, 5, 0.15, float(target_curvature[0]))
+    # print(f"target k for {target_inc}: ", float(target_curvature[0]))
+    # print(f"size for {target_inc}: ", surface_size)
     return surface_size
 
 def get_state_points(mp, yield_point_num, target_inc):
@@ -92,70 +95,75 @@ def get_state_points(mp, yield_point_num, target_inc):
 
 def visualize_shape_projection(coords, mp, yield_point_num, target_incs):
     """
-    Plot 3 shapes for different increments in a single figure:
-      - Rows: Different target increments
-      - Columns: Different views ("Mx-My", "Mx-Mxy", "My-Mxy")
+    Plot each shape in a separate figure:
+      - Each increment has its own set of three figures.
+      - Each figure represents a different view ("Mx-My", "Mx-Mxy", "My-Mxy").
     """
     views = ["mx-my", "mx-mxy", "my-mxy"]
-    num_rows = len(target_incs)
-    num_cols = len(views)
-
-    fig, axs = plt.subplots(num_rows, num_cols, figsize=(6 * num_cols, 6 * num_rows))  # Adjust figure size
-
     all_points = coords.reshape(-1, 3)  # Flatten coordinates
 
-    for row, target_inc in enumerate(target_incs):
+    # # Set global limits for consistency across figures
+    # x_min, x_max = np.min(all_points[:, 0]), np.max(all_points[:, 0])
+    # y_min, y_max = np.min(all_points[:, 1]), np.max(all_points[:, 1])
+    # xy_min, xy_max = np.min(all_points[:, 2]), np.max(all_points[:, 2])
+
+    for target_inc in target_incs:
         points, surface_size = get_state_points(mp, yield_point_num, target_inc)
-        for col, view in enumerate(views):
-            ax = axs[row, col] if num_rows > 1 else axs[col]  # Handle single-row case
+
+        for view in views:
+            fig, ax = plt.subplots(figsize=(6, 6))
 
             # Select view
             if view == "mx-my":
                 selected_view = all_points[:, :2]
-                xlabel, ylabel = r"$M_x$", r"$M_y$"
+                xlabel, ylabel = r"$M_{xx}$", r"$M_{yy}$"
+                # ax.set_xlim(x_min, x_max)
+                # ax.set_ylim(y_min, y_max)
             elif view == "mx-mxy":
                 selected_view = all_points[:, [0, 2]]
-                xlabel, ylabel = r"$M_x$", r"$M_{xy}$"
+                xlabel, ylabel = r"$M_{xx}$", r"$M_{xy}$"
+                # ax.set_xlim(x_min, x_max)
+                # ax.set_ylim(xy_min, xy_max)
             elif view == "my-mxy":
                 selected_view = all_points[:, 1:]
-                xlabel, ylabel = r"$M_y$", r"$M_{xy}$"
+                xlabel, ylabel = r"$M_{yy}$", r"$M_{xy}$"
+                # ax.set_xlim(y_min, y_max)
+                # ax.set_ylim(xy_min, xy_max)
 
             # Compute Convex Hull
             hull_points = compute_convex_hull_2d(selected_view)
             hull_points_closed = np.vstack([hull_points, hull_points[0]])
 
-            # Define styles
+            # Define styles with color and line width
             shapes = [
-                (1.0, "--k", "gray", "original"),
-                (surface_size, "-k", "red", "softened"),
+                (1.0, "--", "#394247", 2.5, "PM"),
+                (surface_size, "-", "#0d5a78", 2.0, "SM"),
             ]
 
-            # Plot each shape
-            for alpha_val, line_style, fill_color, label_str in shapes:
+            # Plot each shape with customized styles
+            for alpha_val, line_style, color, lw, label_str in shapes:
                 scaled = alpha_val * hull_points_closed
-                ax.plot(scaled[:, 0], scaled[:, 1], line_style, label=label_str)
+                ax.plot(scaled[:, 0], scaled[:, 1], line_style, color=color, linewidth=lw, label=label_str)
 
             # Plot yield points
             for point in points:
                 if view == "mx-my":
-                    ax.scatter(point.mx, point.my, c='b', marker='o', alpha=0.5)
+                    ax.scatter(point.mx, point.my, s=point_size, c='b', marker='o', alpha=0.5)
                 elif view == "mx-mxy":
-                    ax.scatter(point.mx, point.mxy, c='b', marker='o', alpha=0.5)
+                    ax.scatter(point.mx, point.mxy, s=point_size, c='b', marker='o', alpha=0.5)
                 elif view == "my-mxy":
-                    ax.scatter(point.my, point.mxy, c='b', marker='o', alpha=0.5)
+                    ax.scatter(point.my, point.mxy, s=point_size, c='b', marker='o', alpha=0.5)
 
             # Set labels and aesthetics
-            ax.set_xlabel(xlabel, fontsize=14)
-            ax.set_ylabel(ylabel, fontsize=14)
+            ax.set_xlabel(xlabel, fontsize=14, labelpad=5)
+            ax.set_ylabel(ylabel, fontsize=14, labelpad=5)
             ax.set_aspect("equal", "box")
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.legend(loc="best", fontsize=10)
-            ax.set_title(f"Inc: {target_inc}, View: {view}", fontsize=14)
+            # ax.set_title(f"Increment: {target_inc}, View: {view}", fontsize=14)
 
-    plt.tight_layout()
-    plt.show()
-
+            plt.show()
 
 if __name__ == "__main__":
     coords = build_discretizing_points(xi_vals, theta_vals)

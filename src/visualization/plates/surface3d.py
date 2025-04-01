@@ -9,11 +9,11 @@ from src.settings import settings
 from .j2 import build_discretizing_points_and_gradients
 
 mp = 6000
-yield_point_num = 6
-every_n_incs = 30
+yield_point_num = 21
+every_n_incs = 10
 xi_vals = np.linspace(-1.95, 1.95, 12)
 theta_vals = np.linspace(0, 2 * np.pi, 16, endpoint=False)
-alpha = 0.3
+alpha = 0.4
 edgecolor = "#2b3a52"
 facecolor = "#bfd8ff"
 
@@ -77,7 +77,7 @@ def get_state_points(mp, yield_point_num):
 
 def visualize_shape_with_single_piece_caps(coords, mp, yield_point_num):
     points = get_state_points(mp, yield_point_num)
-    fig = plt.figure(figsize=(16, 16))
+    fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection="3d")
 
     n_xi, n_th, _ = coords.shape
@@ -107,7 +107,7 @@ def visualize_shape_with_single_piece_caps(coords, mp, yield_point_num):
     ax.add_collection3d(cap_poly_low)
     ax.add_collection3d(cap_poly_high)
     for point in points:
-        ax.scatter(point.mx, point.my, point.mxy, s=80, c='b', marker='o', edgecolors='k', alpha=0.9)
+        ax.scatter(point.mx, point.my, point.mxy, s=100, c='#176cad', marker='H', edgecolors='#394247', alpha=1)
     # ax.scatter(all_mx, all_my, all_mxy, c='b', marker='o', alpha=0.5)
 
     ax.set_xlim(-1.5, 1.5)
@@ -115,8 +115,8 @@ def visualize_shape_with_single_piece_caps(coords, mp, yield_point_num):
     ax.set_zlim(-0.7, 0.7)
 
     # D) Axis labels with **larger fonts + padding**
-    ax.set_xlabel(r"$M_x$", fontsize=16, labelpad=15)
-    ax.set_ylabel(r"$M_y$", fontsize=16, labelpad=15, rotation=90)
+    ax.set_xlabel(r"$M_{xx}$", fontsize=16, labelpad=15)
+    ax.set_ylabel(r"$M_{yy}$", fontsize=16, labelpad=15, rotation=90)
     ax.set_zlabel(r"$M_{xy}$", fontsize=16, labelpad=15, rotation=90)
 
     ax.set_title(
