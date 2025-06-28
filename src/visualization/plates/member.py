@@ -52,7 +52,7 @@ def plot_members(nodes, members, yield_points, plastic_points, highlight_node=No
     plt.scatter(nodes['x'], nodes['y'], color='#72858f', marker='o', s=20, label='Nodes')
 
     # Plot yield points
-    plt.scatter(yield_points['x'], yield_points['y'], color='#4bc8fa', marker='x', s=15, label='Yield Points')
+    plt.scatter(yield_points['x'], yield_points['y'], color='#4bc8fa', marker='x', s=15, label='Evaluation Points')
 
     # Highlight a specific node if provided
     if highlight_node is not None:
@@ -64,7 +64,7 @@ def plot_members(nodes, members, yield_points, plastic_points, highlight_node=No
     if highlight_yield is not None:
         yld_point = yield_points[yield_points['num'] == highlight_yield]
         if not yld_point.empty:
-            plt.scatter(yld_point['x'], yld_point['y'], color='#23bbf7', marker='P', s=70, label=f'Monitored Yield Point')
+            plt.scatter(yld_point['x'], yld_point['y'], color='#23bbf7', marker='P', s=70, label='Monitored Evaluation Point')
 
     plt.legend(loc="lower left", bbox_to_anchor=(+0.02, +0.02), framealpha=0.95)
     plt.show()
