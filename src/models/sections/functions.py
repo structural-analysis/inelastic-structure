@@ -4,7 +4,7 @@ from functools import lru_cache
 
 # FIXME: FIX OPTIMIZED NOT WITH CACHING
 @lru_cache(maxsize=192)
-def get_von_mises_matrix(sy):
+def get_von_mises_matrix(mp):
     si = np.array([1.9, 1.7, 1.2, 1, 0.5, 0, -0.5, -1, -1.2, -1.7, -1.9])
     m = 40
     n = si.shape[0]  # -2 & +2 will produce only one plane each
@@ -16,8 +16,8 @@ def get_von_mises_matrix(sy):
 
     # specifying two end planes
     phi = np.zeros((3, p_total))
-    phi[:, 0] = np.array([0.5, 0.5, 0]) / sy
-    phi[:, p_total - 1] = np.array([-0.5, -0.5, 0]) / sy
+    phi[:, 0] = np.array([0.5, 0.5, 0]) / mp
+    phi[:, p_total - 1] = np.array([-0.5, -0.5, 0]) / mp
 
     q = 0
     for i in range(n):
@@ -27,13 +27,113 @@ def get_von_mises_matrix(sy):
                 0.25 * (si[i] - 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
                 0.25 * (si[i] + 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
                 1.5 * np.sqrt(2) * np.sin(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))
-            ]) / sy
+            ]) / mp
         q += m
     return phi
 
-###############################################################################
-# Build discretizing points & gradients for Hill's yield surface
-###############################################################################
+
+def get_hill_matrix(mp, M0x, M0y, M0xy, rho, gamma):
+    """
+    General Hill (power-law) yield planes, ordered like legacy J2:
+      - Column 0:  +cap  (Mx=My>0 line)
+      - Columns 1..(m*n): barrel (rings i=0..n-1, theta j=0..m-1; theta runs fastest)
+      - Last column: -cap  (Mx=My<0 line)
+    Each plane is scaled by 1/mp, and normalized so that φ·P = 1 at its construction point P.
+
+    Pass J2 parameters to recover von Mises as a special case (no branching):
+      M0x = M0y = mp
+      M0xy = mp / sqrt(3)
+      rho  = 1.0
+      gamma = 2.0
+    """
+    # ---- legacy-like ring/sector sampling ----
+    # same si and m as your old get_von_mises_matrix (keeps order/indexing consistent)
+    si = np.array([1.9, 1.7, 1.2, 1.0, 0.5, 0.0, -0.5, -1.0, -1.2, -1.7, -1.9], dtype=float)
+    m = 40
+    theta_values = np.linspace(0.0, 2.0*np.pi, m, endpoint=False)
+
+    # Map si ∈ [-2,2] to Hill’s xi range using the same D1 used in your builder:
+    # D1 = 4/(2 - rho), so |xi| ≤ sqrt(D1). Linear map: xi = si * (sqrt(D1)/2).
+    D1 = 4.0 / (2.0 - rho)
+    xi_scale = np.sqrt(D1) / 2.0
+    xi_values = si * xi_scale
+
+    # ---- get surface points + gradients from your builder ----
+    coords, grads = build_discretizing_points_and_gradients_hill(
+        xi_values=xi_values,
+        theta_values=theta_values,
+        M0x=M0x, M0y=M0y, M0xy=M0xy,
+        rho=rho, gamma=gamma
+    )
+
+    n_xi = len(xi_values)
+    p_total = m * n_xi + 2
+    phi = np.zeros((3, p_total), dtype=float)
+
+    # ---------- caps (bi-axial Mx=My, txy=0) ----------
+    # Solve f(M,M,0)=1 with bisection; use the same power-law form as your builder.
+    def _f_biax(M):
+        # (txy=0) → term_xy = 0; cross term uses (|Mx*My|/(M0x*M0y))^(gamma/2)
+        term_x = (abs(M) / M0x) ** gamma
+        term_y = (abs(M) / M0y) ** gamma
+        term_cross = rho * ((abs(M*M) / (M0x*M0y)) ** (gamma / 2.0))
+        return term_x + term_y - term_cross  # = 1 on the surface
+
+    # positive cap
+    lo, hi = 0.0, max(M0x, M0y) * 5.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if _f_biax(mid) >= 1.0:
+            hi = mid
+        else:
+            lo = mid
+    M_cap = 0.5 * (lo + hi)
+    P_cap_pos = np.array([M_cap, M_cap, 0.0], dtype=float)
+
+    # gradient of the power-law Hill at (Mx,My,txy)
+    def _grad_power(Mx, My, Txy):
+        # Avoid zero^(-something): treat ~zero as zero contribution
+        eps = 1e-14
+        # cross “product” term exponent base:
+        prod = (Mx * My) / (M0x * M0y)
+        abs_prod = abs(prod)
+        sgn_prod = 0.0 if abs_prod < eps else (1.0 if prod > 0.0 else -1.0)
+
+        dfd_Mx = gamma * ((abs(Mx)/M0x)**(gamma-1.0) if abs(Mx)>eps else 0.0) * np.sign(Mx) / M0x \
+                 - rho * (gamma/2.0) * ((abs_prod)**(gamma/2.0 - 1.0) if abs_prod>eps else 0.0) * sgn_prod * (My / (M0x*M0y))
+        dfd_My = gamma * ((abs(My)/M0y)**(gamma-1.0) if abs(My)>eps else 0.0) * np.sign(My) / M0y \
+                 - rho * (gamma/2.0) * ((abs_prod)**(gamma/2.0 - 1.0) if abs_prod>eps else 0.0) * sgn_prod * (Mx / (M0x*M0y))
+        dfd_T  = gamma * ((abs(Txy)/M0xy)**(gamma-1.0) if abs(Txy)>eps else 0.0) * np.sign(Txy) / M0xy
+        return np.array([dfd_Mx, dfd_My, dfd_T], dtype=float)
+
+    g_cap_pos = _grad_power(*P_cap_pos)
+    # normalize so that φ·P = 1 (then scale by 1/mp)
+    norm_cap_pos = float(np.dot(g_cap_pos, P_cap_pos))
+    phi[:, 0] = (g_cap_pos / norm_cap_pos) / mp
+
+    # negative cap
+    P_cap_neg = -P_cap_pos
+    g_cap_neg = _grad_power(*P_cap_neg)
+    norm_cap_neg = float(np.dot(g_cap_neg, P_cap_neg))
+    phi[:, -1] = (g_cap_neg / norm_cap_neg) / mp
+
+    # ---------- barrel (same order as legacy: ring i outer loop, theta j inner loop) ----------
+    col = 1
+    for i in range(n_xi):
+        for j in range(m):
+            P = coords[i, j, :]       # (Mx, My, Txy)
+            g = grads[i, j, :]        # gradient at that point (your builder's formula)
+            denom = float(np.dot(g, P))
+            # Guard against degenerate points extremely close to caps
+            if abs(denom) < 1e-14:
+                # fallback: skip normalization change (keeps array stable)
+                phi[:, col] = phi[:, col-1]
+            else:
+                phi[:, col] = (g / denom) / mp
+            col += 1
+
+    return phi
+
 
 def build_discretizing_points_and_gradients_hill(xi_values, theta_values, M0x, M0y, M0xy, rho, gamma):
     """
@@ -95,8 +195,8 @@ def build_discretizing_points_and_gradients_hill(xi_values, theta_values, M0x, M
                 lam = 0.5 * (lo + hi)
 
             # Compute the coordinate on the yield surface with final λ
-            sx = 0.5 * (xi + np.sqrt(D2) * lam * np.cos(theta)) * M0x
-            sy = 0.5 * (xi - np.sqrt(D2) * lam * np.cos(theta)) * M0y
+            sx = 0.5 * (xi - np.sqrt(D2) * lam * np.cos(theta)) * M0x
+            sy = 0.5 * (xi + np.sqrt(D2) * lam * np.cos(theta)) * M0y
             txy = lam * np.sin(theta) * M0xy
             coords[i, j] = (sx, sy, txy)
 
@@ -117,77 +217,3 @@ def build_discretizing_points_and_gradients_hill(xi_values, theta_values, M0x, M
             dfd_txy = gamma * ((abs(txy) / M0xy) ** (gamma - 1.0)) * (1 if txy >= 0 else -1) / M0xy
             grads[i, j] = (dfd_sx, dfd_sy, dfd_txy)
     return coords, grads
-
-###############################################################################
-# Compute the phi matrix (gradients of yield planes) for Hill criterion
-###############################################################################
-def get_hill_matrix(mp, M0x, M0y, M0xy, rho, gamma):
-    """
-    Construct the matrix of yield plane normals (phi) for the Hill yield surface.
-    Each column phi[:,k] corresponds to a linear yield plane: phi[0]*Mx + phi[1]*My + phi[2]*Mxy = 1.
-    The planes include barrel facets (connecting adjacent xi rings) and two caps.
-    """
-    # Define xi discretization similar to the J2 case (a set of rings between +/- xi_max)
-    xi_max = np.sqrt(4.0 / (2.0 - rho)) if (2.0 - rho) > 1e-8 else 2.0  # theoretical max of xi (equi-biaxial yield)
-    # Choose xi levels (fractions of xi_max) for discretization
-    xi_levels = [0.95, 0.85, 0.60, 0.50, 0.25, 0.0]
-    xi_values = sorted({xi_max * lvl for lvl in xi_levels} | {-xi_max * lvl for lvl in xi_levels})
-    xi_values = np.array(xi_values)
-
-    # Theta angles (m segments around)
-    m = 40
-    theta_values = np.linspace(0, 2 * np.pi, m, endpoint=False)
-
-    # Compute all surface points and gradients
-    coords, grads = build_discretizing_points_and_gradients_hill(xi_values, theta_values, M0x, M0y, M0xy, rho, gamma)
-    n_xi = len(xi_values)
-    p_total = (n_xi - 1) * m + 2  # total number of yield planes = barrel facets + 2 caps
-    phi = np.zeros((3, p_total))
-
-    # A) Top cap plane (positive equi-biaxial Mx = My)
-    # Find yield point for Mx=My (positive) by solving f(M, M, 0) = 1
-    lo, hi = 0.0, max(M0x, M0y) * 2.0
-    for _ in range(30):
-        mid = 0.5 * (lo + hi)
-        # Hill yield function for sx = sy = M (txy=0)
-        f_mid = (mid / M0x) ** gamma + (mid / M0y) ** gamma - rho * ((mid * mid) / (M0x * M0y)) ** (gamma / 2.0)
-        if f_mid >= 1.0:
-            hi = mid
-        else:
-            lo = mid
-
-    M0b = 0.5 * (lo + hi)  # approximate yield moment under bi-axial bending
-    sx_cap = sy_cap = M0b
-    # Gradient at the equi-biaxial yield point
-    val_P = sx_cap * sy_cap / (M0x * M0y)
-    grad_cap_x = gamma * ((sx_cap / M0x) ** (gamma - 1.0)) / M0x \
-                 - rho * (gamma / 2.0) * ((val_P) ** (gamma / 2.0 - 1.0) if val_P > 1e-12 else 0.0) * (sy_cap / (M0x * M0y))
-    grad_cap_y = gamma * ((sy_cap / M0y) ** (gamma - 1.0)) / M0y \
-                 - rho * (gamma / 2.0) * ((val_P) ** (gamma / 2.0 - 1.0) if val_P > 1e-12 else 0.0) * (sx_cap / (M0x * M0y))
-    grad_cap_t = 0.0
-    # Scale gradient so that phi ⋅ [sx_cap, sy_cap, 0] = 1
-    norm_factor = grad_cap_x * sx_cap + grad_cap_y * sy_cap  # dot with the point
-    phi[:, 0] = np.array([grad_cap_x, grad_cap_y, grad_cap_t]) / norm_factor / mp
-
-    # B) Bottom cap plane (negative equi-biaxial Mx = My)
-    sx_cap_neg = sy_cap_neg = -M0b
-    val_P_neg = sx_cap_neg * sy_cap_neg / (M0x * M0y)
-    grad_cap_x_b = gamma * ((abs(sx_cap_neg) / M0x) ** (gamma - 1.0)) * (-1 if sx_cap_neg < 0 else 1) / M0x \
-                   - rho * (gamma / 2.0) * ((val_P_neg) ** (gamma / 2.0 - 1.0) if val_P_neg > 1e-12 else 0.0) * (sy_cap_neg / (M0x * M0y))
-    grad_cap_y_b = gamma * ((abs(sy_cap_neg) / M0y) ** (gamma - 1.0)) * (-1 if sy_cap_neg < 0 else 1) / M0y \
-                   - rho * (gamma / 2.0) * ((val_P_neg) ** (gamma / 2.0 - 1.0) if val_P_neg > 1e-12 else 0.0) * (sx_cap_neg / (M0x * M0y))
-    grad_cap_t_b = 0.0
-    norm_factor_b = grad_cap_x_b * sx_cap_neg + grad_cap_y_b * sy_cap_neg
-    phi[:, -1] = np.array([grad_cap_x_b, grad_cap_y_b, grad_cap_t_b]) / norm_factor_b / mp
-
-    # C) Barrel facet planes: for each quadrilateral facet between ring i and i+1
-    k = 1  # start filling phi columns after the top cap
-    for i in range(n_xi - 1):
-        for j in range(m):
-            sx, sy, txy = coords[i, j]
-            dfd_sx, dfd_sy, dfd_txy = grads[i, j]
-            # Plane normal = gradient; scale such that φ⋅[sx,sy,txy] = 1
-            norm = dfd_sx * sx + dfd_sy * sy + dfd_txy * txy
-            phi[:, k] = np.array([dfd_sx, dfd_sy, dfd_txy]) / norm / mp
-            k += 1
-    return phi

@@ -44,7 +44,11 @@ class YieldSpecs:
         elif self.yield_surface == "mises":
             phi = get_von_mises_matrix(self.mp)
         elif self.yield_surface == "hill":
-            phi = get_hill_matrix(mp=self.mp)
+            phi = get_hill_matrix(mp=self.mp, M0x=1, M0y=1, M0xy=1/np.sqrt(3.0), rho=1, gamma=2)
+        # print(f"{self.mp=}")
+        # print(f"{phi.shape=}")
+        # print(f"{phi=}")
+        # input()
         return phi
 
 

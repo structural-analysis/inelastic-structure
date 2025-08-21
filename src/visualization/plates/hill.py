@@ -47,9 +47,9 @@ def visualize_shape_with_single_piece_caps(coords):
     # ax.set_xlim(np.min(all_points[:, 0]), np.max(all_points[:, 0]))
     # ax.set_ylim(np.min(all_points[:, 1]), np.max(all_points[:, 1]))
     # ax.set_zlim(np.min(all_points[:, 2]), np.max(all_points[:, 2]))
-    ax.set_xlim(-1, 1)
-    ax.set_ylim(-1, 1)
-    ax.set_zlim(-1, 1)
+    ax.set_xlim(-1.5, 1.5)
+    ax.set_ylim(-1.5, 1.5)
+    ax.set_zlim(-0.75, 0.75)
 
     # D) Axis labels (with larger fonts and padding)
     ax.set_xlabel(r"$M_x$", fontsize=16, labelpad=15)
@@ -62,7 +62,7 @@ def visualize_shape_with_single_piece_caps(coords):
 # Example usage
 if __name__ == "__main__":
     # Define Hill yield parameters (example values)
-    M0x, M0y, M0xy = 1, 0.5, 0.5    # yield capacities for Mx, My, and Mxy
+    M0x, M0y, M0xy = 1, 1, 0.5    # yield capacities for Mx, My, and Mxy
     rho = 1.0   # anisotropy cross-coupling parameter
     gamma = 2 # exponent (2 for quadratic Hill yield criterion)
 
