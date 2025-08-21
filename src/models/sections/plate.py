@@ -1,5 +1,5 @@
 import numpy as np
-from functools import lru_cache
+from .functions import get_von_mises_matrix, get_hill_matrix
 
 
 class Material:
@@ -17,8 +17,6 @@ class Geometry:
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.mp = 0.25 * geometry.thickness ** 2 * material.sy
-        # print(f"{self.mp=}")
-        # input()
         self.yield_surface = input_nonlinear["yield_surface"]
 
 
@@ -44,7 +42,9 @@ class YieldSpecs:
                 [0.2143, -1.2143, -2],
             ]).T / self.mp
         elif self.yield_surface == "mises":
-            phi = get_von_mises_matrix(mp=self.mp)
+            phi = get_von_mises_matrix(self.mp)
+        elif self.yield_surface == "hill":
+            phi = get_hill_matrix(mp=self.mp)
         return phi
 
 
@@ -101,33 +101,3 @@ class PlateSection:
         d[0:3, 0:3] = ceb
         d[3:5, 3:5] = ces
         return d
-
-
-# FIXME: FIX OPTIMIZED NOT WITH CACHING
-@lru_cache(maxsize=192)
-def get_von_mises_matrix(mp):
-    si = np.array([1.9, 1.7, 1.2, 1, 0.5, 0, -0.5, -1, -1.2, -1.7, -1.9])
-    m = 40
-    n = si.shape[0]  # -2 & +2 will produce only one plane each
-    p_total = m * n + 2  # total number of yield planes
-    teta = np.zeros(40)
-    pi = np.pi
-    for i in range(m):
-        teta[i] = 2 * pi * i / m
-
-    # specifying two end planes
-    phi = np.zeros((3, p_total))
-    phi[:, 0] = np.array([0.5, 0.5, 0]) / mp
-    phi[:, p_total - 1] = np.array([-0.5, -0.5, 0]) / mp
-
-    l = 0
-    for i in range(n):
-        for j in range(m):
-            k = j + l + 1
-            phi[:, k] = np.array([
-                0.25 * (si[i] - 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
-                0.25 * (si[i] + 3 * np.cos(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))),
-                1.5 * np.sqrt(2) * np.sin(teta[j]) * np.sqrt((4 - (si[i]) ** 2) / (3 * (1 + np.sin(teta[j]) ** 2)))
-            ]) / mp
-        l += m
-    return phi
