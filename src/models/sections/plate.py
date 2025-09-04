@@ -16,11 +16,9 @@ class Geometry:
 
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
-        self.mp = 0.25 * geometry.thickness ** 2 * material.sy
-        # print(f"{self.mp=}")
-        # input()
+        self.is_direct_capacity = input_nonlinear["is_direct_capacity"]
+        self.mp = float(input_nonlinear["mp"]) if self.is_direct_capacity else 0.25 * geometry.thickness ** 2 * material.sy
         self.yield_surface = input_nonlinear["yield_surface"]
-
 
 class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):

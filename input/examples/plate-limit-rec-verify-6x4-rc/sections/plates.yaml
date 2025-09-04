@@ -1,0 +1,12 @@
+plate:
+  geometry:
+    t: 0.05
+  material:
+    e: 20000000000
+    nu: 0.2
+    sy: 240000000
+  nonlinear:
+    is_direct_capacity: true
+    mp: 23.12
+    yield_surface: mises
+  softening: null

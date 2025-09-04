@@ -32,10 +32,10 @@ if __name__ == "__main__":
     # Input parameters (example for a square plate)
     a = 6.0      # Length (m)
     b = 4.0      # Width (m)
-    q = 100000     # Uniform load (N/m²)
-    h = 0.05     # Thickness (m)
-    E = 2.0e11   # Young's modulus (Pa, steel)
-    nu = 0.3     # Poisson's ratio
+    q = 20000     # Uniform load (N/m²)
+    h = 0.15     # Thickness (m)
+    E = 2.0e10   # Young's modulus (Pa, steel)
+    nu = 0.2     # Poisson's ratio
     m_max = 100   # Number of terms in m-series (odd)
     n_max = 100   # Number of terms in n-series (odd)
     
