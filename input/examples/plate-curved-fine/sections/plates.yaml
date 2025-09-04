@@ -6,5 +6,6 @@ plate:
     nu: 0.3
     sy: 240000000.0
   nonlinear:
+    is_direct_capacity: false
     yield_surface: mises
   softening: null

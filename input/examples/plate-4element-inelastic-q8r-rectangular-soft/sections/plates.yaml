@@ -6,6 +6,7 @@ plate:
   geometry:
     t: 0.05
   nonlinear:
+    is_direct_capacity: false
     yield_surface: mises # simple or mises
   softening:
     alpha: 0.8
