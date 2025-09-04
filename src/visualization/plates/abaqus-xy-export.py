@@ -2,8 +2,8 @@ from abaqus import session
 import csv
 
 # inputs:
-load_factor = 1
-data_names = ["sm1", "sm2", "sm3"]
+load_factor = 150000
+data_names = ["u3"]
 
 def export_xy_data(data_name):
     xy_data = session.xyDataObjects[data_name]

@@ -9,13 +9,13 @@ class SiftingType(str, Enum):
 
 
 class Settings(BaseSettings):
-    example_name: str = "plate-limit-rec-verify-6x4-rc"
+    example_name: str = "plate-curved-fine-rc"
     sifting_type: SiftingType = SiftingType.mahini
     monitor_incremental_disp: bool = True
-    controlled_node_for_disp = 46
+    controlled_node_for_disp = 4
     controlled_node_dofs_count = 3
     controlled_node_dof_for_disp = 0
-    controlled_node_for_mises = 46
+    controlled_node_for_mises = 4
     computational_zero = 1e-12
     isclose_tolerance = 1e-7
     output_digits = 10
