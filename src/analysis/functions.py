@@ -73,8 +73,6 @@ def get_members_disps(structure, disp):
 
 def get_internal_responses(structure, members_disps):
     # Compute member responses
-    # print(f"{members_disps=}")
-    # input()
     members_responses = [
         member.get_response(members_disps[i, :])
         for i, member in enumerate(structure.members)
@@ -93,9 +91,7 @@ def get_internal_responses(structure, members_disps):
     members_nodal_moments = np.array(
         [mr.nodal_moments for mr in members_responses]
     )
-    # print(f"{members_nodal_strains=}")
-    # print("--------------------------------------")
-    # input()
+
     # Concatenate yield component forces
     yield_components_forces = [
         mr.yield_components_force for mr in members_responses

@@ -151,12 +151,6 @@ class MahiniMethod:
             raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
             raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
 
-        # print(f"{self.q.shape=}")
-        # print(f"{self.h.shape=}")
-        # print(f"{self.w.shape=}")
-        # print(f"{dv_phi.shape=}")
-        # print(f"{self.d0.shape=}")
-
         columns_count = self.primary_vars_count + self.slack_vars_count
         table = np.zeros((self.constraints_count, columns_count))
         table[0:self.constraints_count, 0:self.primary_vars_count] = raw_a
@@ -698,10 +692,7 @@ class MahiniMethod:
         # (probable usage: in case when unload is last step)
 
         pm_var_family = self.get_pm_var_family(pm_var)
-        # print(f"{pm_var_family=}")
         for primary_var in pm_var_family:
-            # print("unload @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-            # print(f"{primary_var=}")
             if primary_var in basic_variables:
                 exiting_row = self.get_var_row(primary_var, basic_variables)
 
@@ -861,20 +852,13 @@ class MahiniMethod:
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
-        # print(f"{abar=}")
-        # print(f"{bbar=}")
         positive_abar = abar[positive_abar_indices]
         ba = bbar[positive_abar_indices] / positive_abar
-        # print(f"{positive_abar=}")
-        # print(f"{ba=}")
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
-        # print(f"{sorted_zipped_ba=}")
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
-        # print(f"{will_out_row=}")
-        # input()
 
         # if will in variable is plastic or softening
         if landa_row and will_in_col:
@@ -901,9 +885,6 @@ class MahiniMethod:
                             break
                         will_out_var = basic_variables[will_out_row]
                         will_out_yield_point = self.get_will_out_yield_point(will_out_var)
-                        # print(f"{will_in_col_yield_point=}")
-                        # print(f"{will_out_yield_point=}")
-                        # input()
 
                         if will_in_col_yield_point != will_out_yield_point:
                             will_out_row = int(sorted_zipped_ba[0, i])

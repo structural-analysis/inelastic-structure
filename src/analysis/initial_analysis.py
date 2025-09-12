@@ -168,11 +168,7 @@ class InitialAnalysis:
         )
 
         self.elastic_nodal_disp_history[time_step, :] = self.elastic_nodal_disp
-        # print(f"{self.total_load=}")
-        # print(f"{self.elastic_nodal_disp=}")
         self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp)
-        # print(f"{self.elastic_members_disps=}")
-        # input()
         self.elastic_members_disps_history[time_step, :, :] = self.elastic_members_disps
         internal_responses = get_internal_responses(self.structure, self.elastic_members_disps)
         self.elastic_members_nodal_forces_history[time_step, :, :] = internal_responses.members_nodal_forces
