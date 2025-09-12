@@ -82,6 +82,7 @@ class InitialAnalysis:
             self.elastic_members_nodal_strains = internal_responses.members_nodal_strains
             self.elastic_members_nodal_stresses = internal_responses.members_nodal_stresses
             self.elastic_members_nodal_moments = internal_responses.members_nodal_moments
+            self.elastic_yield_points_forces=internal_responses.p0
 
             if self.structure.is_inelastic:
                 sensitivity = get_sensitivity(structure=self.structure, loads=self.loads)
@@ -91,6 +92,7 @@ class InitialAnalysis:
                 self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
                 self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
                 self.members_nodal_moments_sensitivity = sensitivity.members_nodal_moments
+                self.yield_points_forces_sensitivity = sensitivity.pv
 
                 self.analysis_data.p0 = internal_responses.p0
                 self.analysis_data.d0 = get_nodal_disp_limits(self.structure, self.elastic_nodal_disp)
@@ -173,11 +175,15 @@ class InitialAnalysis:
         # input()
         self.elastic_members_disps_history[time_step, :, :] = self.elastic_members_disps
         internal_responses = get_internal_responses(self.structure, self.elastic_members_disps)
-
         self.elastic_members_nodal_forces_history[time_step, :, :] = internal_responses.members_nodal_forces
-        self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
-        self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
-        # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
+
+        if internal_responses.members_nodal_strains.any():
+            self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
+            self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
+
+        if internal_responses.members_nodal_moments.any():
+            self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
+
         self.previous_modal_loads = self.elastic_modal_loads
         self.previous_a2s = self.elastic_a2s
         self.previous_b2s = self.elastic_b2s

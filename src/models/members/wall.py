@@ -147,20 +147,20 @@ class WallMember:
         s = natural_point.s
         nodes = self.nodes
         if self.element_type in ("Q4", "Q4R"):
-            j = 0.25 * np.dot(np.array([
+            j = 0.25 * np.array([
                 [-(1 - s), (1 - s), (1 + s), -(1 + s)],
                 [-(1 - r), -(1 + r), (1 + r), (1 - r)],
-            ]), np.array([
+            ]) @ np.array([
                 [nodes[0].x, nodes[0].y],
                 [nodes[1].x, nodes[1].y],
                 [nodes[2].x, nodes[2].y],
                 [nodes[3].x, nodes[3].y],
-            ]))
+            ])
         elif self.element_type in ("Q8", "Q8R"):
-            j = 0.25 * np.dot(np.array([
+            j = 0.25 * np.array([
                 [-2 * r * s + 2 * r - s ** 2 + s, 4 * r * (s - 1), -2 * r * s + 2 * r + s ** 2 - s, 2 - 2 * s ** 2, 2 * r * s + 2 * r + s ** 2 + s, -4 * r * (s + 1), 2 * r * s + 2 * r - s ** 2 - s, 2 * s ** 2 - 2],
                 [-r ** 2 - 2 * r * s + r + 2 * s, 2 * r ** 2 - 2, -r ** 2 + 2 * r * s - r + 2 * s, -4 * s * (r + 1), r ** 2 + 2 * r * s + r + 2 * s, 2 - 2 * r ** 2, r ** 2 - 2 * r * s - r + 2 * s, 4 * s * (r - 1)],
-            ]), np.array([
+            ]) @ np.array([
                 [nodes[0].x, nodes[0].y],
                 [nodes[1].x, nodes[1].y],
                 [nodes[2].x, nodes[2].y],
@@ -169,7 +169,7 @@ class WallMember:
                 [nodes[5].x, nodes[5].y],
                 [nodes[6].x, nodes[6].y],
                 [nodes[7].x, nodes[7].y],
-            ]))
+            ])
         return j
 
     @lru_cache(maxsize=192)
@@ -180,27 +180,27 @@ class WallMember:
         b = np.zeros((3, 2 * self.nodes_count))
 
         if self.element_type in ("Q4", "Q4R"):
-            du = 0.25 * np.dot(np.linalg.inv(j), np.array([
+            du = 0.25 * np.linalg.inv(j) @ np.array([
                 [-(1 - s), 0, (1 - s), 0, (1 + s), 0, -(1 + s), 0],
                 [-(1 - r), 0, -(1 + r), 0, 1 + r, 0, 1 - r, 0],
-            ]))
-            dv = 0.25 * np.dot(np.linalg.inv(j), np.array([
+            ])
+            dv = 0.25 * np.linalg.inv(j) @ np.array([
                 [0, -(1 - s), 0, (1 - s), 0, (1 + s), 0, -(1 + s)],
                 [0, -(1 - r), 0, -(1 + r), 0, 1 + r, 0, 1 - r],
-            ]))
+            ])
             b[0, :] = du[0, :]
             b[1, :] = dv[1, :]
             b[2, :] = du[1, :] + dv[0, :]
 
         elif self.element_type in ("Q8", "Q8R"):
-            du = 0.25 * np.dot(np.linalg.inv(j), np.array([
+            du = 0.25 * np.linalg.inv(j) @ np.array([
                 [-2 * r * s + 2 * r - s ** 2 + s, 0, 4 * r * (s - 1), 0, -2 * r * s + 2 * r + s ** 2 - s, 0, 2 - 2 * s ** 2, 0, 2 * r * s + 2 * r + s ** 2 + s, 0, -4 * r * (s + 1), 0, 2 * r * s + 2 * r - s ** 2 - s, 0, 2 * s ** 2 - 2, 0],
                 [-r ** 2 - 2 * r * s + r + 2 * s, 0, 2 * r ** 2 - 2, 0, -r ** 2 + 2 * r * s - r + 2 * s, 0, -4 * s * (r + 1), 0, r ** 2 + 2 * r * s + r + 2 * s, 0, 2 - 2 * r ** 2, 0, r ** 2 - 2 * r * s - r + 2 * s, 0, 4 * s * (r - 1), 0],
-            ]))
-            dv = 0.25 * np.dot(np.linalg.inv(j), np.array([
+            ])
+            dv = 0.25 * np.linalg.inv(j) @ np.array([
                 [0, -2 * r * s + 2 * r - s ** 2 + s, 0, 4 * r * (s - 1), 0, -2 * r * s + 2 * r + s ** 2 - s, 0, 2 - 2 * s ** 2, 0, 2 * r * s + 2 * r + s ** 2 + s, 0, -4 * r * (s + 1), 0, 2 * r * s + 2 * r - s ** 2 - s, 0, 2 * s ** 2 - 2],
                 [0, -r ** 2 - 2 * r * s + r + 2 * s, 0, 2 * r ** 2 - 2, 0, -r ** 2 + 2 * r * s - r + 2 * s, 0, -4 * s * (r + 1), 0, r ** 2 + 2 * r * s + r + 2 * s, 0, 2 - 2 * r ** 2, 0, r ** 2 - 2 * r * s - r + 2 * s, 0, 4 * s * (r - 1)],
-            ]))
+            ])
             b[0, :] = du[0, :]
             b[1, :] = dv[1, :]
             b[2, :] = du[1, :] + dv[0, :]
@@ -241,7 +241,7 @@ class WallMember:
             j = self.get_jacobian(gauss_point)
             j_det = np.linalg.det(j)
             # gauss_point_k = gauss_point.weight * b.T * self.section.ce * b * j_det * self.section.geometry.thickness * self.section.geometry.thickness * self.section.geometry.thickness
-            gauss_point_k = gauss_point.weight * np.dot(b.T, np.dot(self.section.ce, b)) * j_det * self.section.geometry.thickness
+            gauss_point_k = gauss_point.weight * (b.T @ (self.section.ce @ b)) * j_det * self.section.geometry.thickness
             k += gauss_point_k
         return k
 
@@ -288,8 +288,8 @@ class WallMember:
             for i in range(self.gauss_points_count):
                 gauss_points_stresses[i, :] += fixed_internal[3 * i:3 * (i + 1)].T
 
-        natural_point_strain = np.dot(gauss_points_strains.T, shape_functions.T)
-        natural_point_stress = np.dot(gauss_points_stresses.T, shape_functions.T)
+        natural_point_strain = gauss_points_strains.T @ shape_functions.T
+        natural_point_stress = gauss_points_stresses.T @ shape_functions.T
         natural_point_strain_object = Strain(x=natural_point_strain[0], y=natural_point_strain[1], xy=natural_point_strain[2])
         natural_point_stress_object = Stress(x=natural_point_stress[0], y=natural_point_stress[1], xy=natural_point_stress[2])
         return natural_point_strain_object, natural_point_stress_object, yield_components_force
@@ -336,8 +336,8 @@ class WallMember:
         distortion = self.get_unit_distortion(gauss_point_component_num)
         j = self.get_jacobian(gauss_point)
         j_det = np.linalg.det(j)
-        nodal_force = np.dot(gauss_point_b.T, np.dot(self.section.ce, distortion)) * self.section.geometry.thickness * j_det
-        gauss_point_stress = np.dot(self.section.ce, distortion)
+        nodal_force = (gauss_point_b.T @ (self.section.ce @ distortion)) * self.section.geometry.thickness * j_det
+        gauss_point_stress = self.section.ce @ distortion
         return nodal_force, gauss_point_stress
 
     def get_nodal_forces_from_unit_distortions(self):
@@ -362,9 +362,9 @@ class WallMember:
             fixed_internal = np.zeros(self.yield_specs.components_count)
 
         if fixed_external.any():
-            nodal_force = np.dot(self.k, nodal_disp) + fixed_external
+            nodal_force = self.k @ nodal_disp + fixed_external
         else:
-            nodal_force = np.dot(self.k, nodal_disp)
+            nodal_force = self.k @ nodal_disp
 
         nodal_strains, nodal_stresses, yield_components_force = self.get_nodal_strains_and_stresses(nodal_disp, fixed_internal)
         response = Response(

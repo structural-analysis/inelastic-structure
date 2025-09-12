@@ -284,27 +284,6 @@ class Sifting:
             sifted_pieces_count=sifted_pieces_count
         )
 
-        if increment == 22:  # use when sifted
-            pass
-            # print(f"{will_in_col=}")
-            # print(f"global_will_in_col=x-{self.structure_sifted_yield_pieces_current[will_in_col].num_in_structure}")
-            # print(f"{updated_indices=}")
-            # !!!!!!!!!!!! these values must check with increment 21 vaules,
-            # beacause values are updated based on increment 21 values !!!!!!!!!!!!!!!!!!!!
-
-            # np.savetxt("table.csv", self.table, delimiter=", ", fmt='%1.4e')
-            # np.savetxt("phi.csv", self.phi, delimiter=", ", fmt='%1.4e')
-            # np.savetxt("b_matrix_inv.csv", b_matrix_inv, delimiter=", ", fmt='%1.4e')
-            # scores,
-            # b_matrix_inv_prev,
-            # basic_variables_prev,
-            # landa_row,
-            # landa_var,
-            # pv,
-            # p0,
-            # will_in_col_piece_num_in_structure
-            # input()
-
         return SiftedResults(
             sifted_yield_points=sifted_yield_points_updated,
             sifted_components_count=sifted_components_count,

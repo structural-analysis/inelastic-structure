@@ -59,3 +59,25 @@ with 2 selected pieces
 
 - 3d-2side-dynamic-inelastic
 with 4 selected pieces. done with 8 pieces.
+
+
+payanname mahini:
+صفحه 64:
+
+از سویی به جای محاسبه و ذخیره سازی کل ماتریس می توان تنها ستون های مورد نیاز آن را در زمان مقرر با استفاده از سطرها و ستون های مرتبط از ماتریس های تسلیم و تاثیر محاسبه نمود و به کار برد
+
+ابتدای صفحه 66:
+کاهش حجم ذخیره سازی با استفاده از روش سیمپلکس اصلاح شده
+
+pivot optimization:
+لازم نیست وقتی میخواهیم پیوت انجام دهیم تمام جدول را به روز کنیم
+کد ماهینی را نگاه کنیم و ایده بگیریم
+
+performance:
+- Make sure your arrays are float64 and in standard NumPy row‐major order for best BLAS performance. If you do big multiplications, or if you do @ self.table repeatedly, it’s good to ensure self.table.flags[‘C_CONTIGUOUS’] is true in NumPy.
+
+- float32 for all arrays.
+- compare with mahini using o1
+- checkif mahini not use full table for score and violation and cbar update
+- plate and wall member object calculations is based on natural r, s. so all elements have some common things probabely
+- multi‐RHS solves for get_sensitivity

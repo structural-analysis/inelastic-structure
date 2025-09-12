@@ -141,9 +141,9 @@ class Frame2DMember:
         # fixed external: fixed external forces like force, moment, ... nodes of a member
 
         if fixed_external is None:
-            nodal_force = np.dot(self.k, nodal_disp)
+            nodal_force = self.k @ nodal_disp
         else:
-            nodal_force = np.dot(self.k, nodal_disp) + fixed_external
+            nodal_force = self.k @ nodal_disp + fixed_external
         yield_components_force = nodal_force[self.yield_components_dofs]
 
         response = Response(

@@ -17,6 +17,8 @@ class Geometry:
 class Nonlinear:
     def __init__(self, material: Material, geometry: Geometry, input_nonlinear):
         self.mp = 0.25 * geometry.thickness ** 2 * material.sy
+        # print(f"{self.mp=}")
+        # input()
         self.yield_surface = input_nonlinear["yield_surface"]
 
 
@@ -80,10 +82,10 @@ class PlateSection:
         self.nonlinear = Nonlinear(self.material, self.geometry, input["nonlinear"])
         self.yield_specs = YieldSpecs(self.nonlinear)
         self.softening = Softening(self.yield_specs, input["softening"])
+        self.d = self.create_d()
 
-    @property
-    def d(self):
-        w = 5 / 6 # warping coefficient
+    def create_d(self):
+        w = 5 / 6  # warping coefficient
         t = self.geometry.thickness
         v = self.material.nu
         e = self.material.e

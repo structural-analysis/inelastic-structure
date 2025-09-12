@@ -1,0 +1,13 @@
+plate:
+  geometry:
+    t: 0.01
+  material:
+    e: 200000000000
+    nu: 0.3
+    sy: 240000000
+  nonlinear:
+    yield_surface: mises
+  softening:
+    alpha: 0.8
+    ep1: 0
+    ep2: 1
