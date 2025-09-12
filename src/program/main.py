@@ -165,6 +165,9 @@ class MahiniMethod:
         phi_p0 = self.phi.T @ self.p0
         phi_pv = self.phi.T @ self.pv
         phi_pv_phi = phi_pv @ self.phi
+        # np.savetxt('phi_p0.txt', phi_p0, fmt='%s', delimiter='\n')
+        # np.savetxt('phi_pv_phi.txt', phi_pv_phi, fmt='%s', delimiter='\n')
+        # input()
 
         landa_base_num = self.plastic_vars_count + self.softening_vars_count
         dv_phi = self.dv @ self.phi
@@ -187,11 +190,11 @@ class MahiniMethod:
             raw_a[disp_limit_base_num:(disp_limit_base_num + self.disp_limits_count), landa_base_num] = self.d0
             raw_a[(disp_limit_base_num + self.disp_limits_count):(disp_limit_base_num + 2 * self.disp_limits_count), landa_base_num] = - self.d0
 
-        print(f"{self.q.shape=}")
-        print(f"{self.h.shape=}")
-        print(f"{self.w.shape=}")
-        print(f"{dv_phi.shape=}")
-        print(f"{self.d0.shape=}")
+        # print(f"{self.q.shape=}")
+        # print(f"{self.h.shape=}")
+        # print(f"{self.w.shape=}")
+        # print(f"{dv_phi.shape=}")
+        # print(f"{self.d0.shape=}")
 
         columns_count = self.primary_vars_count + self.slack_vars_count
         table = np.zeros((self.constraints_count, columns_count))
@@ -693,14 +696,20 @@ class MahiniMethod:
         # when there is no positive a remaining (structure failure), e.g. stop the process.
 
         positive_abar_indices = np.array(np.where(abar > 0)[0], dtype=int)
+        # print(f"{abar=}")
+        # print(f"{bbar=}")
         positive_abar = abar[positive_abar_indices]
         ba = bbar[positive_abar_indices] / positive_abar
+        # print(f"{positive_abar=}")
+        # print(f"{ba=}")
         zipped_ba = np.row_stack([positive_abar_indices, ba])
         mask = np.argsort(zipped_ba[1], kind="stable")
         sorted_zipped_ba = zipped_ba[:, mask]
         # print(f"{sorted_zipped_ba=}")
         # if will in variable is landa
         will_out_row = int(sorted_zipped_ba[0, 0])
+        # print(f"{will_out_row=}")
+        # input()
 
         # if will in variable is plastic or softening
         if landa_row and will_in_col:

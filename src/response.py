@@ -2,7 +2,7 @@ import os
 import numpy as np
 from enum import Enum
 
-from .functions import get_elastoplastic_response, load_chunk, delete_chunk, get_activated_plastic_points
+from .functions import get_elastoplastic_response, get_activated_plastic_points
 from .settings import settings
 from .analysis.initial_analysis import AnalysisType
 
@@ -275,6 +275,11 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
             members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
 
+            if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
+                members_nodal_strains = np.zeros((increments_count, structure.members_count, structure.max_member_nodal_components_count))
+                members_nodal_stresses = np.zeros((increments_count, structure.members_count, structure.max_member_nodal_components_count))
+                nodal_strains = np.zeros((increments_count, structure.nodal_components_count))
+                nodal_stresses = np.zeros((increments_count, structure.nodal_components_count))
             for i in range(increments_count):
                 phi_pms = phi_pms_history[i] + final_inc_phi_pms_prev
                 load_level = load_level_history[i]
@@ -306,6 +311,26 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
 
                 plastic_points[i] = get_activated_plastic_points(pms=pms_history[i], intact_pieces=initial_analysis.initial_data.intact_pieces)
 
+                if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
+                    elastoplastic_members_nodal_strains = get_elastoplastic_response(
+                        load_level=load_level,
+                        phi_x=phi_pms,
+                        elastic_response=initial_analysis.elastic_members_nodal_strains_history[time_step, :],
+                        sensitivity=initial_analysis.members_nodal_strains_sensitivity,
+                    )
+
+                    elastoplastic_members_nodal_stresses = get_elastoplastic_response(
+                        load_level=load_level,
+                        phi_x=phi_pms,
+                        elastic_response=initial_analysis.elastic_members_nodal_stresses_history[time_step, :],
+                        sensitivity=initial_analysis.members_nodal_stresses_sensitivity,
+                    )
+
+                    members_nodal_strains[i, :, :] = elastoplastic_members_nodal_strains
+                    members_nodal_stresses[i, :, :] = elastoplastic_members_nodal_stresses
+                    nodal_strains[i, :] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_strains)
+                    nodal_stresses[i, :] = average_nodal_responses(structure=structure, members_responses=elastoplastic_members_nodal_stresses)
+
             responses[time_step] = {
                 "plastic_points": plastic_points,
                 "nodal_disp": nodal_disp,
@@ -314,9 +339,15 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 "load_levels": load_levels,
             }
 
-        # delete_chunk(response="nodal_disp")
-        # delete_chunk(response="members_nodal_forces")
-        # delete_chunk(response="members_disps")
+            if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
+                responses[time_step].update(
+                    {
+                        "nodal_strains": nodal_strains,
+                        "nodal_stresses": nodal_stresses,
+                        "members_nodal_strains": members_nodal_strains,
+                        "members_nodal_stresses": members_nodal_stresses,
+                    }
+                )
 
     elif not structure.is_inelastic:  # if structure is elastic
         load_limit = structure.limits["load_limit"][0]
@@ -331,16 +362,16 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
         increments_count = 1
 
         for time_step in range(1, initial_analysis.time_steps):
-            nodal_disp = np.zeros((increments_count, structure.dofs_count))
-            members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
-            members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
-            members_nodal_strains = np.zeros([increments_count, structure.members_count], dtype=object)
-            members_nodal_stresses = np.zeros([increments_count, structure.members_count], dtype=object)
-            nodal_strains = np.zeros([increments_count, 1], dtype=object)
-            nodal_stresses = np.zeros([increments_count, 1], dtype=object)
             load_levels = np.zeros(increments_count)
+            nodal_disp = np.zeros((increments_count, structure.dofs_count))
+            members_nodal_forces = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
+            members_disps = np.zeros((increments_count, structure.members_count, structure.max_member_dofs_count))
 
-            load_levels[0] = load_limit
+            if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
+                members_nodal_strains = np.zeros((increments_count, structure.members_count, structure.max_member_nodal_components_count))
+                members_nodal_stresses = np.zeros((increments_count, structure.members_count, structure.max_member_nodal_components_count))
+                nodal_strains = np.zeros((increments_count, structure.nodal_components_count))
+                nodal_stresses = np.zeros((increments_count, structure.nodal_components_count))
             # elastoplastic_nodal_disp = get_elastoplastic_response(
             #     load_level=load_level,
             #     phi_x=phi_x,
@@ -349,6 +380,7 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
             # )
             # nodal_disp[i, 0] = elastoplastic_nodal_disp[0, 0]
             for i in range(increments_count):
+                load_levels[0] = load_limit
                 nodal_disp[i, :] = elastic_nodal_disp_history[time_step, :] * load_limit
                 # elastoplastic_members_nodal_forces = get_elastoplastic_response(
                 #     load_level=load_level,
@@ -358,15 +390,15 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                 # )
                 elastic_members_nodal_forces = elastic_members_nodal_forces_history[time_step, :, :] * load_limit
                 elastic_members_disps = elastic_members_disps_history[time_step, :, :] * load_limit
-                elastic_members_nodal_strains = elastic_members_nodal_strains_history[time_step, :] * load_limit
-                elastic_members_nodal_stresses = elastic_members_nodal_stresses_history[time_step, :] * load_limit
 
                 members_nodal_forces[i, :, :] = elastic_members_nodal_forces
                 members_disps[i, :, :] = elastic_members_disps
 
-                if has_any_response(members_nodal_strains):
-                    nodal_strains[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains)
-                    nodal_stresses[0, 0] = average_nodal_responses(structure=structure, members_responses=members_nodal_stresses)
+                if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
+                    members_nodal_strains[i, :, :] = elastic_members_nodal_strains_history[time_step, :] * load_limit
+                    members_nodal_stresses[i, :, :] = elastic_members_nodal_stresses_history[time_step, :] * load_limit
+                    nodal_strains[i, :] = average_nodal_responses(structure=structure, members_responses=members_nodal_strains[i, :, :])
+                    nodal_stresses[i, :] = average_nodal_responses(structure=structure, members_responses=members_nodal_stresses[i, :, :])
 
                 # elastoplastic_members_disps = get_elastoplastic_response(
                 #     load_level=load_level,
@@ -380,14 +412,15 @@ def calculate_dynamic_responses(initial_analysis, inelastic_analysis):
                     "nodal_disp": nodal_disp,
                     "members_disps": members_disps,
                     "members_nodal_forces": members_nodal_forces,
-                    "members_nodal_strains": members_nodal_strains,
-                    "members_nodal_stresses": members_nodal_stresses,
                 }
-                if has_any_response(members_nodal_strains):
+                if has_any_response(initial_analysis.elastic_members_nodal_strains_history):
                     responses[time_step].update(
                         {
                             "nodal_strains": nodal_strains,
                             "nodal_stresses": nodal_stresses,
+                            "members_nodal_strains": members_nodal_strains,
+                            "members_nodal_stresses": members_nodal_stresses,
+
                         }
                     )
 

@@ -33,6 +33,9 @@ class DynamicSensitivity:
     modal_loads: np.array
     a2s: np.array
     b2s: np.array
+    members_nodal_strains: np.array
+    members_nodal_stresses: np.array
+    members_nodal_moments: np.array
 
 
 @dataclass
@@ -70,6 +73,8 @@ def get_members_disps(structure, disp):
 
 def get_internal_responses(structure, members_disps):
     # Compute member responses
+    # print(f"{members_disps=}")
+    # input()
     members_responses = [
         member.get_response(members_disps[i, :])
         for i, member in enumerate(structure.members)
@@ -88,7 +93,9 @@ def get_internal_responses(structure, members_disps):
     members_nodal_moments = np.array(
         [mr.nodal_moments for mr in members_responses]
     )
-
+    # print(f"{members_nodal_strains=}")
+    # print("--------------------------------------")
+    # input()
     # Concatenate yield component forces
     yield_components_forces = [
         mr.yield_components_force for mr in members_responses
@@ -343,6 +350,9 @@ def get_dynamic_sensitivity(structure, loads, deltat):
     modal_load_sensitivity = np.zeros((
         selected_modes_count, structure.yield_specs.intact_components_count
     ))
+    members_nodal_strains_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
+    members_nodal_stresses_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
+    members_nodal_moments_sensitivity = np.zeros((structure.members_count, structure.max_member_nodal_components_count, structure.yield_specs.intact_components_count))
     a2_sensitivity = np.zeros((
         selected_modes_count, structure.yield_specs.intact_components_count
     ))
@@ -353,11 +363,10 @@ def get_dynamic_sensitivity(structure, loads, deltat):
     a1s_empty = np.zeros(selected_modes_count)
     b1s_empty = np.zeros(selected_modes_count)
     initial_modal_load_empty = np.zeros(selected_modes_count)
-
     for member_num, member in enumerate(members):
-        for load in member.udefs.T:
+        for comp_num, force in enumerate(member.udefs.T):
             fv = np.zeros((structure.dofs_count, 1))
-            global_load = np.dot(member.t.T, load.T)
+            global_load = np.dot(member.t.T, force.T)
             local_node_base_dof = 0
             for node in member.nodes:
                 global_node_base_dof = structure.node_dofs_count * node.num
@@ -365,11 +374,9 @@ def get_dynamic_sensitivity(structure, loads, deltat):
                     fv[global_node_base_dof + i] = global_load[local_node_base_dof + i]
                 local_node_base_dof += structure.node_dofs_count
 
-                # affected_struc_disp, p2_modes, a2_modes, b2_mdoes = self.get_dynamic_unit_nodal_disp(fv, modes, time_step)
-                a1s = a1s_empty
-                b1s = b1s_empty
-                initial_modal_loads = initial_modal_load_empty
-
+            a1s = a1s_empty
+            b1s = b1s_empty
+            initial_modal_loads = initial_modal_load_empty
             affected_a2s, affected_b2s, _, _, affected_modal_load, affected_struc_disp = get_dynamic_nodal_disp(
                 structure=structure,
                 loads=loads,
@@ -387,18 +394,44 @@ def get_dynamic_sensitivity(structure, loads, deltat):
             b2_sensitivity[:, pv_column] = affected_b2s
             affected_member_disps = get_members_disps(structure, affected_struc_disp)
             current_affected_member_ycns = 0
+            for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
+                fixed_external_shape = structure.members[affected_member_num].dofs_count
+                fixed_external = -force.T if member_num == affected_member_num else np.zeros(fixed_external_shape)
+                # affected_member_response = structure.members[affected_member_num].get_response(affected_member_disps[affected_member_num, :], fixed_external)
+                if structure.members[affected_member_num].__class__.__name__ in ["WallMember", "PlateMember"]:
+                    # NOTE: yield_specs.components_count has different meanings in different members.
+                    fixed_internal_shape = (structure.members[affected_member_num].yield_specs.components_count, 1)
+                    if member_num == affected_member_num:
+                        fixed_internal = -structure.members[affected_member_num].udets.T[comp_num].T
+                    else:
+                        fixed_internal = np.matrix(np.zeros((fixed_internal_shape)))
+                else:
+                    fixed_internal = None
 
-            # for affected_member_num, affected_member_disp in enumerate(affected_member_disps):
-            for affected_member_num in range(affected_member_disps.shape[0]):
-                fixed_external = -load.T if member_num == affected_member_num else None
-                affected_member_response = structure.members[affected_member_num].get_response(affected_member_disps[affected_member_num, :], fixed_external)
+
+                affected_member_response = structure.members[affected_member_num].get_response(affected_member_disp, fixed_external, fixed_internal)
                 affected_member_nodal_force = affected_member_response.nodal_force
                 affected_member_yield_components_force = affected_member_response.yield_components_force
+
+                if member.__class__.__name__ in ["WallMember", "PlateMember"]:
+                    if member_num == affected_member_num:
+                        udet = structure.members[affected_member_num].udets.T[comp_num]
+                        affected_member_yield_components_force -= udet.T
+                    affected_member_nodal_strains = affected_member_response.nodal_strains
+                    affected_member_nodal_stresses = affected_member_response.nodal_stresses
+                    affected_member_nodal_moments = affected_member_response.nodal_moments
+                    members_nodal_strains_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_strains, (0, structure.max_member_nodal_components_count - affected_member_nodal_strains.size))
+                    members_nodal_stresses_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_stresses, (0, structure.max_member_nodal_components_count - affected_member_nodal_stresses.size))
+                    members_nodal_moments_sensitivity[affected_member_num, :, pv_column] = np.pad(affected_member_nodal_moments, (0, structure.max_member_nodal_components_count - affected_member_nodal_moments.size))
+
                 members_nodal_forces_sensitivity[affected_member_num, :, pv_column] = affected_member_nodal_force
                 members_disps_sensitivity[affected_member_num, :, pv_column] = affected_member_disps[affected_member_num, :]
                 pv[current_affected_member_ycns:(current_affected_member_ycns + structure.members[affected_member_num].yield_specs.components_count), pv_column] = affected_member_yield_components_force
                 current_affected_member_ycns = current_affected_member_ycns + structure.members[affected_member_num].yield_specs.components_count
+
             pv_column += 1
+
+
 
     sensitivity = DynamicSensitivity(
         modal_loads=modal_load_sensitivity,
@@ -408,6 +441,9 @@ def get_dynamic_sensitivity(structure, loads, deltat):
         nodal_disp=nodal_disp_sensitivity,
         members_nodal_forces=members_nodal_forces_sensitivity,
         members_disps=members_disps_sensitivity,
+        members_nodal_strains=members_nodal_strains_sensitivity,
+        members_nodal_stresses=members_nodal_stresses_sensitivity,
+        members_nodal_moments=members_nodal_moments_sensitivity,
     )
     return sensitivity
 

@@ -133,6 +133,9 @@ class InitialAnalysis:
                 self.nodal_disp_sensitivity = sensitivity.nodal_disp
                 self.members_disps_sensitivity = sensitivity.members_disps
                 self.members_nodal_forces_sensitivity = sensitivity.members_nodal_forces
+                self.members_nodal_strains_sensitivity = sensitivity.members_nodal_strains
+                self.members_nodal_stresses_sensitivity = sensitivity.members_nodal_stresses
+                self.members_nodal_moments_sensitivity = sensitivity.members_nodal_moments
 
                 self.analysis_data.pv = sensitivity.pv
                 self.analysis_data.dv = get_nodal_disp_limits_sensitivity_rows(
@@ -163,13 +166,17 @@ class InitialAnalysis:
         )
 
         self.elastic_nodal_disp_history[time_step, :] = self.elastic_nodal_disp
+        # print(f"{self.total_load=}")
+        # print(f"{self.elastic_nodal_disp=}")
         self.elastic_members_disps = get_members_disps(self.structure, self.elastic_nodal_disp)
+        # print(f"{self.elastic_members_disps=}")
+        # input()
         self.elastic_members_disps_history[time_step, :, :] = self.elastic_members_disps
         internal_responses = get_internal_responses(self.structure, self.elastic_members_disps)
 
         self.elastic_members_nodal_forces_history[time_step, :, :] = internal_responses.members_nodal_forces
-        # self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
-        # self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
+        self.elastic_members_nodal_strains_history[time_step, :, :] = internal_responses.members_nodal_strains
+        self.elastic_members_nodal_stresses_history[time_step, :, :] = internal_responses.members_nodal_stresses
         # self.elastic_members_nodal_moments_history[time_step, :, :] = internal_responses.members_nodal_moments
         self.previous_modal_loads = self.elastic_modal_loads
         self.previous_a2s = self.elastic_a2s

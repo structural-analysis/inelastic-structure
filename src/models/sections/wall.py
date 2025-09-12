@@ -25,7 +25,7 @@ class YieldSpecs:
     def __init__(self, nonlinear: Nonlinear):
         self.sy = nonlinear.sy
         self.yield_surface = nonlinear.yield_surface
-        self.sifted_pieces_count = 4
+        self.sifted_pieces_count = 25
         self.components_count = self.phi.shape[0]
         self.pieces_count = self.phi.shape[1]
 
@@ -94,7 +94,7 @@ def get_von_mises_matrix(sy):
     m = 40
     n = si.shape[0]  # -2 & +2 will produce only one plane each
     p_total = m * n + 2  # total number of yield planes
-    teta = np.zeros(40)
+    teta = np.zeros(m)
     pi = np.pi
     for i in range(m):
         teta[i] = 2 * pi * i / m

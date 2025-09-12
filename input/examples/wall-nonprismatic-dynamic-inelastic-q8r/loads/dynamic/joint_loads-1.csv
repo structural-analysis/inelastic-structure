@@ -1,0 +1,2 @@
+load,node,dof(0:x|1:y|2:teta_z),load_magnitude
+sin-110k-2pi-1-2sec-0.01,64,1,-22.5
